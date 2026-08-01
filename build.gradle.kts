@@ -3,7 +3,7 @@
 // flix.jar fetched by tools/oracle/fetch.sh. Gradle is used here, not mill,
 // so upstream's build-tool choice never becomes flix-spec's problem.
 plugins {
-    id("com.diffplug.spotless") version "7.0.4"
+    id("com.diffplug.spotless") version "8.9.0"
 }
 
 repositories {

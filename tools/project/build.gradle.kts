@@ -13,15 +13,15 @@ repositories {
 val oracleJar = rootProject.layout.projectDirectory.file(".oracle/flix.jar")
 
 dependencies {
-    implementation("org.scala-lang:scala-library:2.13.18")
+    implementation("org.scala-lang:scala-library:3.8.4")
     // No scala-reflect: TreeKind enumeration reads jar entries and decides via java.lang.Class,
     // so knownDirectSubclasses (direct-only, documented as unreliable) is not needed and the
     // dependency surface stays at scala-library + the pinned oracle jar.
     implementation(files(oracleJar))
 
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.scalatest:scalatest_2.13:3.2.19")
-    testImplementation("org.scalatestplus:junit-4-13_2.13:3.2.19.0")
+    testImplementation("org.scalatest:scalatest_2.13:3.2.20")
+    testImplementation("org.scalatestplus:junit-4-13_2.13:3.2.20.0")
 }
 
 application {
