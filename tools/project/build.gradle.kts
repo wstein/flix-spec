@@ -14,7 +14,9 @@ val oracleJar = rootProject.layout.projectDirectory.file(".oracle/flix.jar")
 
 dependencies {
     implementation("org.scala-lang:scala-library:2.13.18")
-    implementation("org.scala-lang:scala-reflect:2.13.18")
+    // No scala-reflect: TreeKind enumeration reads jar entries and decides via java.lang.Class,
+    // so knownDirectSubclasses (direct-only, documented as unreliable) is not needed and the
+    // dependency surface stays at scala-library + the pinned oracle jar.
     implementation(files(oracleJar))
 
     testImplementation("junit:junit:4.13.2")
@@ -23,7 +25,7 @@ dependencies {
 }
 
 application {
-    mainClass.set("spike.Extract")
+    mainClass.set("flix.spec.ProjectionExtractor")
 }
 
 tasks.withType<ScalaCompile> {
@@ -33,7 +35,7 @@ tasks.withType<ScalaCompile> {
 tasks.register<JavaExec>("extract") {
     description = "Emits a projected tree for a single .flix file: ./gradlew :tools:project:extract --args=path/to/file.flix"
     classpath = sourceSets["main"].runtimeClasspath
-    mainClass.set("spike.Extract")
+    mainClass.set("flix.spec.ProjectionExtractor")
     workingDir = rootProject.projectDir
 }
 

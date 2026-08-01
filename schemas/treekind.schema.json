@@ -6,6 +6,10 @@
   "type": "object",
   "required": [
     "schemaVersion",
+    "generatedBy",
+    "toolVersion",
+    "upstreamCommit",
+    "oracleSha256",
     "treeKindCount",
     "treeKindDigest",
     "kinds"
@@ -14,6 +18,26 @@
     "schemaVersion": {
       "type": "integer",
       "minimum": 1
+    },
+    "generatedBy": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Fully qualified generator that produced this file."
+    },
+    "toolVersion": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Generator version; bumped when output format or selection logic changes."
+    },
+    "upstreamCommit": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$",
+      "description": "flix/flix commit this inventory was derived from."
+    },
+    "oracleSha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "SHA-256 of the oracle jar actually used. Two different jars exist at the pinned commit (release asset vs self-built), so the artifact must be named, not assumed."
     },
     "treeKindCount": {
       "type": "integer",

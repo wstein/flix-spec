@@ -1,4 +1,4 @@
-package spike
+package flix.spec
 
 import ca.uwaterloo.flix.api.Flix
 import ca.uwaterloo.flix.language.ast.{ChangeSet, SourcePosition, SyntaxTree, Token, TokenKind}
@@ -10,7 +10,7 @@ import java.nio.file.Paths
 /** Phase 0 spike: drives Reader -> Lexer -> Parser2 directly (no Flix.check()) and prints the resulting SyntaxTree as a
   * canonical projected-tree JSON, per flix-spec plan section 3.1 / phase 0 question 1-2.
   */
-object Extract {
+object ProjectionExtractor {
 
   def esc(s: String): String = {
     val sb = new StringBuilder
@@ -59,7 +59,7 @@ object Extract {
 
   def main(args: Array[String]): Unit = {
     if (args.length != 1) {
-      System.err.println("usage: Extract <path-to-flix-file>")
+      System.err.println("usage: ProjectionExtractor <path-to-flix-file>")
       sys.exit(1)
     }
 
