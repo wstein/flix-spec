@@ -28,7 +28,14 @@ Key components established:
 - **JSON schemas ([`schemas/`](schemas/))**: draft-07 definitions for `ast/treekind.json` and canonical projected trees, enforced in CI by [`tools/project/validate-treekind.py`](tools/project/validate-treekind.py).
 - **Committed AST inventory ([`ast/treekind.json`](ast/treekind.json))**: 192 `TreeKind` nodes with qualified names, parent traits and forms, name-set digest `ef4c5a85…`, and a provenance header naming the generator, tool version, upstream commit and the exact oracle jar it was derived from.
 - **Corpus definition ([`corpus/`](corpus/))**: 873 pinned `.flix` files (688 under `main/`, 185 under `examples/`), inclusion rules, and a tree-hash-verified fetch script.
-- **CI and verification**: fast-tier workflows ([`verify.yml`](.github/workflows/verify.yml), [`oracle.yml`](.github/workflows/oracle.yml)), actions pinned by commit SHA, runner pinned to `ubuntu-24.04`, and Dependabot for actions and Gradle.
+- **CI and verification**: actions pinned by commit SHA, runner pinned to `ubuntu-24.04`, and Dependabot for actions and Gradle.
+
+  | Workflow | Trigger | Does |
+  | --- | --- | --- |
+  | [`oracle.yml`](.github/workflows/oracle.yml) | `pin.json` changes, manual | Fetch the pinned jar, verify its SHA-256, cache it by digest |
+  | [`verify.yml`](.github/workflows/verify.yml) | push, PR | Format check, tests, end-to-end suite, regenerate and diff `ast/treekind.json` |
+  | [`corpus.yml`](.github/workflows/corpus.yml) | weekly, manual | Clone upstream, verify tree hash and file counts; report if the pin is behind |
+  | [`release.yml`](.github/workflows/release.yml) | `v*` tag | Verify, then publish the artifact bundle with `SHA256SUMS` |
 
 ### How the pieces fit
 

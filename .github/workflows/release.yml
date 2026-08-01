@@ -1,0 +1,116 @@
+name: Release
+
+# Publishes the consumable artifacts for a tagged version: pin.json, the AST
+# inventory, the schemas and the fixtures, plus SHA256SUMS. Consumers vendor
+# these with a checksum -- there is no package registry and no git submodule,
+# because a floating submodule pointer across several CI configurations defeats
+# the pin this repository exists to hold.
+#
+# Nothing is published that has not been regenerated and verified first.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Verify and Publish Release Assets
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      # Required to create the release and upload assets. Scoped to this job
+      # only; the workflow default above stays read-only.
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Java JDK 21
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Restore Cached Oracle Jar
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .oracle/flix.jar
+          key: oracle-jar-${{ hashFiles('pin.json') }}
+
+      - name: Fetch Oracle Jar and Verify SHA-256
+        run: ./tools/oracle/fetch.sh
+
+      - name: Run End-to-End Verification Suite
+        run: ./tools/project/verify.sh
+
+      - name: Refuse to Publish Stale Artifacts
+        # verify.sh regenerates ast/treekind.json. If regeneration moved it, the
+        # tag points at artifacts that do not match their own oracle.
+        run: git diff --exit-code ast/treekind.json
+
+      - name: Assemble Release Bundle
+        id: bundle
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME}"
+          FLIX_TAG="$(python3 -c "import json; print(json.load(open('pin.json'))['upstream']['tag'])")"
+          BUNDLE="flix-spec-${VERSION}+flix${FLIX_TAG}"
+
+          mkdir -p "dist/${BUNDLE}/corpus"
+          cp -r pin.json ast schemas fixtures \
+                LICENSE.md NOTICE.md README.md "dist/${BUNDLE}/"
+          cp corpus/corpus.json "dist/${BUNDLE}/corpus/"
+
+          tar -czf "dist/${BUNDLE}.tar.gz" -C dist "${BUNDLE}"
+          ( cd dist && sha256sum "${BUNDLE}.tar.gz" > SHA256SUMS )
+          ( cd "dist/${BUNDLE}" && find . -type f -print0 \
+              | sort -z | xargs -0 sha256sum > ../SHA256SUMS.contents )
+
+          echo "bundle=${BUNDLE}" >> "$GITHUB_OUTPUT"
+          cat dist/SHA256SUMS
+
+      - name: Publish Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUNDLE: ${{ steps.bundle.outputs.bundle }}
+        run: |
+          set -euo pipefail
+          FLIX_TAG="$(python3 -c "import json; print(json.load(open('pin.json'))['upstream']['tag'])")"
+          ORACLE="$(python3 -c "import json; print(json.load(open('pin.json'))['oracleArtifact']['sha256'])")"
+          DIGEST="$(python3 -c "import json; print(json.load(open('ast/treekind.json'))['treeKindDigest'])")"
+          COUNT="$(python3 -c "import json; print(json.load(open('ast/treekind.json'))['treeKindCount'])")"
+
+          {
+            echo "Derived from \`flix/flix\` ${FLIX_TAG}."
+            echo
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Upstream release | \`${FLIX_TAG}\` |"
+            echo "| Oracle jar SHA-256 | \`${ORACLE}\` |"
+            echo "| TreeKinds | ${COUNT} |"
+            echo "| Name-set digest | \`${DIGEST}\` |"
+            echo
+            echo "Verify with \`sha256sum -c SHA256SUMS\`. \`SHA256SUMS.contents\`"
+            echo "lists a digest per file inside the bundle."
+            echo
+            echo "The oracle jar is attested by digest, not by provenance; see \`NOTICE.md\`."
+          } > dist/NOTES.md
+
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "${GITHUB_REF_NAME}" \
+            --notes-file dist/NOTES.md \
+            "dist/${BUNDLE}.tar.gz" \
+            dist/SHA256SUMS \
+            dist/SHA256SUMS.contents

@@ -1,0 +1,63 @@
+name: Slow Tier — Corpus Integrity
+
+# Separated from verify.yml because this clones the whole upstream repository:
+# too slow and too network-heavy for every push, but it is the only check that
+# proves the pinned corpus still resolves to the tree hash pin.json claims.
+#
+# Scope note: the whole-corpus differential run belongs here too, but the
+# harness it needs does not exist yet. This workflow deliberately claims only
+# what it verifies.
+
+on:
+  schedule:
+    # Mondays, 05:00 UTC -- ahead of the weekly Dependabot batch.
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+  push:
+    paths:
+      - 'corpus/**'
+      - 'pin.json'
+      - '.github/workflows/corpus.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: corpus-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  corpus-integrity:
+    name: Verify Pinned Corpus
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Fetch and Verify Corpus at the Pin
+        # Verifies commit, git tree hash, and .flix file counts against
+        # corpus/corpus.json. Fails loudly on any mismatch.
+        run: ./corpus/fetch
+
+      - name: Report Upstream Releases Newer Than the Pin
+        # Dependabot cannot bump the Flix pin -- it is not a package ecosystem,
+        # so nothing else in this repository would ever notice a new release.
+        # Informational only: a newer upstream release is not a failure, and
+        # bumping the pin is a reviewed human decision (docs/PIN-BUMP.md).
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          PINNED="$(python3 -c "import json; print(json.load(open('pin.json'))['upstream']['tag'])")"
+          LATEST="$(gh release view --repo flix/flix --json tagName --jq '.tagName')"
+          echo "pinned: $PINNED"
+          echo "latest: $LATEST"
+          if [ "$PINNED" != "$LATEST" ]; then
+            echo "::notice title=Flix pin is behind::pin.json is at $PINNED; upstream latest is $LATEST. See docs/PIN-BUMP.md."
+          else
+            echo "Pin is current."
+          fi

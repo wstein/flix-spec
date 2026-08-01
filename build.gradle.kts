@@ -33,7 +33,20 @@ spotless {
             ".scalafmt.conf",
             "gradle.properties",
         )
-        targetExclude(".oracle/**", "build/**", "**/build/**", ".git/**", "tmp/**")
+        // The globs above are deliberately broad, so everything not tracked by git
+        // must be excluded explicitly -- build output, fetched artifacts, release
+        // staging, and tool state directories. Formatting a file the repository
+        // does not own is always wrong, and it fails the build for the owner.
+        targetExclude(
+            ".git/**",
+            ".gradle/**",
+            ".oracle/**",
+            ".remember/**",
+            "build/**",
+            "**/build/**",
+            "dist/**",
+            "tmp/**",
+        )
         trimTrailingWhitespace()
         endWithNewline()
     }
