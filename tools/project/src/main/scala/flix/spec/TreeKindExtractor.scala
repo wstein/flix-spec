@@ -28,7 +28,7 @@ object TreeKindExtractor {
 
   private val OracleJar = Paths.get(".oracle/flix.jar")
   private val PinFile = Paths.get("pin.json")
-  private val TreeKindClass = "ca.uwaterloo.flix.language.ast.SyntaxTree$TreeKind"
+  private val TreeKindClass = TreeKindNaming.TreeKindClass
   private val EntryPrefix = "ca/uwaterloo/flix/language/ast/SyntaxTree$"
 
   // ---------------------------------------------------------------- pin.json
@@ -58,31 +58,7 @@ object TreeKindExtractor {
 
   // ------------------------------------------------------------- enumeration
 
-  /** Last `$`-segment of a binary name: `...SyntaxTree$TreeKind$Expr$Apply$` -> `Apply`. */
-  private def simpleName(binaryName: String): String =
-    binaryName.stripSuffix("$").split('$').last
-
-  /** Qualified name, built from the *type hierarchy* rather than lexical nesting.
-    *
-    * These genuinely disagree: `case object DerivationList extends Type` is declared at TreeKind top level
-    * (SyntaxTree.scala:98) but extends `Type`, so binary nesting says `DerivationList` while the type hierarchy says
-    * `Type.DerivationList`. Reflection was chosen over source parsing precisely so the hierarchy wins, and `name` must
-    * agree with `extends` by construction rather than by coincidence.
-    */
-  private def qualifiedName(parent: String, binaryName: String): String =
-    if (parent == "TreeKind") simpleName(binaryName) else s"$parent.${simpleName(binaryName)}"
-
-  /** The sub-trait a kind belongs to (Decl, Expr, Type, ...), or TreeKind for top-level kinds. */
-  private def parentOf(c: Class[_], treeKind: Class[_]): String = {
-    val subTrait = c.getInterfaces.find(i => i != treeKind && treeKind.isAssignableFrom(i))
-    subTrait.map(i => simpleName(i.getName)).getOrElse("TreeKind")
-  }
-
-  /** case object or case class, decided by the presence of Scala's MODULE$ field -- never by matching against a
-    * hardcoded name.
-    */
-  private def formOf(c: Class[_]): String =
-    if (c.getFields.exists(_.getName == "MODULE$")) "case-object" else "case-class"
+  import TreeKindNaming.{formOf, parentOf, qualifiedName, simpleName}
 
   def extractTreeKinds(jar: Path): List[TreeKindInfo] = {
     val loader = getClass.getClassLoader

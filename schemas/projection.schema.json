@@ -6,12 +6,36 @@
   "type": "object",
   "required": [
     "schemaVersion",
+    "generatedBy",
+    "toolVersion",
+    "upstreamCommit",
+    "oracleSha256",
     "units"
   ],
   "properties": {
     "schemaVersion": {
       "type": "integer",
       "minimum": 1
+    },
+    "generatedBy": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Fully qualified generator that produced this file."
+    },
+    "toolVersion": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Generator version; bumped when the emitted format changes."
+    },
+    "upstreamCommit": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$",
+      "description": "flix/flix commit this projection was derived from."
+    },
+    "oracleSha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "SHA-256 of the oracle jar actually used."
     },
     "units": {
       "type": "array",
@@ -26,12 +50,21 @@
       "type": "object",
       "required": [
         "source",
+        "diagnostics",
         "tree"
       ],
       "properties": {
         "source": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "description": "Repository-relative, forward-slashed path. Never absolute: committed expectations must not be machine-specific."
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Diagnostic"
+          },
+          "description": "Lexer and parser diagnostics, sorted by (line, col, kind)."
         },
         "tree": {
           "$ref": "#/definitions/Node"
@@ -106,7 +139,8 @@
       "properties": {
         "kind": {
           "type": "string",
-          "minLength": 1
+          "minLength": 1,
+          "description": "Sub-trait-qualified TreeKind name drawn from ast/treekind.json, e.g. Expr.Apply. Bare names are ambiguous: 13 simple names are reused across sub-traits."
         },
         "span": {
           "$ref": "#/definitions/Span"
@@ -123,6 +157,34 @@
               }
             ]
           }
+        }
+      },
+      "additionalProperties": false
+    },
+    "Diagnostic": {
+      "type": "object",
+      "description": "kind and line are gated by conformance; col and message are advisory because both are recovery-dependent (implementation plan section 3.4).",
+      "required": [
+        "kind",
+        "line",
+        "col",
+        "message"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "col": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "message": {
+          "type": "string"
         }
       },
       "additionalProperties": false

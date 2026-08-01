@@ -20,15 +20,28 @@ echo "== running Gradle test suite =="
 ./gradlew test
 
 echo "== extracting fixtures/positive/hello.flix twice, checking determinism =="
+# JavaExec forks a JVM per invocation, so these are two separate processes.
 ./gradlew -q :tools:project:extract --args="fixtures/positive/hello.flix" > "$WORK/out1.json"
 ./gradlew -q :tools:project:extract --args="fixtures/positive/hello.flix" > "$WORK/out2.json"
 diff "$WORK/out1.json" "$WORK/out2.json"
-echo "OK: byte-identical across two runs"
+echo "OK: byte-identical across two forked JVMs"
 
 echo "== extracting fixtures/negative/unclosed-paren.flix, checking ErrorTree recovery =="
 ./gradlew -q :tools:project:extract --args="fixtures/negative/unclosed-paren.flix" > "$WORK/broken.json"
 grep -q '"kind":"ErrorTree"' "$WORK/broken.json"
 echo "OK: parse error recovered into a well-formed tree with an ErrorTree node"
+
+echo "== validating committed fixtures/expected against schema and inventory =="
+python3 tools/project/validate-projection.py
+
+echo "== regenerating fixtures/expected =="
+./gradlew -q :tools:project:generateFixtures
+
+echo "== validating regenerated fixtures/expected =="
+python3 tools/project/validate-projection.py
+
+echo "== regenerating ast/coverage.json =="
+python3 tools/project/coverage.py
 
 echo "== validating committed ast/treekind.json against schema =="
 python3 tools/project/validate-treekind.py
@@ -59,4 +72,4 @@ if [ "$ACTUAL_DIGEST" != "$EXPECT_DIGEST" ]; then
 fi
 echo "OK: ast/treekind.json carries exactly $ACTUAL_COUNT kinds matching pin digest $ACTUAL_DIGEST"
 
-echo "== all Phase 1 verification checks passed =="
+echo "== all verification checks passed =="

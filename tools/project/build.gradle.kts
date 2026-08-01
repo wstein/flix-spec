@@ -49,6 +49,21 @@ tasks.register<JavaExec>("extract") {
     workingDir = rootProject.projectDir
 }
 
+tasks.register<JavaExec>("generateFixtures") {
+    description = "Regenerates fixtures/expected/*.json for every fixture under fixtures/."
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("flix.spec.ProjectionExtractor")
+    workingDir = rootProject.projectDir
+    argumentProviders.add(
+        CommandLineArgumentProvider {
+            val root = rootProject.projectDir
+            val fixtures = rootProject.fileTree("fixtures") { include("positive/**/*.flix", "negative/**/*.flix") }
+                .files.map { it.relativeTo(root).path }.sorted()
+            listOf("--out", "fixtures/expected") + fixtures
+        },
+    )
+}
+
 tasks.register<JavaExec>("proposeTreeKind") {
     description =
         "Reports the TreeKind count and digest for the pinned jar without asserting or writing. " +
@@ -67,7 +82,7 @@ tasks.register<JavaExec>("generateTreeKind") {
     workingDir = rootProject.projectDir
 }
 
-tasks.matching { it.name in setOf("run", "extract", "proposeTreeKind", "generateTreeKind") }.configureEach {
+tasks.matching { it.name in setOf("run", "extract", "proposeTreeKind", "generateTreeKind", "generateFixtures") }.configureEach {
     (this as JavaExec).doFirst {
         check(oracleJar.asFile.exists()) {
             "Missing ${oracleJar.asFile}. Run tools/oracle/fetch.sh first."

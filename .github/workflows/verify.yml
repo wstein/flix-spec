@@ -49,7 +49,7 @@ jobs:
       - name: Run End-to-End Verification Suite
         run: ./tools/project/verify.sh
 
-      - name: Verify TreeKind Extraction Diff
-        run: |
-          ./gradlew :tools:project:generateTreeKind
-          git diff --exit-code ast/treekind.json
+      - name: Verify Generated Artifacts Are Current
+        # verify.sh already regenerated everything. Any diff means a committed
+        # artifact does not match what the pinned oracle actually produces.
+        run: git diff --exit-code ast/ fixtures/expected/
