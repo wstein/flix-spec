@@ -1,4 +1,5 @@
 {
+  "schemaVersion": 1,
   "upstream": {
     "repository": "https://github.com/flix/flix",
     "tag": "v0.75.1",
@@ -10,12 +11,20 @@
     "url": "https://github.com/flix/flix/releases/download/v0.75.1/flix.jar",
     "sha256": "e3177700aead8a22a42c910e73bfb8a326fefdbab4e3eaeaf6d55c328a6bd938",
     "sizeBytes": 33793240,
+    "attestation": "digest-only -- release asset without provenance attestation or build commit stamp",
     "note": "Pinned by digest, not rebuilt. A self-built jar at the same commit was NOT byte-identical to this asset (16794 vs 16776 entries) -- see docs/phase0-spike.md section 'Q2'. The digest above is the contract; nothing here re-derives it."
+  },
+  "selfBuiltArtifact": {
+    "sha256": "bfca1bac75142a67fafca163f2c97b71075f2cdb93bdd680259c75fafacfdb4b",
+    "sizeBytes": 33793240,
+    "note": "Measured during Phase 0 spike on clean checkout at commit 318bb51a953c58a8785251a80fad8aea005f729f via ./mill flix.assembly."
   },
   "buildProvenance": {
     "note": "Provenance metadata only -- flix-spec's own build does not need to match this to consume the pinned artifact above (implementation plan section 3.2).",
     "buildTool": "mill",
     "buildToolVersion": "1.1.5",
+    "command": "./mill flix.assembly",
+    "outputPath": "out/flix/assembly.dest/out.jar",
     "scalaVersion": "2.13.18",
     "jdkTarget": 21,
     "loadBearingScalacOptions": [
@@ -29,13 +38,20 @@
     ]
   },
   "entryPoint": {
-    "description": "Reader.run -> Lexer.run -> Parser2.run, each wrapped in Flix.phaseNew, invoked with an implicit ca.uwaterloo.flix.api.Flix instance constructed by the caller",
+    "description": "Public API: new Flix() -> addVirtualPath -> check() -> getParsedAst(): SyntaxTree.Root",
     "classes": [
-      "ca.uwaterloo.flix.language.phase.Reader",
-      "ca.uwaterloo.flix.language.phase.Lexer",
-      "ca.uwaterloo.flix.language.phase.Parser2"
+      "ca.uwaterloo.flix.api.Flix",
+      "ca.uwaterloo.flix.language.ast.SyntaxTree"
     ]
   },
+  "libraryLevel": {
+    "fixtures": "Options.TestWithLibNix",
+    "corpus": "Options.TestWithLibAll"
+  },
+  "classpath": {
+    "requirement": "system-classpath",
+    "note": "Must be loaded on the system classpath. URLClassLoader isolation hides dev.flix.runtime.Global and returns empty trees."
+  },
   "treeKindCount": 192,
-  "schemaVersion": 0
+  "treeKindDigest": "PENDING_PHASE_1B"
 }

@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/wstein/flix-spec/main/schemas/treekind.schema.json",
+  "title": "Flix Syntax TreeKind Inventory Schema",
+  "description": "Schema for ast/treekind.json, enumerating all syntax tree node kinds reflected from the pinned Flix reference compiler.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "treeKindCount",
+    "treeKindDigest",
+    "kinds"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "treeKindCount": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "treeKindDigest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "kinds": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/TreeKindItem"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "TreeKindItem": {
+      "type": "object",
+      "required": [
+        "name",
+        "extends",
+        "form"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Qualified syntax tree node kind name (e.g. Expr.Apply, Decl.Def, ErrorTree)."
+        },
+        "extends": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Qualified parent trait name within SyntaxTree (e.g. Expr, Decl, TreeKind)."
+        },
+        "form": {
+          "type": "string",
+          "enum": [
+            "case-object",
+            "case-class"
+          ],
+          "description": "JVM representation form (case-object for singleton leaves, case-class for ErrorTree)."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

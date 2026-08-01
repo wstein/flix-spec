@@ -1,0 +1,131 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/wstein/flix-spec/main/schemas/projection.schema.json",
+  "title": "Flix Projected Concrete Syntax Tree Schema",
+  "description": "Schema for projected concrete syntax trees produced from Flix source files against the pinned oracle.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "units"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "units": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/CompilationUnit"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "CompilationUnit": {
+      "type": "object",
+      "required": [
+        "source",
+        "tree"
+      ],
+      "properties": {
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tree": {
+          "$ref": "#/definitions/Node"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Position": {
+      "type": "object",
+      "required": [
+        "line",
+        "col"
+      ],
+      "properties": {
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "col": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "Span": {
+      "type": "object",
+      "required": [
+        "start",
+        "end"
+      ],
+      "properties": {
+        "start": {
+          "$ref": "#/definitions/Position"
+        },
+        "end": {
+          "$ref": "#/definitions/Position"
+        }
+      },
+      "additionalProperties": false
+    },
+    "TokenNode": {
+      "type": "object",
+      "required": [
+        "token",
+        "text",
+        "start",
+        "end"
+      ],
+      "properties": {
+        "token": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "start": {
+          "$ref": "#/definitions/Position"
+        },
+        "end": {
+          "$ref": "#/definitions/Position"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Node": {
+      "type": "object",
+      "required": [
+        "kind",
+        "children"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "span": {
+          "$ref": "#/definitions/Span"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/definitions/Node"
+              },
+              {
+                "$ref": "#/definitions/TokenNode"
+              }
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
