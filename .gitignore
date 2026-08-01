@@ -6,3 +6,6 @@ build/
 
 # Pinned oracle artifact -- fetched by tools/oracle/fetch.sh, verified against pin.json
 .oracle/
+
+.vscode/
+nohup.out

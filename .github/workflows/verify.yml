@@ -21,18 +21,18 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
       - name: Setup Java JDK 21
-        uses: actions/setup-java@3a47288d29edd610052991036079c6565f1262d1 # v4.7.0
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: 'temurin'
           java-version: '21'
 
       - name: Restore Cached Oracle Jar
-        uses: actions/cache@d4323d4df104b026a6ec633f211e3165443a32b6 # v4.2.2
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .oracle/flix.jar
           key: oracle-jar-${{ hashFiles('pin.json') }}
