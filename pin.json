@@ -11,13 +11,14 @@
     "url": "https://github.com/flix/flix/releases/download/v0.75.1/flix.jar",
     "sha256": "e3177700aead8a22a42c910e73bfb8a326fefdbab4e3eaeaf6d55c328a6bd938",
     "sizeBytes": 33793240,
+    "jarEntries": 16776,
     "attestation": "digest-only -- release asset without provenance attestation or build commit stamp",
     "note": "Pinned by digest, not rebuilt. A self-built jar at the same commit was NOT byte-identical to this asset (16794 vs 16776 entries) -- see docs/phase0-spike.md section 'Q2'. The digest above is the contract; nothing here re-derives it."
   },
   "selfBuiltArtifact": {
     "sha256": "bfca1bac75142a67fafca163f2c97b71075f2cdb93bdd680259c75fafacfdb4b",
-    "sizeBytes": 33793240,
-    "note": "Measured during Phase 0 spike on clean checkout at commit 318bb51a953c58a8785251a80fad8aea005f729f via ./mill flix.assembly."
+    "jarEntries": 16794,
+    "note": "Measured during Phase 0 spike on a clean checkout at commit 318bb51a953c58a8785251a80fad8aea005f729f via ./mill flix.assembly. NOT the oracle -- recorded only to document that a same-commit rebuild is not byte-identical to the release asset (18 extra entries, most likely transitive-dependency drift). sizeBytes is deliberately absent: it was never measured, and a jar with 18 more entries cannot share the release asset's byte count."
   },
   "buildProvenance": {
     "note": "Provenance metadata only -- flix-spec's own build does not need to match this to consume the pinned artifact above (implementation plan section 3.2).",
@@ -38,11 +39,15 @@
     ]
   },
   "entryPoint": {
-    "description": "Public API: new Flix() -> addVirtualPath -> check() -> getParsedAst(): SyntaxTree.Root",
+    "description": "Phase pipeline, driven directly: Reader.run(List(Input.RealFile), AvailableClasses.empty) -> Lexer.run -> Parser2.run, with an implicit Flix. Chosen over the public API because it parses exactly the given inputs.",
     "classes": [
       "ca.uwaterloo.flix.api.Flix",
+      "ca.uwaterloo.flix.language.phase.Reader",
+      "ca.uwaterloo.flix.language.phase.Lexer",
+      "ca.uwaterloo.flix.language.phase.Parser2",
       "ca.uwaterloo.flix.language.ast.SyntaxTree"
-    ]
+    ],
+    "alternativeRejected": "new Flix() -> addVirtualPath -> check() -> getParsedAst() is public and simpler, but getParsedAst() returns the CST for the entire compilation including the standard library (~1.03M projected nodes, 143 of 192 kinds for a one-line fixture), so every fixture expectation would embed the stdlib. Retained as the route for the corpus-wide reachability run, where that breadth is the point."
   },
   "libraryLevel": {
     "fixtures": "Options.TestWithLibNix",
