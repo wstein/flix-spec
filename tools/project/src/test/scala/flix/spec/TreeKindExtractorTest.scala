@@ -72,6 +72,21 @@ class TreeKindExtractorTest extends AnyFunSuite with Matchers {
     digest1.matches("^[a-f0-9]{64}$") shouldBe true
   }
 
+  test("pin.json records the count and digest the extractor computes") {
+    val kinds = TreeKindExtractor.extractTreeKinds(oracleJar)
+    val pin = Files.readString(repoRoot.resolve("pin.json"))
+
+    // generateTreeKind asserts against these; if they drift, the failure should surface here
+    // with a readable diff rather than as a require() deep inside a Gradle task.
+    pin should include(s""""treeKindCount": ${kinds.length}""")
+    pin should include(s""""treeKindDigest": "${TreeKindExtractor.calculateDigest(kinds)}"""")
+  }
+
+  test("the oracle jar on disk is the artifact pin.json names") {
+    val pin = Files.readString(repoRoot.resolve("pin.json"))
+    pin should include(s""""sha256": "${TreeKindExtractor.fileDigest(oracleJar)}"""")
+  }
+
   test("ast/treekind.json matches extracted kinds, pin digest, and names its oracle") {
     val kinds = TreeKindExtractor.extractTreeKinds(oracleJar)
     val digest = TreeKindExtractor.calculateDigest(kinds)

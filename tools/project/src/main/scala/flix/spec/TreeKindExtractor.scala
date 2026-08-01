@@ -171,17 +171,33 @@ object TreeKindExtractor {
     sb.toString
   }
 
+  /** Usage text for the two modes. */
+  private val Usage =
+    """usage: TreeKindExtractor [--propose] [<output-path>]
+      |
+      |  default    assert count and digest against pin.json, then write the inventory
+      |  --propose  report the count and digest without asserting or writing
+      |""".stripMargin
+
   def main(args: Array[String]): Unit = {
+    val propose = args.contains("--propose")
+    val positional = args.filterNot(_.startsWith("--"))
+    val unknown = args.filter(a => a.startsWith("--") && a != "--propose")
+    if (unknown.nonEmpty) {
+      System.err.println(s"unknown option: ${unknown.mkString(" ")}\n\n$Usage")
+      sys.exit(2)
+    }
+
     require(Files.exists(OracleJar), s"FATAL: missing $OracleJar -- run tools/oracle/fetch.sh")
     require(Files.exists(PinFile), s"FATAL: missing $PinFile")
 
     val pin = Files.readString(PinFile, StandardCharsets.UTF_8)
     val upstreamCommit = pinString(pin, "commit", after = Some("\"upstream\""))
     val expectedOracle = pinString(pin, "sha256", after = Some("\"oracleArtifact\""))
-    val expectedCount = pinInt(pin, "treeKindCount")
-    val expectedDigest = pinString(pin, "treeKindDigest")
 
-    // The oracle must be the artifact pin.json names, checked before anything is derived from it.
+    // The oracle must be the artifact pin.json names, checked before anything is derived from
+    // it. This holds in both modes: a pin bump updates the artifact digest first, so by the time
+    // TreeKinds are unknown the jar's identity is already settled.
     val oracleSha256 = fileDigest(OracleJar)
     require(
       oracleSha256 == expectedOracle,
@@ -191,24 +207,42 @@ object TreeKindExtractor {
     val kinds = extractTreeKinds(OracleJar)
     val digest = calculateDigest(kinds)
 
+    if (propose) {
+      // Discovery mode. Asserting here would be circular: a pin bump cannot know the new count
+      // or digest until the new jar has been read, and reading it is what this reports.
+      println(s"""  "treeKindCount": ${kinds.length},""")
+      println(s"""  "treeKindDigest": "$digest"""")
+      System.err.println(
+        s"Proposed values for pin.json. Nothing was written and no assertion was made.\n" +
+          s"Copy them into pin.json, then run generateTreeKind to regenerate under assertion."
+      )
+      return
+    }
+
     // Assert against pin.json rather than a literal: a pin bump must update pin.json in the
     // same commit, which is the review we want (plan section 3.3).
+    val expectedCount = pinInt(pin, "treeKindCount")
+    val expectedDigest = pinString(pin, "treeKindDigest")
     require(
       kinds.length == expectedCount,
-      s"FATAL: expected $expectedCount TreeKinds per pin.json, got ${kinds.length}"
+      s"FATAL: expected $expectedCount TreeKinds per pin.json, got ${kinds.length}.\n" +
+        s"       If this is a pin bump, run with --propose and update pin.json first."
     )
     require(
       digest == expectedDigest,
-      s"FATAL: name-set digest mismatch\n  pin.json: $expectedDigest\n  computed: $digest"
+      s"FATAL: name-set digest mismatch\n  pin.json: $expectedDigest\n  computed: $digest\n" +
+        s"       If this is a pin bump, run with --propose and update pin.json first."
     )
 
     val json = formatJson(kinds, digest, upstreamCommit, oracleSha256)
 
-    if (args.nonEmpty) {
-      val path = Paths.get(args(0)).toAbsolutePath
-      Option(path.getParent).foreach(Files.createDirectories(_))
-      Files.writeString(path, json, StandardCharsets.UTF_8)
-      println(s"Wrote ${kinds.length} TreeKinds to $path with digest $digest")
-    } else print(json)
+    positional.headOption match {
+      case Some(target) =>
+        val path = Paths.get(target).toAbsolutePath
+        Option(path.getParent).foreach(Files.createDirectories(_))
+        Files.writeString(path, json, StandardCharsets.UTF_8)
+        println(s"Wrote ${kinds.length} TreeKinds to $path with digest $digest")
+      case None => print(json)
+    }
   }
 }

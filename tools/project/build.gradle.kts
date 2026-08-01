@@ -39,10 +39,13 @@ tasks.register<JavaExec>("extract") {
     workingDir = rootProject.projectDir
 }
 
-tasks.register<JavaExec>("listKinds") {
-    description = "Enumerates every TreeKind via reflection over the pinned jar."
+tasks.register<JavaExec>("proposeTreeKind") {
+    description =
+        "Reports the TreeKind count and digest for the pinned jar without asserting or writing. " +
+            "Use during a pin bump, before updating pin.json."
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set("flix.spec.TreeKindExtractor")
+    args = listOf("--propose")
     workingDir = rootProject.projectDir
 }
 
@@ -54,7 +57,7 @@ tasks.register<JavaExec>("generateTreeKind") {
     workingDir = rootProject.projectDir
 }
 
-tasks.matching { it.name in setOf("run", "extract", "listKinds", "generateTreeKind") }.configureEach {
+tasks.matching { it.name in setOf("run", "extract", "proposeTreeKind", "generateTreeKind") }.configureEach {
     (this as JavaExec).doFirst {
         check(oracleJar.asFile.exists()) {
             "Missing ${oracleJar.asFile}. Run tools/oracle/fetch.sh first."
