@@ -4,29 +4,28 @@ This document defines the canonical projected syntax tree format, normalization 
 
 ## 1. Overview
 
-`flix-spec` provides shared test infrastructure for independent parsers of the Flix programming language (such as `flix-antlr4-grammar`, `tree-sitter-flix`, and `flix-textmate`). 
+`flix-spec` provides shared test infrastructure for independent parsers of the Flix programming
+language, such as `flix-antlr4-grammar`, `tree-sitter-flix` and `flix-textmate`.
 
-Rather than comparing raw string sequences or implementation-specific AST representations, consumers project their parse trees into a **canonical projected tree** defined by `schemas/projection.schema.json`.
+Rather than comparing raw string sequences or implementation-specific AST representations,
+consumers project their parse trees into a **canonical projected tree** defined by
+`schemas/projection.schema.json`.
 
+```mermaid
+flowchart TD
+    UP["Upstream Flix reference compiler<br/>pin v0.75.1 · 318bb51a95…<br/><b>operational oracle</b>"]
+    CANON["Canonical projected tree<br/><code>schemas/projection.schema.json</code>"]
+    C1["flix-antlr4-grammar"]
+    C2["tree-sitter-flix"]
+
+    UP -->|"ProjectionExtractor<br/>(Reader → Lexer → Parser2)"| CANON
+    C1 -->|"projection map"| CANON
+    C2 -.->|"projection map, later"| CANON
 ```
-                        +----------------------------------+
-                        | Upstream Flix Reference Compiler |
-                        |   (pin: v0.75.1 / 318bb51a95...) |
-                        +----------------------------------+
-                                         |
-                                         v
-                         +--------------------------------+
-                         |  Canonical Projected Tree      |
-                         |  (schemas/projection.schema)   |
-                         +--------------------------------+
-                                   ^            ^
-                                   |            |
-                  (Projection Map) |            | (Projection Map)
-                                   |            |
-            +----------------------+            +----------------------+
-            | flix-antlr4-grammar  |            |   tree-sitter-flix   |
-            +----------------------+            +----------------------+
-```
+
+The arrows into the canonical tree run in one direction only. The reference compiler defines the
+shape; consumers map onto it. No consumer is an authority over another, and none is an authority
+over the reference.
 
 ## 2. Canonical Projected Tree Format
 
@@ -38,6 +37,13 @@ A projected syntax tree document represents one or more compilation units. Each 
 
 A projected tree node consists of:
 - `kind`: A qualified syntax tree node kind string, drawn directly from `ast/treekind.json` (e.g. `Expr.Apply`, `Decl.Def`, `Type.Tuple`, `ErrorTree`).
+
+  Qualification is mandatory, not cosmetic. `SyntaxTree.TreeKind` has no `toString` override, so
+  13 simple names are reused across sub-traits — `Expr.Apply` and `Type.Apply` both print as
+  `"Apply"`, and 28 leaf positions collapse to 13 bare strings. A bare name cannot identify a node
+  kind. Qualified names are derived from the **type hierarchy**, not from lexical nesting: the two
+  disagree for `DerivationList`, which is declared at `TreeKind` top level but extends `Type`, and
+  is therefore `Type.DerivationList`.
 - `children`: An ordered list of child elements. A child may be a sub-node or a leaf token.
 - `span` *(advisory)*: Source position span `{"start": {"line": L, "col": C}, "end": {"line": L, "col": C}}`.
 
@@ -63,7 +69,9 @@ To enable meaningful cross-parser comparison, projected trees distinguish betwee
 
 ## 4. Consumer Projection Maps
 
-External parsers typically use different naming conventions (e.g. `tree-sitter-flix` uses 190 named `snake_case` node types). 
+External parsers use different naming conventions — `tree-sitter-flix`, for example, has 190 named
+`snake_case` node types. Its near-match to the 192 `TreeKind`s is a coincidence, not a
+correspondence, so expect a genuine mapping effort rather than a rename table.
 
 Each consumer maintains a projection map in `ast/projection/<consumer>.json` mapping its native AST node vocabulary into the canonical `TreeKind` names defined in `ast/treekind.json`.
 

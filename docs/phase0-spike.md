@@ -25,10 +25,18 @@ Two internal-but-public APIs had to be worked around, both cheap and stable acro
   SecurityContext.Plain)` and `AvailableClasses.empty` are enough for a single real file; no need
   for `Flix`'s private `getInputs`.
 
-Route B (reflection over the built compiler, section 4.2) was validated the same way: `ListKinds`
-walks `TreeKind`'s sealed hierarchy with `scala.reflect.runtime.universe`, entirely against the
-jar's classes, and returns **exactly 192** leaves (191 `case object` + `ErrorTree`) — matching the
-plan's hand-count of `SyntaxTree.scala` with no source parsing at all.
+Route B (reflection over the built compiler, section 4.2) was validated the same way: walking
+`TreeKind`'s sealed hierarchy entirely against the jar's classes returns **exactly 192** leaves
+(191 `case object` + `ErrorTree`) — matching the plan's hand-count of `SyntaxTree.scala` with no
+source parsing at all.
+
+> **Superseded in Phase 1.** The spike used `scala.reflect.runtime.universe`'s
+> `knownDirectSubclasses`. `flix.spec.TreeKindExtractor` now enumerates jar entries and filters
+> with `java.lang.Class`, which drops the `scala-reflect` dependency and avoids an API that is
+> direct-only and documented as order-sensitive. Both routes yield the same 192 names; only the
+> mechanism changed. Enumeration from the jar is unavoidable either way — the JVM has no reverse
+> subclass index — but the *filter* must be reflective, not name-based: on the pinned jar the
+> pattern `SyntaxTree$*` matches 213 classes and `SyntaxTree$TreeKind$*` matches 206.
 
 ## Q2 — Does the v0.75.1 release ship a `flix.jar` asset?
 
@@ -61,7 +69,7 @@ default.
 **Yes, as a traversal shape to copy — not as reachable code** (section 4.1 fact 3: it's reachable
 only via `AstPrinter.printDocProgram`, gated on a debug flag, and emits pretty-printed `DocAst`
 **text** for a whole run, not JSON per fixture — recovering structure from that would mean parsing
-pretty-printed text, exactly what section 4 bans). `tools/project/src/main/scala/spike/Extract.scala`
+pretty-printed text, exactly what section 4 bans). `flix.spec.ProjectionExtractor`
 reimplements its walk directly against `SyntaxTree.Tree`/`Child`: match on `TreeKind.ErrorTree`
 specially (not a case object, so no free `toString`), recurse into `Token | Tree` children.
 `SyntaxTree.Tree` additionally carries `loc: SourceLocation`, which the printer discards but the
@@ -85,7 +93,7 @@ route doesn't need would be effort spent on the bridge the plan already says to 
 
 ## A finding beyond the four questions: bare `TreeKind` names are not unique
 
-`ListKinds`' full output (`tools/project` — `./gradlew :tools:project:listKinds`) surfaces something
+The full kind listing (`./gradlew :tools:project:proposeTreeKind`) surfaces something
 none of revisions 1–3 recorded: of the 191 non-`ErrorTree` leaves, **13 simple names are reused
 across different sub-traits** — `Apply`, `Argument`, `ArgumentList`, `Ascribe`, `Binary`, `Effect`,
 `ExtTag`, `Literal`, `Record`, `RecordFieldFragment`, `Tuple` (×3), `Unary` (×3), `Use`, `Variable`
@@ -95,10 +103,15 @@ so `Expr.Apply` and `Type.Apply` both print as plain `"Apply"` — which is exac
 
 This matters directly for section 3.1 and 3.3: the projection schema's `kind` field and
 `ast/treekind.json`'s name-set digest cannot be built from bare case-object names — at least 13 of
-them are ambiguous. Phase 1 needs a qualified identifier (e.g. `Expr.Apply` vs. `Type.Apply`, using
-the enclosing sub-trait, which reflection already gives for free via `knownDirectSubclasses`'
-owner chain) before `ast/treekind.json` or the projected-tree `kind` string can claim to identify a
-node kind uniquely.
+them are ambiguous.
+
+**Resolved in Phase 1.** `ast/treekind.json` carries sub-trait-qualified names, derived from each
+class's implemented interface. One subtlety the spike did not anticipate: qualification must come
+from the **type hierarchy**, not from lexical nesting. The two disagree for exactly one kind —
+`case object DerivationList extends Type` is declared at `TreeKind` top level
+(`SyntaxTree.scala:98`) yet extends `Type`, so nesting says `DerivationList` while the hierarchy
+says `Type.DerivationList`. The hierarchy is authoritative, which is the reason reflection was
+chosen over source parsing in the first place.
 
 ## Recommendation
 
@@ -111,3 +124,4 @@ node kind uniquely.
   asset, and does not auto-promote its output to canonical.
 - **Carry into Phase 1:** qualified (sub-trait-prefixed) `TreeKind` names in `ast/treekind.json` and
   the projection schema — the bare-name collision above is a real gap, not a hypothetical one.
+  *(Done; see the resolution note above.)*

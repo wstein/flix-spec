@@ -14,6 +14,21 @@ This product includes software and artifacts derived from the Flix compiler proj
 
 The concrete syntax tree hierarchy inventory in `ast/treekind.json` and syntax tree projections are extracted directly from the compiled Flix reference compiler jar at the pinned release.
 
+**Provenance of the oracle artifact.** The pinned `flix.jar` is the upstream release asset,
+identified by SHA-256. Upstream publishes no release-building workflow, no build attestation, and
+no commit stamp inside the artifact, so the chain `tag → commit → tree` is verifiable through git
+while `jar → commit` is not verifiable from outside the project. `pin.json.oracleArtifact.attestation`
+records this as `digest-only`. A same-commit rebuild is *not* byte-identical to the published asset
+(16794 entries versus 16776), so the published artifact and a self-built one are demonstrably
+different files.
+
 ## 2. Derived Artifacts
 
 All test fixtures and corpus specifications derived from Flix source code inherit the Apache 2.0 license of the upstream Flix project.
+
+## 3. Build and Verification Tooling
+
+`flix-spec` never compiles Flix; it builds against the pinned jar as an external dependency. Its
+own tooling depends only on the Scala standard library (`org.scala-lang:scala-library`, Apache 2.0),
+Gradle plugins declared in `build.gradle.kts`, and test-scope libraries (ScalaTest, JUnit). No
+third-party grammar, lexer base, or parser generator is vendored into this repository.
