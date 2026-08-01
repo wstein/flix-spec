@@ -30,8 +30,8 @@ dependencies {
     implementation(files(oracleJar))
 
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.scalatest:scalatest_2.13:3.2.19")
-    testImplementation("org.scalatestplus:junit-4-13_2.13:3.2.19.0")
+    testImplementation("org.scalatest:scalatest_2.13:3.2.20")
+    testImplementation("org.scalatestplus:junit-4-13_2.13:3.2.20.0")
 }
 
 application {
