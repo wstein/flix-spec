@@ -20,6 +20,13 @@ updates:
       gradle-dependencies:
         patterns:
           - "*"
+    ignore:
+      # The Scala version is dictated by the oracle jar, not chosen by this
+      # repository, and is read from pin.json rather than written literally.
+      # Dependabot resolves org.scala-lang:scala-library against scala/scala3
+      # and proposed 3.8.4 -- the Scala 3 standard library, which does not
+      # compile against a Scala 2.13 jar. It moves only in a pin bump.
+      - dependency-name: "org.scala-lang:*"
     labels:
       - "dependencies"
       - "gradle"

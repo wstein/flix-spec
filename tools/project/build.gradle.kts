@@ -12,8 +12,18 @@ repositories {
 
 val oracleJar = rootProject.layout.projectDirectory.file(".oracle/flix.jar")
 
+// The Scala version is not ours to choose: it must match the oracle jar, which is
+// compiled with Scala 2.13.18. Read it from pin.json so the two cannot drift and so
+// no dependency bot can "upgrade" it -- Dependabot proposed scala-library 3.8.4,
+// which is the Scala 3 standard library and does not compile against this jar.
+val oracleScalaVersion: String = groovy.json.JsonSlurper()
+    .parse(rootProject.layout.projectDirectory.file("pin.json").asFile)
+    .let { it as Map<*, *> }
+    .let { it["buildProvenance"] as Map<*, *> }
+    .let { it["scalaVersion"] as String }
+
 dependencies {
-    implementation("org.scala-lang:scala-library:2.13.18")
+    implementation("org.scala-lang:scala-library:$oracleScalaVersion")
     // No scala-reflect: TreeKind enumeration reads jar entries and decides via java.lang.Class,
     // so knownDirectSubclasses (direct-only, documented as unreliable) is not needed and the
     // dependency surface stays at scala-library + the pinned oracle jar.
