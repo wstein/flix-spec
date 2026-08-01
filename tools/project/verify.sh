@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Phase 1 verification: exercises extractor end-to-end against the pinned, checksummed
-# flix.jar, verifies determinism (byte-identical across two runs), schema validity,
+# flix.jar, verifies determinism (byte-identical across two forked JVMs), structural
+# conformance to schemas/treekind.schema.json (required keys, types, patterns, enums),
 # unit tests, and exact TreeKind count matching pin.json.
 set -euo pipefail
 
@@ -29,8 +30,14 @@ echo "== extracting fixtures/negative/unclosed-paren.flix, checking ErrorTree re
 grep -q '"kind":"ErrorTree"' "$WORK/broken.json"
 echo "OK: parse error recovered into a well-formed tree with an ErrorTree node"
 
+echo "== validating committed ast/treekind.json against schema =="
+python3 tools/project/validate-treekind.py
+
 echo "== generating ast/treekind.json via reflection =="
 ./gradlew -q :tools:project:generateTreeKind
+
+echo "== validating regenerated ast/treekind.json against schema =="
+python3 tools/project/validate-treekind.py
 
 echo "== validating ast/treekind.json structure and pin.json digest =="
 EXPECT_COUNT="$(python3 -c "import json; print(json.load(open('pin.json'))['treeKindCount'])")"

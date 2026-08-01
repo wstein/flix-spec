@@ -15,4 +15,24 @@ spotless {
         target("tools/**/src/**/*.scala")
         scalafmt("3.9.4").configFile(".scalafmt.conf")
     }
+
+    // Scripts, schemas and workflows are hand-written; enforce only what can be
+    // enforced without reformatting them. Indentation is deliberately not touched
+    // -- reindenting shell or YAML mechanically does more harm than good.
+    //
+    // Markdown is excluded on purpose: two trailing spaces are a hard line break,
+    // so blanket trimming silently changes rendering, and LICENSE.md must stay
+    // byte-for-byte as published.
+    format("misc") {
+        target(
+            "**/*.py",
+            "**/*.sh",
+            "**/*.yml",
+            "**/*.json",
+            "corpus/fetch",
+        )
+        targetExclude(".oracle/**", "build/**", "**/build/**", ".git/**", "tmp/**")
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
 }
