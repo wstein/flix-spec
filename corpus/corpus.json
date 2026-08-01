@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "upstream": {
+    "repository": "https://github.com/flix/flix",
+    "commit": "318bb51a953c58a8785251a80fad8aea005f729f",
+    "treeHash": "294b9ac53cd0d74f7d7092006009a6b6806b0f57"
+  },
+  "counts": {
+    "totalFlixFiles": 873,
+    "mainFlixFiles": 688,
+    "testFlixFiles": 185
+  },
+  "inclusionRules": {
+    "main": "All .flix files located under the main/ directory tree in upstream (688 files)",
+    "test": "All .flix files located outside the main/ directory tree in upstream (185 files)"
+  }
+}

@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Fetches the pinned Flix source corpus from upstream, verifies its git tree hash
+# and file counts according to corpus/corpus.json and pin.json.
+#
+# Implementation plan section 5.2: the corpus definition is a day-one deliverable.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PIN="$ROOT/pin.json"
+CORPUS_SPEC="$ROOT/corpus/corpus.json"
+DEST_DIR="$ROOT/.oracle/flix-repo"
+
+COMMIT="$(python3 -c "import json; print(json.load(open('$PIN'))['upstream']['commit'])")"
+TREE_HASH="$(python3 -c "import json; print(json.load(open('$PIN'))['upstream']['treeHash'])")"
+EXPECT_TOTAL="$(python3 -c "import json; print(json.load(open('$CORPUS_SPEC'))['counts']['totalFlixFiles'])")"
+EXPECT_MAIN="$(python3 -c "import json; print(json.load(open('$CORPUS_SPEC'))['counts']['mainFlixFiles'])")"
+
+if [ ! -d "$DEST_DIR/.git" ]; then
+  echo "Cloning upstream flix repository at commit $COMMIT..."
+  mkdir -p "$DEST_DIR"
+  git clone --quiet https://github.com/flix/flix.git "$DEST_DIR"
+fi
+
+echo "Checking out $COMMIT in $DEST_DIR..."
+git -C "$DEST_DIR" checkout --quiet "$COMMIT"
+
+ACTUAL_COMMIT="$(git -C "$DEST_DIR" rev-parse HEAD)"
+if [ "$ACTUAL_COMMIT" != "$COMMIT" ]; then
+  echo "FATAL: corpus commit mismatch" >&2
+  echo "  expected: $COMMIT" >&2
+  echo "  actual:   $ACTUAL_COMMIT" >&2
+  exit 1
+fi
+
+ACTUAL_TREE_HASH="$(git -C "$DEST_DIR" rev-parse "HEAD^{tree}")"
+if [ "$ACTUAL_TREE_HASH" != "$TREE_HASH" ]; then
+  echo "FATAL: corpus git tree hash mismatch" >&2
+  echo "  expected: $TREE_HASH" >&2
+  echo "  actual:   $ACTUAL_TREE_HASH" >&2
+  exit 1
+fi
+
+ACTUAL_TOTAL="$(find "$DEST_DIR" -name '*.flix' | wc -l | tr -d ' ')"
+ACTUAL_MAIN="$(find "$DEST_DIR/main" -name '*.flix' | wc -l | tr -d ' ')"
+
+if [ "$ACTUAL_TOTAL" -ne "$EXPECT_TOTAL" ]; then
+  echo "FATAL: total .flix file count mismatch" >&2
+  echo "  expected: $EXPECT_TOTAL" >&2
+  echo "  actual:   $ACTUAL_TOTAL" >&2
+  exit 1
+fi
+
+if [ "$ACTUAL_MAIN" -ne "$EXPECT_MAIN" ]; then
+  echo "FATAL: main .flix file count mismatch" >&2
+  echo "  expected: $EXPECT_MAIN" >&2
+  echo "  actual:   $ACTUAL_MAIN" >&2
+  exit 1
+fi
+
+echo "Verified corpus at $DEST_DIR:"
+echo "  commit:    $ACTUAL_COMMIT"
+echo "  treeHash:  $ACTUAL_TREE_HASH"
+echo "  totalFlix: $ACTUAL_TOTAL"
+echo "  mainFlix:  $ACTUAL_MAIN"
