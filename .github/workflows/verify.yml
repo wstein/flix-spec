@@ -52,4 +52,8 @@ jobs:
       - name: Verify Generated Artifacts Are Current
         # verify.sh already regenerated everything. Any diff means a committed
         # artifact does not match what the pinned oracle actually produces.
-        run: git diff --exit-code ast/ fixtures/expected/
+        run: |
+          # --exit-code alone ignores untracked files, so a newly generated
+          # artifact that was never committed would pass silently.
+          git add --intent-to-add --all ast/ fixtures/expected/
+          git diff --exit-code ast/ fixtures/expected/

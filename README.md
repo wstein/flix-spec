@@ -20,7 +20,7 @@ a rebuild), and [`docs/PIN-BUMP.md`](docs/PIN-BUMP.md) (how the pin moves).
 
 ## Status
 
-**Phase 1 (Pin, contracts, AST inventory & corpus specification) complete.**
+**Phase 1 (pin, contracts, AST inventory, corpus) and Phase 2 (projected fixtures, coverage, reachability) complete.**
 
 Key components established:
 - **Oracle pin contract ([`pin.json`](pin.json))**: pinned to upstream release `v0.75.1` (`318bb51a…`, tree `294b9ac53…`), the release asset's SHA-256 (`e3177700…`), the entry point actually used, the required library level, and the classpath requirement. The `attestation` field records that the jar is **attested by digest, not by provenance** — upstream publishes no release workflow, no build attestation, and no commit stamp inside the artifact.
@@ -28,13 +28,16 @@ Key components established:
 - **JSON schemas ([`schemas/`](schemas/))**: draft-07 definitions for `ast/treekind.json` and canonical projected trees, enforced in CI by [`tools/project/validate-treekind.py`](tools/project/validate-treekind.py).
 - **Committed AST inventory ([`ast/treekind.json`](ast/treekind.json))**: 192 `TreeKind` nodes with qualified names, parent traits and forms, name-set digest `ef4c5a85…`, and a provenance header naming the generator, tool version, upstream commit and the exact oracle jar it was derived from.
 - **Corpus definition ([`corpus/`](corpus/))**: 873 pinned `.flix` files (688 under `main/`, 185 under `examples/`), inclusion rules, and a tree-hash-verified fetch script.
+- **Projected fixtures ([`fixtures/`](fixtures/))**: 113 fixtures — 108 positive, 5 negative — with expected trees generated from the pinned oracle and held under a diff gate. Kind names are sub-trait qualified, sources are repository-relative, and diagnostics record `kind`/`line` as gated with `col`/`message` advisory.
+- **Coverage ([`ast/coverage.json`](ast/coverage.json))**: 184 of 192 kinds exercised by fixtures — measured, not claimed.
+- **Reachability ([`ast/reachability.json`](ast/reachability.json))**: 184 of 192 kinds actually emitted by the reference across all 873 corpus files. Coverage equals reachability, so **every kind the reference is known to produce is exercised by a fixture**. The 8 remaining kinds are never emitted anywhere in the corpus at this pin.
 - **CI and verification**: actions pinned by commit SHA, runner pinned to `ubuntu-24.04`, and Dependabot for actions and Gradle.
 
   | Workflow | Trigger | Does |
   | --- | --- | --- |
   | [`oracle.yml`](.github/workflows/oracle.yml) | `pin.json` changes, manual | Fetch the pinned jar, verify its SHA-256, cache it by digest |
   | [`verify.yml`](.github/workflows/verify.yml) | push, PR | Format check, tests, end-to-end suite, regenerate and diff `ast/treekind.json` |
-  | [`corpus.yml`](.github/workflows/corpus.yml) | weekly, manual | Clone upstream, verify tree hash and file counts; report if the pin is behind |
+  | [`corpus.yml`](.github/workflows/corpus.yml) | weekly, manual | Clone upstream, verify tree hash and counts, regenerate reachability; report if the pin is behind |
   | [`release.yml`](.github/workflows/release.yml) | `v*` tag | Verify, then publish the artifact bundle with `SHA256SUMS` |
 
 ### How the pieces fit
@@ -68,14 +71,21 @@ schemas/
   projection.schema.json # JSON Schema for canonical projected trees
 ast/
   treekind.json          # GENERATED — 192 qualified syntax tree kinds, digest, provenance header
+  coverage.json          # GENERATED — which kinds the fixture suite exercises
+  reachability.json      # GENERATED — which kinds the reference emits across the whole corpus
 corpus/
   corpus.json            # Pinned corpus inventory specification & inclusion rules
   fetch                  # Clone, check out, and verify the corpus tree hash
-fixtures/                # Test fixtures (positive / negative)
+fixtures/
+  positive/              # Sources the reference parses cleanly
+  negative/              # Sources the reference rejects or recovers from
+  expected/              # GENERATED — canonical projected trees
 tools/
   oracle/                # fetch.sh (pinned jar + checksum), build-from-source.sh (fallback)
   project/               # Gradle + Scala module: extractors, tests, verification suite
     validate-treekind.py # Structural validation of ast/treekind.json against its schema
+    validate-projection.py # Schema + kind-vocabulary validation of fixtures/expected/
+    coverage.py          # Generates ast/coverage.json
     verify.sh            # End-to-end verification suite
 ```
 
@@ -87,6 +97,9 @@ tools/
 ./gradlew :tools:project:generateTreeKind                  # Regenerate ast/treekind.json (asserts against pin.json)
 ./gradlew :tools:project:proposeTreeKind                   # Report count + digest without asserting (pin bumps)
 ./gradlew :tools:project:extract --args=path/to/file.flix  # Emit a projected concrete syntax tree
+./gradlew :tools:project:generateFixtures                  # Regenerate fixtures/expected/*.json
+./gradlew :tools:project:reachability                      # Regenerate ast/reachability.json (needs ./corpus/fetch)
+python3 tools/project/coverage.py                          # Regenerate ast/coverage.json
 ./gradlew test                                             # ScalaTest suite
 ./tools/project/verify.sh                                  # End-to-end verification suite
 ./gradlew spotlessApply                                    # Format Scala, scripts, workflows, JSON

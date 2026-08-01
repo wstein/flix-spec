@@ -4,9 +4,8 @@ name: Slow Tier — Corpus Integrity
 # too slow and too network-heavy for every push, but it is the only check that
 # proves the pinned corpus still resolves to the tree hash pin.json claims.
 #
-# Scope note: the whole-corpus differential run belongs here too, but the
-# harness it needs does not exist yet. This workflow deliberately claims only
-# what it verifies.
+# It also runs the reachability survey, which needs the whole corpus parsed and
+# so cannot live in the fast tier.
 
 on:
   schedule:
@@ -42,6 +41,27 @@ jobs:
         # Verifies commit, git tree hash, and .flix file counts against
         # corpus/corpus.json. Fails loudly on any mismatch.
         run: ./corpus/fetch
+
+      - name: Setup Java JDK 21
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Fetch Oracle Jar and Verify SHA-256
+        run: ./tools/oracle/fetch.sh
+
+      - name: Regenerate Reachability Over the Whole Corpus
+        # The only artifact here that states a fact about Flix rather than about
+        # our parsers: which TreeKinds the reference parser actually emits.
+        run: ./gradlew :tools:project:reachability
+
+      - name: Verify Reachability Artifact Is Current
+        run: |
+          # --exit-code alone ignores untracked files, so a newly generated
+          # artifact that was never committed would pass silently.
+          git add --intent-to-add --all ast/reachability.json
+          git diff --exit-code ast/reachability.json
 
       - name: Report Upstream Releases Newer Than the Pin
         # Dependabot cannot bump the Flix pin -- it is not a package ecosystem,

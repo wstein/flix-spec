@@ -69,22 +69,61 @@ class ProjectionExtractorTest extends AnyFunSuite with Matchers {
     }
   }
 
-  test("negative fixtures record at least one diagnostic; positive fixtures record none") {
+  /** Kinds the parser emits only for malformed input. */
+  private val ErrorKinds = List("ErrorTree", "OperatorError", "TrailingDot", "UnclosedMark")
+
+  test("negative fixtures show malformation; positive fixtures show none") {
+    // Evidence is a diagnostic *or* an error kind, not a diagnostic alone. Parser2 recovers
+    // silently from some malformed input and defers the error to a later phase: a block
+    // containing `1 2` yields a synthetic OperatorError node and no parser diagnostic at all,
+    // because Weeder2 is what turns it into MissingBinaryOperator. A consumer cannot be required
+    // to report a diagnostic where the reference itself reports none.
     expectations.foreach { p =>
       val body = Files.readString(p)
       val isNegative = body.contains("\"source\": \"fixtures/negative/")
       val hasDiagnostics = !body.contains("\"diagnostics\": []")
+      val hasErrorKind = ErrorKinds.exists(k => body.contains(s""""kind":"$k""""))
       withClue(s"$p (negative=$isNegative) ") {
-        hasDiagnostics shouldBe isNegative
+        (hasDiagnostics || hasErrorKind) shouldBe isNegative
       }
     }
   }
 
-  test("no positive fixture parses to an ErrorTree") {
+  test("no positive fixture parses to an error kind") {
     expectations.foreach { p =>
       val body = Files.readString(p)
       if (body.contains("\"source\": \"fixtures/positive/")) {
-        withClue(s"$p ") { body should not include "\"kind\":\"ErrorTree\"" }
+        ErrorKinds.foreach(k => withClue(s"$p ") { body should not include s""""kind":"$k"""" })
+      }
+    }
+  }
+
+  test("fixtures cover every kind the corpus proves reachable") {
+    // The two artifacts are generated independently -- coverage from fixtures, reachability from
+    // the 873-file corpus -- so agreement is a real check, not a tautology. A kind that the
+    // reference emits somewhere in the corpus but no fixture exercises is a genuine gap.
+    val coverage = Files.readString(repoRoot.resolve("ast/coverage.json"))
+    val reachability = repoRoot.resolve("ast/reachability.json")
+
+    if (Files.exists(reachability)) {
+      val listed = """"([A-Za-z.]+)"""".r
+      val uncovered = listed
+        .findAllMatchIn(coverage.substring(coverage.indexOf("\"uncovered\"")))
+        .map(_.group(1))
+        .toSet - "uncovered"
+      val unreachable = listed
+        .findAllMatchIn(
+          Files
+            .readString(reachability)
+            .substring(
+              Files.readString(reachability).indexOf("\"unreachable\"")
+            )
+        )
+        .map(_.group(1))
+        .toSet - "unreachable"
+
+      withClue(s"kinds reachable in the corpus but not covered by any fixture: ") {
+        (uncovered -- unreachable) shouldBe empty
       }
     }
   }

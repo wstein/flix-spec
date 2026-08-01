@@ -22,11 +22,24 @@ records this as `digest-only`. A same-commit rebuild is *not* byte-identical to 
 (16794 entries versus 16776), so the published artifact and a self-built one are demonstrably
 different files.
 
-## 2. Derived Artifacts
+## 2. Test Fixtures Adapted from tree-sitter-flix
+
+Most fixtures under `fixtures/positive/` and `fixtures/negative/` are Flix source snippets adapted
+from the test corpus of [`wstein/tree-sitter-flix`](https://github.com/wstein/tree-sitter-flix),
+used under the MIT License.
+
+    MIT License
+    Copyright (c) 2026 Werner Stein
+
+Only the Flix source of each corpus entry was taken; the tree-sitter s-expression expectations were
+not. The expected trees in `fixtures/expected/` are generated from the pinned Flix reference
+compiler and are not derived from tree-sitter-flix.
+
+## 3. Derived Artifacts
 
 All test fixtures and corpus specifications derived from Flix source code inherit the Apache 2.0 license of the upstream Flix project.
 
-## 3. Build and Verification Tooling
+## 4. Build and Verification Tooling
 
 `flix-spec` never compiles Flix; it builds against the pinned jar as an external dependency. Its
 own tooling depends only on the Scala standard library (`org.scala-lang:scala-library`, Apache 2.0),

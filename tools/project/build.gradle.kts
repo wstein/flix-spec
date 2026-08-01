@@ -64,6 +64,16 @@ tasks.register<JavaExec>("generateFixtures") {
     )
 }
 
+tasks.register<JavaExec>("reachability") {
+    description =
+        "Parses the whole pinned corpus and writes ast/reachability.json: which TreeKinds the " +
+            "reference parser actually emits. Requires ./corpus/fetch."
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("flix.spec.ReachabilityRun")
+    maxHeapSize = "3g"
+    workingDir = rootProject.projectDir
+}
+
 tasks.register<JavaExec>("proposeTreeKind") {
     description =
         "Reports the TreeKind count and digest for the pinned jar without asserting or writing. " +
@@ -82,7 +92,7 @@ tasks.register<JavaExec>("generateTreeKind") {
     workingDir = rootProject.projectDir
 }
 
-tasks.matching { it.name in setOf("run", "extract", "proposeTreeKind", "generateTreeKind", "generateFixtures") }.configureEach {
+tasks.matching { it.name in setOf("run", "extract", "proposeTreeKind", "generateTreeKind", "generateFixtures", "reachability") }.configureEach {
     (this as JavaExec).doFirst {
         check(oracleJar.asFile.exists()) {
             "Missing ${oracleJar.asFile}. Run tools/oracle/fetch.sh first."
