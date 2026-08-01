@@ -1,0 +1,55 @@
+name: Fast Tier Verification
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fast-tier-verification:
+    name: Re-extract, Diff & Verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Java JDK 21
+        uses: actions/setup-java@3a47288d29edd610052991036079c6565f1262d1 # v4.7.0
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Restore Cached Oracle Jar
+        uses: actions/cache@d4323d4df104b026a6ec633f211e3165443a32b6 # v4.2.2
+        with:
+          path: .oracle/flix.jar
+          key: oracle-jar-${{ hashFiles('pin.json') }}
+
+      - name: Ensure Oracle Jar Present
+        run: ./tools/oracle/fetch.sh
+
+      - name: Run Formatter Check
+        run: ./gradlew spotlessCheck
+
+      - name: Run Unit Tests
+        run: ./gradlew test
+
+      - name: Run End-to-End Verification Suite
+        run: ./tools/project/verify.sh
+
+      - name: Verify TreeKind Extraction Diff
+        run: |
+          ./gradlew :tools:project:generateTreeKind
+          git diff --exit-code ast/treekind.json

@@ -1,10 +1,7 @@
 #!/usr/bin/env bash
-# Phase 0 spike verification, Gradle path: exercises the extractor end to
-# end against the pinned, checksummed flix.jar and checks the properties
-# the implementation plan calls non-negotiable for any generator (section
-# 3.3): determinism (byte-identical across two runs) and an exact TreeKind
-# count, not a floor. Stand-in for the fast tier (verify.yml) Phase 1
-# formalizes; not itself CI.
+# Phase 1 verification: exercises extractor end-to-end against the pinned, checksummed
+# flix.jar, verifies determinism (byte-identical across two runs), schema validity,
+# unit tests, and exact TreeKind count matching pin.json.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -18,6 +15,9 @@ fi
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
+echo "== running Gradle test suite =="
+./gradlew test
+
 echo "== extracting fixtures/positive/hello.flix twice, checking determinism =="
 ./gradlew -q :tools:project:extract --args="fixtures/positive/hello.flix" > "$WORK/out1.json"
 ./gradlew -q :tools:project:extract --args="fixtures/positive/hello.flix" > "$WORK/out2.json"
@@ -29,13 +29,27 @@ echo "== extracting fixtures/negative/unclosed-paren.flix, checking ErrorTree re
 grep -q '"kind":"ErrorTree"' "$WORK/broken.json"
 echo "OK: parse error recovered into a well-formed tree with an ErrorTree node"
 
-echo "== enumerating TreeKind via reflection, checking exact count =="
-./gradlew -q :tools:project:listKinds > "$WORK/kinds.txt"
-TOTAL="$(grep -m1 '^total:' "$WORK/kinds.txt" | cut -d' ' -f2)"
-if [ "$TOTAL" != "192" ]; then
-  echo "FATAL: expected 192 TreeKind leaves at this pin, got $TOTAL" >&2
+echo "== generating ast/treekind.json via reflection =="
+./gradlew -q :tools:project:generateTreeKind
+
+echo "== validating ast/treekind.json structure and pin.json digest =="
+EXPECT_COUNT="$(python3 -c "import json; print(json.load(open('pin.json'))['treeKindCount'])")"
+EXPECT_DIGEST="$(python3 -c "import json; print(json.load(open('pin.json'))['treeKindDigest'])")"
+
+ACTUAL_COUNT="$(python3 -c "import json; print(json.load(open('ast/treekind.json'))['treeKindCount'])")"
+ACTUAL_DIGEST="$(python3 -c "import json; print(json.load(open('ast/treekind.json'))['treeKindDigest'])")"
+
+if [ "$ACTUAL_COUNT" -ne "$EXPECT_COUNT" ]; then
+  echo "FATAL: expected $EXPECT_COUNT TreeKind items, got $ACTUAL_COUNT" >&2
   exit 1
 fi
-echo "OK: exactly 192 TreeKind leaves"
 
-echo "== all Phase 0 spike checks passed =="
+if [ "$ACTUAL_DIGEST" != "$EXPECT_DIGEST" ]; then
+  echo "FATAL: treeKindDigest mismatch between pin.json and ast/treekind.json" >&2
+  echo "  pin.json:       $EXPECT_DIGEST" >&2
+  echo "  treekind.json:  $ACTUAL_DIGEST" >&2
+  exit 1
+fi
+echo "OK: ast/treekind.json carries exactly $ACTUAL_COUNT kinds matching pin digest $ACTUAL_DIGEST"
+
+echo "== all Phase 1 verification checks passed =="
