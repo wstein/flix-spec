@@ -16,6 +16,10 @@ dependencies {
     implementation("org.scala-lang:scala-library:2.13.18")
     implementation("org.scala-lang:scala-reflect:2.13.18")
     implementation(files(oracleJar))
+
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.scalatest:scalatest_2.13:3.2.19")
+    testImplementation("org.scalatestplus:junit-4-13_2.13:3.2.19.0")
 }
 
 application {
@@ -36,12 +40,29 @@ tasks.register<JavaExec>("extract") {
 tasks.register<JavaExec>("listKinds") {
     description = "Enumerates every TreeKind via reflection over the pinned jar."
     classpath = sourceSets["main"].runtimeClasspath
-    mainClass.set("spike.ListKinds")
+    mainClass.set("flix.spec.TreeKindExtractor")
     workingDir = rootProject.projectDir
 }
 
-tasks.matching { it.name in setOf("run", "extract", "listKinds") }.configureEach {
+tasks.register<JavaExec>("generateTreeKind") {
+    description = "Generates ast/treekind.json from reflection over the pinned jar."
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("flix.spec.TreeKindExtractor")
+    args = listOf(rootProject.layout.projectDirectory.file("ast/treekind.json").asFile.absolutePath)
+    workingDir = rootProject.projectDir
+}
+
+tasks.matching { it.name in setOf("run", "extract", "listKinds", "generateTreeKind") }.configureEach {
     (this as JavaExec).doFirst {
+        check(oracleJar.asFile.exists()) {
+            "Missing ${oracleJar.asFile}. Run tools/oracle/fetch.sh first."
+        }
+    }
+}
+
+tasks.withType<Test> {
+    useJUnit()
+    doFirst {
         check(oracleJar.asFile.exists()) {
             "Missing ${oracleJar.asFile}. Run tools/oracle/fetch.sh first."
         }

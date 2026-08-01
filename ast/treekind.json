@@ -1,0 +1,967 @@
+{
+  "schemaVersion": 1,
+  "treeKindCount": 192,
+  "treeKindDigest": "ef4c5a850b5e35b60325bed40ab6fec4057a5fce40419c743fad21063e4eb08e",
+  "kinds": [
+    {
+      "name": "AnnotationList",
+      "extends": "TreeKind",
+      "form": "case-object"
+    },
+    {
+      "name": "Argument",
+      "extends": "TreeKind",
+      "form": "case-object"
+    },
+    {
+      "name": "ArgumentList",
+      "extends": "TreeKind",
+      "form": "case-object"
+    },
+    {
+      "name": "ArgumentNamed",
+      "extends": "TreeKind",
+      "form": "case-object"
+    },
+    {
+      "name": "Case",
+      "extends": "TreeKind",
+      "form": "case-object"
+    },
+    {
+      "name": "CaseBody",
+      "extends": "TreeKind",
+      "form": "case-object"
+    },
+    {
+      "name": "CommentList",
+      "extends": "TreeKind",
+      "form": "case-object"
+    },
+    {
+      "name": "Decl.AssociatedTypeDef",
+      "extends": "Decl",
+      "form": "case-object"
+    },
+    {
+      "name": "Decl.AssociatedTypeSig",
+      "extends": "Decl",
+      "form": "case-object"
+    },
+    {
+      "name": "Decl.Def",
+      "extends": "Decl",
+      "form": "case-object"
+    },
+    {
+      "name": "Decl.Effect",
+      "extends": "Decl",
+      "form": "case-object"
+    },
+    {
+      "name": "Decl.Enum",
+      "extends": "Decl",
+      "form": "case-object"
+    },
+    {
+      "name": "Decl.EqualityConstraintFragment",
+      "extends": "Decl",
+      "form": "case-object"
+    },
+    {
+      "name": "Decl.EqualityConstraintList",
+      "extends": "Decl",
+      "form": "case-object"
+    },
+    {
+      "name": "Decl.Instance",
+      "extends": "Decl",
+      "form": "case-object"
+    },
+    {
+      "name": "Decl.Law",
+      "extends": "Decl",
+      "form": "case-object"
+    },
+    {
+      "name": "Decl.Module",
+      "extends": "Decl",
+      "form": "case-object"
+    },
+    {
+      "name": "Decl.Op",
+      "extends": "Decl",
+      "form": "case-object"
+    },
+    {
+      "name": "Decl.Redef",
+      "extends": "Decl",
+      "form": "case-object"
+    },
+    {
+      "name": "Decl.RestrictableEnum",
+      "extends": "Decl",
+      "form": "case-object"
+    },
+    {
+      "name": "Decl.Signature",
+      "extends": "Decl",
+      "form": "case-object"
+    },
+    {
+      "name": "Decl.Struct",
+      "extends": "Decl",
+      "form": "case-object"
+    },
+    {
+      "name": "Decl.Trait",
+      "extends": "Decl",
+      "form": "case-object"
+    },
+    {
+      "name": "Decl.TypeAlias",
+      "extends": "Decl",
+      "form": "case-object"
+    },
+    {
+      "name": "Doc",
+      "extends": "TreeKind",
+      "form": "case-object"
+    },
+    {
+      "name": "ErrorTree",
+      "extends": "TreeKind",
+      "form": "case-class"
+    },
+    {
+      "name": "Expr.AmbiguousNew",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.Apply",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.Ascribe",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.Binary",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.Block",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.CheckedEffectCast",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.CheckedTypeCast",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.DebugInterpolator",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.Expr",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.ExtMatch",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.ExtMatchRuleFragment",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.ExtTag",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.FixpointConstraint",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.FixpointConstraintSet",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.FixpointFromFragment",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.FixpointInject",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.FixpointLambda",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.FixpointQuery",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.FixpointQueryWithProvenance",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.FixpointSelect",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.FixpointSolveWithProject",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.FixpointSolveWithProvenance",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.FixpointWhere",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.FixpointWith",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.ForApplicative",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.ForFragmentGenerator",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.ForFragmentGuard",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.ForFragmentLet",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.ForMonadic",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.Foreach",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.GetField",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.Handler",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.Hole",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.HoleVariable",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.IfThenElse",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.Index",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.IndexMut",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.InstanceOf",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.Intrinsic",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.InvokeConstructor",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.InvokeMethod",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.InvokeSuperConstructor",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.InvokeSuperMethod",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.JvmConstructor",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.JvmMethod",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.Lambda",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.LambdaExtMatch",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.LambdaMatch",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.LetMatch",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.Literal",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.LiteralArray",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.LiteralList",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.LiteralMap",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.LiteralMapKeyValueFragment",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.LiteralSet",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.LiteralStructFieldFragment",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.LiteralVector",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.LocalDef",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.Match",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.MatchRuleFragment",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.OpenVariant",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.OpenVariantAs",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.OperatorAsLambda",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.ParYield",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.ParYieldFragment",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.Paren",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.RecordOpExtend",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.RecordOpRestrict",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.RecordOpUpdate",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.RecordOperation",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.RecordSelect",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.Region",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.RegionName",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.RestrictableChoose",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.RestrictableChooseStar",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.Run",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.RunWithBodyExpr",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.RunWithRuleFragment",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.Select",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.SelectRuleDefaultFragment",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.SelectRuleFragment",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.Spawn",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.Statement",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.Static",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.StringInterpolation",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.StructGet",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.StructPut",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.StructPutRHS",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.Throw",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.Try",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.TryCatchBodyFragment",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.TryCatchRuleFragment",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.Tuple",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.Unary",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.UncheckedCast",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.Unsafe",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.UnsafeAsEffFragment",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Expr.Use",
+      "extends": "Expr",
+      "form": "case-object"
+    },
+    {
+      "name": "Ident",
+      "extends": "TreeKind",
+      "form": "case-object"
+    },
+    {
+      "name": "Kind",
+      "extends": "TreeKind",
+      "form": "case-object"
+    },
+    {
+      "name": "ModifierList",
+      "extends": "TreeKind",
+      "form": "case-object"
+    },
+    {
+      "name": "Operator",
+      "extends": "TreeKind",
+      "form": "case-object"
+    },
+    {
+      "name": "OperatorError",
+      "extends": "TreeKind",
+      "form": "case-object"
+    },
+    {
+      "name": "Parameter",
+      "extends": "TreeKind",
+      "form": "case-object"
+    },
+    {
+      "name": "ParameterList",
+      "extends": "TreeKind",
+      "form": "case-object"
+    },
+    {
+      "name": "Pattern.ExtTag",
+      "extends": "Pattern",
+      "form": "case-object"
+    },
+    {
+      "name": "Pattern.FCons",
+      "extends": "Pattern",
+      "form": "case-object"
+    },
+    {
+      "name": "Pattern.Literal",
+      "extends": "Pattern",
+      "form": "case-object"
+    },
+    {
+      "name": "Pattern.Pattern",
+      "extends": "Pattern",
+      "form": "case-object"
+    },
+    {
+      "name": "Pattern.Record",
+      "extends": "Pattern",
+      "form": "case-object"
+    },
+    {
+      "name": "Pattern.RecordFieldFragment",
+      "extends": "Pattern",
+      "form": "case-object"
+    },
+    {
+      "name": "Pattern.Tag",
+      "extends": "Pattern",
+      "form": "case-object"
+    },
+    {
+      "name": "Pattern.TagBody",
+      "extends": "Pattern",
+      "form": "case-object"
+    },
+    {
+      "name": "Pattern.Tuple",
+      "extends": "Pattern",
+      "form": "case-object"
+    },
+    {
+      "name": "Pattern.Unary",
+      "extends": "Pattern",
+      "form": "case-object"
+    },
+    {
+      "name": "Pattern.Variable",
+      "extends": "Pattern",
+      "form": "case-object"
+    },
+    {
+      "name": "Predicate.Atom",
+      "extends": "Predicate",
+      "form": "case-object"
+    },
+    {
+      "name": "Predicate.Body",
+      "extends": "Predicate",
+      "form": "case-object"
+    },
+    {
+      "name": "Predicate.Functional",
+      "extends": "Predicate",
+      "form": "case-object"
+    },
+    {
+      "name": "Predicate.Guard",
+      "extends": "Predicate",
+      "form": "case-object"
+    },
+    {
+      "name": "Predicate.Head",
+      "extends": "Predicate",
+      "form": "case-object"
+    },
+    {
+      "name": "Predicate.LatticeTerm",
+      "extends": "Predicate",
+      "form": "case-object"
+    },
+    {
+      "name": "Predicate.Param",
+      "extends": "Predicate",
+      "form": "case-object"
+    },
+    {
+      "name": "Predicate.ParamList",
+      "extends": "Predicate",
+      "form": "case-object"
+    },
+    {
+      "name": "Predicate.ParamUntyped",
+      "extends": "Predicate",
+      "form": "case-object"
+    },
+    {
+      "name": "Predicate.PatternList",
+      "extends": "Predicate",
+      "form": "case-object"
+    },
+    {
+      "name": "Predicate.TermList",
+      "extends": "Predicate",
+      "form": "case-object"
+    },
+    {
+      "name": "PredicateAndArity",
+      "extends": "TreeKind",
+      "form": "case-object"
+    },
+    {
+      "name": "QName",
+      "extends": "TreeKind",
+      "form": "case-object"
+    },
+    {
+      "name": "Root",
+      "extends": "TreeKind",
+      "form": "case-object"
+    },
+    {
+      "name": "StructField",
+      "extends": "TreeKind",
+      "form": "case-object"
+    },
+    {
+      "name": "TrailingDot",
+      "extends": "TreeKind",
+      "form": "case-object"
+    },
+    {
+      "name": "Type.Apply",
+      "extends": "Type",
+      "form": "case-object"
+    },
+    {
+      "name": "Type.Argument",
+      "extends": "Type",
+      "form": "case-object"
+    },
+    {
+      "name": "Type.ArgumentList",
+      "extends": "Type",
+      "form": "case-object"
+    },
+    {
+      "name": "Type.Ascribe",
+      "extends": "Type",
+      "form": "case-object"
+    },
+    {
+      "name": "Type.Binary",
+      "extends": "Type",
+      "form": "case-object"
+    },
+    {
+      "name": "Type.CaseSet",
+      "extends": "Type",
+      "form": "case-object"
+    },
+    {
+      "name": "Type.Constant",
+      "extends": "Type",
+      "form": "case-object"
+    },
+    {
+      "name": "Type.Constraint",
+      "extends": "Type",
+      "form": "case-object"
+    },
+    {
+      "name": "Type.ConstraintList",
+      "extends": "Type",
+      "form": "case-object"
+    },
+    {
+      "name": "Type.DerivationList",
+      "extends": "Type",
+      "form": "case-object"
+    },
+    {
+      "name": "Type.Effect",
+      "extends": "Type",
+      "form": "case-object"
+    },
+    {
+      "name": "Type.EffectSet",
+      "extends": "Type",
+      "form": "case-object"
+    },
+    {
+      "name": "Type.Extensible",
+      "extends": "Type",
+      "form": "case-object"
+    },
+    {
+      "name": "Type.Function",
+      "extends": "Type",
+      "form": "case-object"
+    },
+    {
+      "name": "Type.PredicateWithAlias",
+      "extends": "Type",
+      "form": "case-object"
+    },
+    {
+      "name": "Type.PredicateWithTypes",
+      "extends": "Type",
+      "form": "case-object"
+    },
+    {
+      "name": "Type.Record",
+      "extends": "Type",
+      "form": "case-object"
+    },
+    {
+      "name": "Type.RecordFieldFragment",
+      "extends": "Type",
+      "form": "case-object"
+    },
+    {
+      "name": "Type.RecordRow",
+      "extends": "Type",
+      "form": "case-object"
+    },
+    {
+      "name": "Type.Schema",
+      "extends": "Type",
+      "form": "case-object"
+    },
+    {
+      "name": "Type.SchemaRow",
+      "extends": "Type",
+      "form": "case-object"
+    },
+    {
+      "name": "Type.Tuple",
+      "extends": "Type",
+      "form": "case-object"
+    },
+    {
+      "name": "Type.Type",
+      "extends": "Type",
+      "form": "case-object"
+    },
+    {
+      "name": "Type.Unary",
+      "extends": "Type",
+      "form": "case-object"
+    },
+    {
+      "name": "Type.Variable",
+      "extends": "Type",
+      "form": "case-object"
+    },
+    {
+      "name": "TypeParameter",
+      "extends": "TreeKind",
+      "form": "case-object"
+    },
+    {
+      "name": "TypeParameterList",
+      "extends": "TreeKind",
+      "form": "case-object"
+    },
+    {
+      "name": "UnclosedMark",
+      "extends": "TreeKind",
+      "form": "case-object"
+    },
+    {
+      "name": "UsesOrImports.Alias",
+      "extends": "UsesOrImports",
+      "form": "case-object"
+    },
+    {
+      "name": "UsesOrImports.Import",
+      "extends": "UsesOrImports",
+      "form": "case-object"
+    },
+    {
+      "name": "UsesOrImports.ImportMany",
+      "extends": "UsesOrImports",
+      "form": "case-object"
+    },
+    {
+      "name": "UsesOrImports.Use",
+      "extends": "UsesOrImports",
+      "form": "case-object"
+    },
+    {
+      "name": "UsesOrImports.UseMany",
+      "extends": "UsesOrImports",
+      "form": "case-object"
+    },
+    {
+      "name": "UsesOrImports.UseOrImportList",
+      "extends": "UsesOrImports",
+      "form": "case-object"
+    }
+  ]
+}

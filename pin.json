@@ -53,5 +53,5 @@
     "note": "Must be loaded on the system classpath. URLClassLoader isolation hides dev.flix.runtime.Global and returns empty trees."
   },
   "treeKindCount": 192,
-  "treeKindDigest": "PENDING_PHASE_1B"
+  "treeKindDigest": "ef4c5a850b5e35b60325bed40ab6fec4057a5fce40419c743fad21063e4eb08e"
 }
