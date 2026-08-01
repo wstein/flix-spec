@@ -30,6 +30,8 @@ spotless {
             "**/*.yml",
             "**/*.json",
             "corpus/fetch",
+            ".scalafmt.conf",
+            "gradle.properties",
         )
         targetExclude(".oracle/**", "build/**", "**/build/**", ".git/**", "tmp/**")
         trimTrailingWhitespace()
