@@ -1,0 +1,41 @@
+{
+  "upstream": {
+    "repository": "https://github.com/flix/flix",
+    "tag": "v0.75.1",
+    "commit": "318bb51a953c58a8785251a80fad8aea005f729f",
+    "treeHash": "294b9ac53cd0d74f7d7092006009a6b6806b0f57"
+  },
+  "oracleArtifact": {
+    "kind": "release-asset",
+    "url": "https://github.com/flix/flix/releases/download/v0.75.1/flix.jar",
+    "sha256": "e3177700aead8a22a42c910e73bfb8a326fefdbab4e3eaeaf6d55c328a6bd938",
+    "sizeBytes": 33793240,
+    "note": "Pinned by digest, not rebuilt. A self-built jar at the same commit was NOT byte-identical to this asset (16794 vs 16776 entries) -- see docs/phase0-spike.md section 'Q2'. The digest above is the contract; nothing here re-derives it."
+  },
+  "buildProvenance": {
+    "note": "Provenance metadata only -- flix-spec's own build does not need to match this to consume the pinned artifact above (implementation plan section 3.2).",
+    "buildTool": "mill",
+    "buildToolVersion": "1.1.5",
+    "scalaVersion": "2.13.18",
+    "jdkTarget": 21,
+    "loadBearingScalacOptions": [
+      "-Xfatal-warnings",
+      "-Ypatmat-exhaust-depth 400",
+      "-release 21",
+      "-opt:inline:ca.uwaterloo.**",
+      "-Xmixin-force-forwarders:false",
+      "-Xsource:3",
+      "-Ytasty-reader"
+    ]
+  },
+  "entryPoint": {
+    "description": "Reader.run -> Lexer.run -> Parser2.run, each wrapped in Flix.phaseNew, invoked with an implicit ca.uwaterloo.flix.api.Flix instance constructed by the caller",
+    "classes": [
+      "ca.uwaterloo.flix.language.phase.Reader",
+      "ca.uwaterloo.flix.language.phase.Lexer",
+      "ca.uwaterloo.flix.language.phase.Parser2"
+    ]
+  },
+  "treeKindCount": 192,
+  "schemaVersion": 0
+}
