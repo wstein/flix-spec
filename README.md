@@ -40,7 +40,7 @@ Key components established:
 ### How the pieces fit
 
 ```mermaid
-flowchart LR
+flowchart TD
     REL["flix.jar<br/>release asset<br/><code>e3177700…</code>"]
     PIN["<code>pin.json</code><br/>execution contract"]
     TK["<code>ast/treekind.json</code><br/>192 kinds"]
