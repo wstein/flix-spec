@@ -3,6 +3,11 @@
 # flix.jar, verifies determinism (byte-identical across two forked JVMs), structural
 # conformance to schemas/treekind.schema.json (required keys, types, patterns, enums),
 # unit tests, and exact TreeKind count matching pin.json.
+#
+# JSON field reads use jq (Category A); anything that walks a real JSON tree -- schema
+# validation, coverage, conformance -- is a Gradle-invoked Scala tool in tools/project/src
+# (Category B), not a Python script. Scripting on the JVM, never Python: implementation plan
+# section 4.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -32,57 +37,52 @@ grep -q '"kind":"ErrorTree"' "$WORK/broken.json"
 echo "OK: parse error recovered into a well-formed tree with an ErrorTree node"
 
 echo "== validating committed fixtures/expected against schema and inventory =="
-python3 tools/project/validate-projection.py
+./gradlew -q :tools:project:validateProjection
 
 echo "== regenerating fixtures/expected =="
 ./gradlew -q :tools:project:generateFixtures
 
 echo "== validating regenerated fixtures/expected =="
-python3 tools/project/validate-projection.py
+./gradlew -q :tools:project:validateProjection
 
 echo "== regenerating ast/coverage.json =="
-python3 tools/project/coverage.py
+./gradlew -q :tools:project:generateCoverage
 
 echo "== validating projection maps =="
-python3 tools/project/validate-projection-map.py
+./gradlew -q :tools:project:validateProjectionMap
 
 echo "== conformance: expectations must agree with themselves =="
-python3 tools/project/conformance.py --actual fixtures/expected
+./gradlew -q :tools:project:conformance --args="--actual fixtures/expected"
 
 echo "== conformance: a mutated tree must be detected =="
 # A comparison that cannot fail is not a check. Rename one kind and drop one child, then require a
 # non-zero exit -- otherwise a silently no-op comparator would report every consumer as conforming.
 MUT="$WORK/mutated"
 cp -r fixtures/expected "$MUT"
-python3 -c "$(printf '%s\n' \
-  'import json, sys' \
-  'p = sys.argv[1] + "/hello.json"' \
-  'd = json.load(open(p))' \
-  't = d["units"][0]["tree"]' \
-  't["children"][1]["kind"] = "Expr.Binary"' \
-  't["children"][1]["children"].pop()' \
-  'json.dump(d, open(p, "w"))')" "$MUT"
-if python3 tools/project/conformance.py --actual "$MUT" >/dev/null 2>&1; then
+jq '.units[0].tree.children[1].kind = "Expr.Binary" | .units[0].tree.children[1].children |= .[:-1]' \
+  "$MUT/hello.json" > "$MUT/hello.json.tmp"
+mv "$MUT/hello.json.tmp" "$MUT/hello.json"
+if ./gradlew -q :tools:project:conformance --args="--actual $MUT" >/dev/null 2>&1; then
   echo "FATAL: conformance passed a deliberately mutated tree" >&2
   exit 1
 fi
 echo "OK: mutation detected"
 
 echo "== validating committed ast/treekind.json against schema =="
-python3 tools/project/validate-treekind.py
+./gradlew -q :tools:project:validateTreeKind
 
 echo "== generating ast/treekind.json via reflection =="
 ./gradlew -q :tools:project:generateTreeKind
 
 echo "== validating regenerated ast/treekind.json against schema =="
-python3 tools/project/validate-treekind.py
+./gradlew -q :tools:project:validateTreeKind
 
 echo "== validating ast/treekind.json structure and pin.json digest =="
-EXPECT_COUNT="$(python3 -c "import json; print(json.load(open('pin.json'))['treeKindCount'])")"
-EXPECT_DIGEST="$(python3 -c "import json; print(json.load(open('pin.json'))['treeKindDigest'])")"
+EXPECT_COUNT="$(jq -r '.treeKindCount' pin.json)"
+EXPECT_DIGEST="$(jq -r '.treeKindDigest' pin.json)"
 
-ACTUAL_COUNT="$(python3 -c "import json; print(json.load(open('ast/treekind.json'))['treeKindCount'])")"
-ACTUAL_DIGEST="$(python3 -c "import json; print(json.load(open('ast/treekind.json'))['treeKindDigest'])")"
+ACTUAL_COUNT="$(jq -r '.treeKindCount' ast/treekind.json)"
+ACTUAL_DIGEST="$(jq -r '.treeKindDigest' ast/treekind.json)"
 
 if [ "$ACTUAL_COUNT" -ne "$EXPECT_COUNT" ]; then
   echo "FATAL: expected $EXPECT_COUNT TreeKind items, got $ACTUAL_COUNT" >&2

@@ -38,12 +38,13 @@ a rebuild), and [`docs/PIN-BUMP.md`](docs/PIN-BUMP.md) (how the pin moves).
 Key components established:
 - **Oracle pin contract ([`pin.json`](pin.json))**: pinned to upstream release `v0.75.1` (`318bb51a…`, tree `294b9ac53…`), the release asset's SHA-256 (`e3177700…`), the entry point actually used, the required library level, and the classpath requirement. The `attestation` field records that the jar is **attested by digest, not by provenance** — upstream publishes no release workflow, no build attestation, and no commit stamp inside the artifact.
 - **Projection contract ([`docs/PROJECTION.md`](docs/PROJECTION.md))**: canonical projected tree format, load-bearing versus advisory elements, normalisation rules, and consumer projection maps.
-- **JSON schemas ([`schemas/`](schemas/))**: draft-07 definitions for `ast/treekind.json` and canonical projected trees, enforced in CI by [`tools/project/validate-treekind.py`](tools/project/validate-treekind.py).
+- **JSON schemas ([`schemas/`](schemas/))**: draft-07 definitions for `ast/treekind.json` and canonical projected trees, enforced in CI by [`TreeKindSchemaValidator`](tools/project/src/main/scala/flix/spec/TreeKindSchemaValidator.scala).
 - **Committed AST inventory ([`ast/treekind.json`](ast/treekind.json))**: 192 `TreeKind` nodes with qualified names, parent traits and forms, name-set digest `ef4c5a85…`, and a provenance header naming the generator, tool version, upstream commit and the exact oracle jar it was derived from.
 - **Corpus definition ([`corpus/`](corpus/))**: 873 pinned `.flix` files (688 under `main/`, 185 under `examples/`), inclusion rules, and a tree-hash-verified fetch script.
 - **Projected fixtures ([`fixtures/`](fixtures/))**: 113 fixtures — 108 positive, 5 negative — with expected trees generated from the pinned oracle and held under a diff gate. Kind names are sub-trait qualified, sources are repository-relative, and diagnostics record `kind`/`line` as gated with `col`/`message` advisory.
 - **Coverage ([`ast/coverage.json`](ast/coverage.json))**: 184 of 192 kinds exercised by fixtures — measured, not claimed.
 - **Reachability ([`ast/reachability.json`](ast/reachability.json))**: 184 of 192 kinds actually emitted by the reference across all 873 corpus files. Coverage equals reachability, so **every kind the reference is known to produce is exercised by a fixture**. The 8 remaining kinds are never emitted anywhere in the corpus at this pin.
+- **Conformance checking ([`docs/CONFORMANCE.md`](docs/CONFORMANCE.md))**: consumers emit canonical projected trees; [`Conformance`](tools/project/src/main/scala/flix/spec/Conformance.scala) does the comparison once, here, rather than four times across four repositories. Projection maps live in [`ast/projection/`](ast/projection/) and declare vocabulary plus wrapper transparency.
 - **CI and verification**: actions pinned by commit SHA, runner pinned to `ubuntu-24.04`, and Dependabot for actions and Gradle.
 
   | Workflow | Trigger | Does |
@@ -82,9 +83,11 @@ docs/
   phase0-spike.md        # Feasibility spike findings and decision record
   VERSIONING.md          # Maven package versioning scheme and rationale
 schemas/
-  treekind.schema.json   # JSON Schema for ast/treekind.json
-  projection.schema.json # JSON Schema for canonical projected trees
+  treekind.schema.json      # JSON Schema for ast/treekind.json
+  projection.schema.json    # JSON Schema for canonical projected trees
+  projection-map.schema.json # JSON Schema for consumer projection maps
 ast/
+  projection/            # Consumer vocabulary maps (tree-sitter-flix, ...)
   treekind.json          # GENERATED — 192 qualified syntax tree kinds, digest, provenance header
   coverage.json          # GENERATED — which kinds the fixture suite exercises
   reachability.json      # GENERATED — which kinds the reference emits across the whole corpus
@@ -97,10 +100,13 @@ fixtures/
   expected/              # GENERATED — canonical projected trees
 tools/
   oracle/                # fetch.sh (pinned jar + checksum), build-from-source.sh (fallback)
-  project/               # Gradle + Scala module: extractors, tests, verification suite
-    validate-treekind.py # Structural validation of ast/treekind.json against its schema
-    validate-projection.py # Schema + kind-vocabulary validation of fixtures/expected/
-    coverage.py          # Generates ast/coverage.json
+  project/               # Gradle + Scala module: extractors, validators, conformance, tests
+    src/main/scala/flix/spec/
+      TreeKindSchemaValidator.scala  # Validates ast/treekind.json against its schema
+      ProjectionSchemaValidator.scala # Schema + kind-vocabulary validation of fixtures/expected/
+      ProjectionMapValidator.scala   # Validates ast/projection/*.json
+      Coverage.scala                 # Generates ast/coverage.json
+      Conformance.scala              # Compares a consumer's projected trees against fixtures/expected/
     verify.sh            # End-to-end verification suite
 packaging/               # Gradle module: packages pin.json/ast/schemas/fixtures/corpus.json
                           # into the io.github.wstein:flix-spec Maven artifact
@@ -148,7 +154,8 @@ additionally needs `credentials { username = ...; password = /* a token with rea
 ./gradlew :tools:project:extract --args=path/to/file.flix  # Emit a projected concrete syntax tree
 ./gradlew :tools:project:generateFixtures                  # Regenerate fixtures/expected/*.json
 ./gradlew :tools:project:reachability                      # Regenerate ast/reachability.json (needs ./corpus/fetch)
-python3 tools/project/coverage.py                          # Regenerate ast/coverage.json
+./gradlew :tools:project:generateCoverage                  # Regenerate ast/coverage.json
+./gradlew :tools:project:conformance --args='--actual <dir>' # Check a consumer against the fixtures
 ./gradlew test                                             # ScalaTest suite
 ./tools/project/verify.sh                                  # End-to-end verification suite
 ./gradlew spotlessApply                                    # Format Scala, scripts, workflows, JSON

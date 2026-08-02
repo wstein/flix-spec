@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedBy": "tools/project/coverage.py",
+  "generatedBy": "flix.spec.Coverage",
   "upstreamCommit": "318bb51a953c58a8785251a80fad8aea005f729f",
   "oracleSha256": "e3177700aead8a22a42c910e73bfb8a326fefdbab4e3eaeaf6d55c328a6bd938",
   "treeKindCount": 192,

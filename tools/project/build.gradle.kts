@@ -92,6 +92,48 @@ tasks.register<JavaExec>("generateTreeKind") {
     workingDir = rootProject.projectDir
 }
 
+// The four tasks below read and write only local JSON files (ast/, schemas/, fixtures/) -- none
+// of them touch a Flix class, so they do not need the oracle jar guard further down. It is still
+// present on their classpath because the whole module fails to compile without it (every other
+// file in this module imports ca.uwaterloo.flix.*), not because these tasks use it.
+
+tasks.register<JavaExec>("validateTreeKind") {
+    description = "Validates ast/treekind.json against schemas/treekind.schema.json."
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("flix.spec.TreeKindSchemaValidator")
+    workingDir = rootProject.projectDir
+}
+
+tasks.register<JavaExec>("validateProjection") {
+    description = "Validates fixtures/expected/*.json against schemas/projection.schema.json and ast/treekind.json."
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("flix.spec.ProjectionSchemaValidator")
+    workingDir = rootProject.projectDir
+}
+
+tasks.register<JavaExec>("validateProjectionMap") {
+    description = "Validates ast/projection/*.json against schemas/projection-map.schema.json and ast/treekind.json."
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("flix.spec.ProjectionMapValidator")
+    workingDir = rootProject.projectDir
+}
+
+tasks.register<JavaExec>("generateCoverage") {
+    description = "Generates ast/coverage.json: which TreeKinds fixtures/expected/ exercises."
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("flix.spec.Coverage")
+    workingDir = rootProject.projectDir
+}
+
+tasks.register<JavaExec>("conformance") {
+    description =
+        "Compares a consumer's projected trees against fixtures/expected/: " +
+            "./gradlew :tools:project:conformance --args='--actual <dir> [--map <file>] [--report <file>] [--baseline <n>]'"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("flix.spec.Conformance")
+    workingDir = rootProject.projectDir
+}
+
 tasks.matching { it.name in setOf("run", "extract", "proposeTreeKind", "generateTreeKind", "generateFixtures", "reachability") }.configureEach {
     (this as JavaExec).doFirst {
         check(oracleJar.asFile.exists()) {

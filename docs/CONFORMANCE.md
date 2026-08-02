@@ -11,7 +11,7 @@ comparison four times is the duplication `flix-spec` exists to end.
 | Side | Who | What |
 | --- | --- | --- |
 | Produce | the consumer | Parse each fixture, emit a canonical projected tree per `schemas/projection.schema.json` |
-| Compare | `flix-spec` | `tools/project/conformance.py` diffs those trees against `fixtures/expected/` |
+| Compare | `flix-spec` | [`Conformance`](../tools/project/src/main/scala/flix/spec/Conformance.scala) diffs those trees against `fixtures/expected/` |
 
 ```mermaid
 flowchart LR
@@ -79,14 +79,14 @@ reference", and collapsing the two would make an incomplete map look like a brok
 
 ```sh
 # Identity: the expectations must agree with themselves.
-python3 tools/project/conformance.py --actual fixtures/expected
+./gradlew :tools:project:conformance --args="--actual fixtures/expected"
 
 # A consumer, with its vocabulary map and a ratchet.
-python3 tools/project/conformance.py \
+./gradlew :tools:project:conformance --args="\
     --actual path/to/consumer/output \
     --map ast/projection/tree-sitter-flix.json \
     --report build/conformance.json \
-    --baseline 85
+    --baseline 85"
 ```
 
 Exit status is non-zero when divergences exceed `--baseline`, so the ratchet is the gate. Lower the

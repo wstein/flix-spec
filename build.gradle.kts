@@ -25,7 +25,6 @@ spotless {
     // byte-for-byte as published.
     format("misc") {
         target(
-            "**/*.py",
             "**/*.sh",
             "**/*.yml",
             "**/*.json",
