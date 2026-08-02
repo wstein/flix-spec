@@ -214,6 +214,13 @@ object Conformance {
     val fixturesCompared = expectedFiles.length - missing.length
     val divergenceList = divergences.toList
 
+    // Agreement alone is gameable: a map that maps almost nothing compares almost nothing and so
+    // agrees with almost everything. Depth -- the share of encountered nodes actually compared --
+    // is what makes the agreement count mean anything, so it is reported rather than left for a
+    // reader to derive.
+    val encountered = stats.counts("compared") + stats.counts("unmapped")
+    val depth = if (encountered == 0) 0.0 else stats.counts("compared").toDouble / encountered
+
     args.report.foreach { reportPath =>
       val p = Paths.get(reportPath)
       Option(p.getParent).foreach(Files.createDirectories(_))
@@ -254,7 +261,8 @@ object Conformance {
     val unmappedSuffix = if (stats.counts("unmapped") > 0) s", ${stats.counts("unmapped")} unmapped" else ""
     println(
       s"$consumer: $agreeing/$fixturesCompared fixtures agree, " +
-        s"${divergenceList.length} divergences, ${stats.counts("compared")} nodes compared$unmappedSuffix"
+        s"${divergenceList.length} divergences, ${stats.counts("compared")} nodes compared" +
+        f" (depth ${depth * 100}%.0f%%)$unmappedSuffix"
     )
     if (missing.nonEmpty) System.err.println(s"  ${missing.length} fixture(s) had no consumer output")
 
