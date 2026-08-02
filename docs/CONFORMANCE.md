@@ -38,6 +38,35 @@ Per [`PROJECTION.md`](PROJECTION.md) section 3:
   spans are advisory, so comparing either would report differences that are not disagreements
   about structure.
 
+## Diagnostic-kind coverage
+
+`Reader`/`Lexer`/`Parser2` can raise 24 distinct diagnostic kinds in this pipeline: 15
+`LexerError` variants and 9 `Parser2`-raised `ParseError` variants. (Three more `ParseError`
+variants — `MissingRegion`, `NeedAtleastOne`, `MissingBinaryOperator` — are raised only by
+`Weeder2`, a phase this pipeline never runs; they are out of scope by construction, not a gap.)
+Fixtures now exercise 23 of those 24.
+
+**The 24th, `ParseError.MisplacedComments`, is not merely unreproduced — it is unreachable by
+construction**, and the reason is worth recording precisely rather than leaving as "we couldn't
+trigger it":
+
+- `expect`/`expectAny`/`expectAnyOpt` each call `open()` before inspecting `nth(0)` to classify a
+  failure, and each has a match arm mapping a leading `CommentLine`/`CommentBlock` to
+  `MisplacedComments`.
+- `open()` unconditionally calls `comments()`, which unconditionally consumes any run of leading
+  comments (doc or not) and wraps them in a `CommentList` node, *before returning*.
+- So by the time `expect` et al. inspect `nth(0)`, any leading `CommentLine`/`CommentBlock` has
+  already been consumed by `open()`'s own call. Those two match arms can never fire: `nth(0)`
+  cannot be a plain comment at that point.
+
+`ParseError.MisplacedDocComments`, by contrast, *is* reachable — but not through that same dead
+code. It comes from a second, independent check inside `comments()` itself: after consuming a run
+of comments, if the last one was a doc comment (`CommentDoc`) and the token now at `nth(0)` is not
+`isDocumentable` (cannot start a declaration, nor `case`/`law`), the doc comment is "dangling" and
+`comments()` raises `MisplacedDocComments` directly — no `expect()` call involved.
+`fixtures/negative/declarations__doc-comment-misplaced-before-paren.flix` exercises exactly this:
+a doc comment immediately before `(`, which is not documentable.
+
 ## Transparency, and why it is symmetric
 
 Parsers disagree about wrapper nodes far more than about structure. A large fraction of canonical
@@ -125,13 +154,37 @@ baseline as divergences are fixed; never raise it without saying why.
 
 | Consumer | Fixtures agreeing | Divergences | Nodes compared | Measured against |
 | --- | --- | --- | --- | --- |
-| `tree-sitter-flix` | 75 / 121 | 109 | 742 | `8875cfb4`, tree-sitter CLI 0.26.11, 121 fixtures |
+| `tree-sitter-flix` | 76 / 134 | 135 | 833 | `8875cfb4`, tree-sitter CLI 0.26.11, 134 fixtures |
 
-This baseline predates the diagnostic-kind negative fixtures added after it (`fixtures/` grew from
-121 to 134 — 113 positive unchanged, 8 negative fixtures to 21). It needs re-measuring against the
-current fixture set the next time `tree-sitter-flix` is available to run against; the number above
-is real but is no longer "all fixtures," and re-running it is exactly the kind of thing that must
-not be estimated instead of measured.
+Re-measured after the diagnostic-kind negative fixtures grew `fixtures/` from 121 to 134 (113
+positive unchanged, negative fixtures 8 to 21) — same `tree-sitter-flix` commit as the prior
+baseline, so the change in numbers reflects the fixture growth, not a grammar change. The adapter
+that converts `tree-sitter parse`'s s-expression output into `--actual`'s JSON shape is a scratch
+script, not committed here or in `tree-sitter-flix`: it only needs `kind`/`children` (spans and
+tokens are never compared, so field names, node ranges and the trailing timing line tree-sitter
+prints after the tree are all discardable), which is small enough to not yet justify a permanent
+home in either repository.
+
+`nodesUnmapped` is 181 (up from an unrecorded prior figure), largely from native node kinds the new
+fixtures exercise for the first time (`sealed_declaration`, the `rvadd`/`rvsub`/`rvand`/`rvnot`/
+`xor` type-operator productions, `lambda`, `record_expression`, and dozens more) that predate this
+baseline having any occasion to hit them. Divergences worth noting rather than silently absorbing
+into "add more mappings":
+
+- Several `Ident` vs `QName` kind mismatches: `QName` is in `elide`, but only fires when tree-sitter's
+  `qualified_name` has at most one canonical child; where it has two the elision rule (by design)
+  declines to fire, and the two trees disagree at that node.
+- Several `Type.Effect` vs `Type.Constant`/`Type.Unary`/`Type.Binary`/`Type.EffectSet` mismatches:
+  the current map appears to send more native effect-formula node kinds to `Type.Effect` than the
+  canonical tree actually produces that shape for.
+- The `unterminated-*` negative fixtures diverge in arity or kind at the error site, which is not a
+  mapping gap at all — it is two independently-implemented recovery strategies genuinely disagreeing
+  about what a truncated input becomes, which is exactly the kind of fact this comparison exists to
+  surface.
+
+None of the above have been fixed. Expanding `ast/projection/tree-sitter-flix.json` to resolve the
+mapping-driven divergences, and deciding whether the recovery-driven ones belong in
+`tree-sitter-flix`'s own `DEFECTS.md`-equivalent, is a follow-up, not done here.
 
 Reproducing this needs the `tree-sitter` CLI and a built grammar, so it is **not** part of CI here;
 the consumer repository is the right home for that job. What CI does verify is that the comparison
