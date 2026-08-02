@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/wstein/flix-spec/main/schemas/projection-map.schema.json",
+  "title": "Flix Consumer Projection Map Schema",
+  "description": "Maps a consumer parser's native node vocabulary onto the canonical TreeKind names in ast/treekind.json. Consumers whose parse trees already carry canonical names need no map.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "consumer",
+    "mappings"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "consumer": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Repository or tool this map belongs to, e.g. tree-sitter-flix."
+    },
+    "description": {
+      "type": "string"
+    },
+    "mappings": {
+      "type": "object",
+      "description": "Native node name -> canonical TreeKind name. Every value must exist in ast/treekind.json.",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "ignored": {
+      "type": "array",
+      "description": "Native nodes deliberately not mapped -- purely syntactic wrappers, punctuation containers, or nodes with no counterpart in the reference tree. Listing a node here asserts the omission is intentional; anything neither mapped nor ignored is reported as unmapped, which is a gap rather than a decision.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "notes": {
+      "type": "object",
+      "description": "Free-form per-node rationale, keyed by native node name.",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "elide": {
+      "type": "array",
+      "description": "Canonical TreeKind names this consumer legitimately does not produce, skipped when matching. Only a node with exactly one child may be elided -- eliding a branching node would discard structure rather than a wrapper. At the current pin 412 of 3572 canonical nodes (11.5%) are single-child wrappers, Type.Type alone accounting for 247, so a parser that was not the reference's parent will not reproduce them. This is the projection layer, not a rename table.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -43,6 +43,31 @@ python3 tools/project/validate-projection.py
 echo "== regenerating ast/coverage.json =="
 python3 tools/project/coverage.py
 
+echo "== validating projection maps =="
+python3 tools/project/validate-projection-map.py
+
+echo "== conformance: expectations must agree with themselves =="
+python3 tools/project/conformance.py --actual fixtures/expected
+
+echo "== conformance: a mutated tree must be detected =="
+# A comparison that cannot fail is not a check. Rename one kind and drop one child, then require a
+# non-zero exit -- otherwise a silently no-op comparator would report every consumer as conforming.
+MUT="$WORK/mutated"
+cp -r fixtures/expected "$MUT"
+python3 -c "$(printf '%s\n' \
+  'import json, sys' \
+  'p = sys.argv[1] + "/hello.json"' \
+  'd = json.load(open(p))' \
+  't = d["units"][0]["tree"]' \
+  't["children"][1]["kind"] = "Expr.Binary"' \
+  't["children"][1]["children"].pop()' \
+  'json.dump(d, open(p, "w"))')" "$MUT"
+if python3 tools/project/conformance.py --actual "$MUT" >/dev/null 2>&1; then
+  echo "FATAL: conformance passed a deliberately mutated tree" >&2
+  exit 1
+fi
+echo "OK: mutation detected"
+
 echo "== validating committed ast/treekind.json against schema =="
 python3 tools/project/validate-treekind.py
 
