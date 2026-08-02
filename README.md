@@ -39,6 +39,7 @@ Key components established:
   | [`verify.yml`](.github/workflows/verify.yml) | push, PR | Format check, tests, end-to-end suite, regenerate and diff `ast/treekind.json` |
   | [`corpus.yml`](.github/workflows/corpus.yml) | weekly, manual | Clone upstream, verify tree hash and counts, regenerate reachability; report if the pin is behind |
   | [`release.yml`](.github/workflows/release.yml) | `v*` tag | Verify, then publish the artifact bundle with `SHA256SUMS` |
+  | [`pages.yml`](.github/workflows/pages.yml) | push to `main`, `v*` tag | Verify, then publish the Maven package (see "Consuming as a Maven package" below) |
 
 ### How the pieces fit
 
@@ -66,6 +67,7 @@ docs/
   PROJECTION.md          # Projection specification & conformance contract
   PIN-BUMP.md            # Step-by-step checklist for pinning new releases
   phase0-spike.md        # Feasibility spike findings and decision record
+  VERSIONING.md          # Maven package versioning scheme and rationale
 schemas/
   treekind.schema.json   # JSON Schema for ast/treekind.json
   projection.schema.json # JSON Schema for canonical projected trees
@@ -87,7 +89,41 @@ tools/
     validate-projection.py # Schema + kind-vocabulary validation of fixtures/expected/
     coverage.py          # Generates ast/coverage.json
     verify.sh            # End-to-end verification suite
+packaging/               # Gradle module: packages pin.json/ast/schemas/fixtures/corpus.json
+                          # into the io.github.wstein:flix-spec Maven artifact
 ```
+
+## Consuming as a Maven package
+
+Everything in `ast/`, `schemas/`, `fixtures/` and `corpus/corpus.json`, plus `pin.json`, is also
+published as `io.github.wstein:flix-spec` — for a consumer that would rather add a dependency than
+vendor files by hand. Versioning is documented in [`docs/VERSIONING.md`](docs/VERSIONING.md); in
+short, the version is `<toolVersion>-flix<upstream-tag>`, e.g. `0.1.0-flix0.75.1`, so the flix pin
+is always visible in — and load-bearing for — the version string itself.
+
+Published to two places, with a real trade-off between them:
+
+| | GitHub Pages (`maven/` on the `gh-pages` branch) | GitHub Packages (`maven.pkg.github.com`) |
+| --- | --- | --- |
+| URL | `https://wstein.github.io/flix-spec/maven/` | `https://maven.pkg.github.com/wstein/flix-spec` |
+| Read access | Public, anonymous — plain static files | **Requires authentication even for public repositories** — a GitHub Packages limitation, not a choice made here |
+| Retention | Every published version accumulates in git history on `gh-pages`, forever, by construction | Managed by GitHub; versions are not deleted by this repository |
+
+For a consumer who cannot or would rather not manage a GitHub token just to resolve a dependency,
+the Pages repository is the one to use:
+
+```kotlin
+repositories {
+    maven { url = uri("https://wstein.github.io/flix-spec/maven/") }
+}
+
+dependencies {
+    implementation("io.github.wstein:flix-spec:0.1.0-flix0.75.1")
+}
+```
+
+The GitHub Packages coordinate is identical; only the repository declaration changes, and it
+additionally needs `credentials { username = ...; password = /* a token with read:packages */ }`.
 
 ## Running verification and generators
 
