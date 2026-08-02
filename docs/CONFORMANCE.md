@@ -134,14 +134,51 @@ inherits the reference's bugs by construction. Losslessness does not: it compare
 its **input**.
 
 > Concatenating every token's `text`, in order, must reproduce the source file — ignoring
-> whitespace, which Flix does not emit as tokens.
+> whitespace and the `$` escape marker, neither of which belongs to any token.
 
-It holds on every fixture, and it catches what a structural comparison cannot: dropped tokens,
-duplicated tokens, and tokens whose recorded text does not match the source. A tree can be
-perfectly well-shaped and still have lost a token's contents.
+Both exclusions are the lexer's own behaviour, not conveniences. Whitespace is never tokenised.
+The `$` in `x.$and(y)` — Flix's escape for a Java method whose name collides with a keyword — is
+stepped over explicitly by `Lexer.scala:519-521` ("Don't include the $ sign in the name"), so the
+token spans `and` and the `$` belongs to nothing. The rule is deliberately narrow, applying only
+when `$` precedes a name character, so string interpolation (`${expr}`) must still round-trip and
+a `$` genuinely dropped from a string literal is still caught.
+
+That precision was not designed; it was **measured**. The property held on all 136 fixtures but
+failed on 6 of 870 cleanly-parsed corpus files — `BigInt.flix`, `Regex.flix`, and four Java-interop
+tests — every one of them an escaped Java name. A curated fixture suite could not have found it.
+
+It holds on **all 136 fixtures and all 870 cleanly-parsed corpus files**, and it catches what a
+structural comparison cannot: dropped tokens, duplicated tokens, and tokens whose recorded text
+does not match the source. A tree can be perfectly well-shaped and still have lost a token's
+contents.
+
+Losslessness is only asserted for files the parser accepted. Error recovery may legitimately
+discard text it could not attach, so a lossy *invalid* file is not a finding; a lossy *valid* one
+is, and fails the run.
 
 It needs no projection map and no vocabulary agreement, so it is the one gate a purely lexical
 consumer can pass today. `./gradlew :tools:project:lossless`.
+
+## Token reachability
+
+`ReachabilityRun` measures the lexical vocabulary over the same corpus walk: **153 of 160
+TokenKinds** are emitted somewhere in the 873 files.
+
+Six of the seven that are not — `Bang`, `Caret`, `Dollar`, `Err`, `KeywordSealed`,
+`KeywordStaticLowercase` — *are* exercised by hand-written fixtures. That is the clearest
+justification for curating a fixture suite at all: 873 files of real Flix do not reach them, and
+targeted inputs do.
+
+The seventh, `Eof`, is exercised nowhere, and is **unattachable by construction**. `advance()` is
+the only path that attaches a token to a tree, and it returns before doing so when at end of input:
+
+```scala
+private def advance()(implicit s: State): Unit = {
+  if (eof()) { return }
+  s.events.append(Event.Advance)   // never reached for Eof
+```
+
+So `Eof` cannot appear in any tree from any input. It is a sentinel, not a gap.
 
 ## Unmapped is not divergent
 

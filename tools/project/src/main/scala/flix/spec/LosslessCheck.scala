@@ -28,7 +28,21 @@ object LosslessCheck {
       case None    => node.get("text").foreach(t => sb.append(t.asString))
     }
 
-  private def squeeze(s: String): String = s.replaceAll("\\s+", "")
+  /** Normalises a source or reconstruction for comparison.
+    *
+    * Two things are removed, and only two:
+    *
+    *   - **whitespace**, which Flix does not emit as tokens at all;
+    *   - the **`$` escape marker** before a name. `Lexer.scala:519-521` moves past it explicitly ("Don't include the $
+    *     sign in the name"), so in `x.$and(y)` the token spans `and` and the `$` belongs to no token. It is a marker,
+    *     like whitespace, not content.
+    *
+    * The `$` rule is deliberately narrow -- only when followed by a name character -- so string interpolation
+    * (`${expr}`, where `$` precedes `{`) still has to round-trip, and a genuinely dropped `$` inside a string literal
+    * would still be caught.
+    */
+  private def squeeze(s: String): String =
+    s.replaceAll("\\s+", "").replaceAll("\\$(?=[A-Za-z_])", "")
 
   def main(args: Array[String]): Unit = {
     val expectedDir = Paths.get("fixtures/expected")
