@@ -4,7 +4,14 @@
     "repository": "https://github.com/flix/flix",
     "tag": "v0.75.1",
     "commit": "318bb51a953c58a8785251a80fad8aea005f729f",
-    "treeHash": "294b9ac53cd0d74f7d7092006009a6b6806b0f57"
+    "treeHash": "294b9ac53cd0d74f7d7092006009a6b6806b0f57",
+    "vocabularySources": {
+      "main/src/ca/uwaterloo/flix/language/ast/SyntaxTree.scala": "32dcd76aabeb081432fe7cba91b85b0c17b6e5c5",
+      "main/src/ca/uwaterloo/flix/language/ast/TokenKind.scala": "5ebbb5dc7e3a9b5d7483391300c07729642d0e9d",
+      "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala": "90f22e4241b755658ee50aab9aebc5ed378c5fbb",
+      "main/src/ca/uwaterloo/flix/language/phase/Lexer.scala": "f8bafb4bc954ce54b1c665e9289837057b35ec2c"
+    },
+    "vocabularySourcesNote": "Blob SHAs at the pinned commit for the files that define the tree and token vocabularies and the parser's behaviour. tools/oracle/check-drift.sh compares these against upstream to detect that the oracle has moved in a way that matters -- a release-tag comparison alone reports 'current' while master has already changed these."
   },
   "oracleArtifact": {
     "kind": "release-asset",

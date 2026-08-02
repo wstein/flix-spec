@@ -14,6 +14,23 @@ The manual procedure for bumping the pinned upstream Flix release in `wstein/fli
 0.75.2 exists. Dependabot covers GitHub Actions and Gradle dependencies only. This asymmetry is
 deliberate — do not "fix" the apparent gap by pointing any check at a moving ref.
 
+**What does notice.** `tools/oracle/check-drift.sh`, run weekly by `corpus.yml`, compares the blob
+SHAs of the four upstream files that define the vocabularies and the parser's behaviour
+(`SyntaxTree.scala`, `TokenKind.scala`, `Parser2.scala`, `Lexer.scala`) against the values recorded
+in `pin.json.upstream.vocabularySources`. It reports; it never bumps.
+
+It replaced a release-tag comparison, which was a proxy and failed the way proxies do. Upstream
+removed the `Law` TreeKind and the `KeywordLaw`/`KeywordLawful` TokenKinds **on master, without
+cutting a release** — so "is there a newer tag?" answered *no* while the vocabulary this repository
+is built on had already changed. Watch the thing, not a stand-in for it.
+
+Run it yourself at any time:
+
+```sh
+./tools/oracle/check-drift.sh              # against upstream master
+./tools/oracle/check-drift.sh --ref=v0.76.0 # against a specific ref
+```
+
 ## Order of operations
 
 The generators assert against `pin.json`, so the file is updated in two passes. Doing this in the
@@ -37,6 +54,8 @@ flowchart TD
 
 1. **Update the pin's identity fields in `pin.json`**, which are knowable before anything is run:
    - `upstream.tag`, `upstream.commit`, `upstream.treeHash`
+   - `upstream.vocabularySources` — the four blob SHAs at the new commit, so drift detection
+     starts measuring from the new baseline. `git rev-parse <commit>:<path>` gives each one.
    - `oracleArtifact.url`, `.sha256`, `.sizeBytes`, `.jarEntries`, `.attestation`
    - `buildProvenance` if upstream changed build tool, Scala version or JDK target
    - Leave `treeKindCount`, `treeKindDigest`, `tokenKindCount` and `tokenKindDigest` alone for now.

@@ -63,21 +63,15 @@ jobs:
           git add --intent-to-add --all ast/reachability.json
           git diff --exit-code ast/reachability.json
 
-      - name: Report Upstream Releases Newer Than the Pin
-        # Dependabot cannot bump the Flix pin -- it is not a package ecosystem,
-        # so nothing else in this repository would ever notice a new release.
-        # Informational only: a newer upstream release is not a failure, and
-        # bumping the pin is a reviewed human decision (docs/PIN-BUMP.md).
+      - name: Detect Oracle Drift
+        # Compares the blobs that actually define the tree and token vocabularies and the
+        # parser's behaviour, not the release tag. The tag is a proxy and it failed as proxies
+        # do: upstream removed the Law TreeKind and the KeywordLaw/KeywordLawful TokenKinds on
+        # master while v0.75.1 was still the newest release, so a tag comparison reported
+        # "pin is current" while the vocabulary had already moved.
+        #
+        # Informational only. Dependabot cannot see the Flix pin -- it is not a package
+        # ecosystem -- and bumping is a reviewed human decision (docs/PIN-BUMP.md).
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          PINNED="$(jq -r '.upstream.tag' pin.json)"
-          LATEST="$(gh release view --repo flix/flix --json tagName --jq '.tagName')"
-          echo "pinned: $PINNED"
-          echo "latest: $LATEST"
-          if [ "$PINNED" != "$LATEST" ]; then
-            echo "::notice title=Flix pin is behind::pin.json is at $PINNED; upstream latest is $LATEST. See docs/PIN-BUMP.md."
-          else
-            echo "Pin is current."
-          fi
+        run: ./tools/oracle/check-drift.sh
