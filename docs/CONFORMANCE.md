@@ -55,9 +55,19 @@ With two or more children it is *kept*: splicing its children into the parent wo
 structure and let a genuine disagreement pass as a mapping decision.
 
 Handling only one side is worse than handling neither — the other side's wrapper then faces a real
-node and reports as a disagreement. Making elision symmetric took the `tree-sitter-flix` baseline
-from 196 divergences to 142; getting empty-node elision right took it from 233 to 196; eliding
-single-child `QName` took it from 142 to 83.
+node and reports as a disagreement.
+
+Each rule was added because measurement demanded it, not by design. Against `tree-sitter-flix`:
+
+| Change | Divergences |
+| --- | ---: |
+| naive kind comparison | 233 |
+| elide *empty* wrappers, not just single-child ones | 196 |
+| make transparency symmetric (splice, never force a match) | 142 |
+| elide single-child `QName` | 80 |
+
+Those four are measured on the 110 fixtures the first adapter could read; the baseline below covers
+all 113.
 
 ## Unmapped is not divergent
 
@@ -76,7 +86,7 @@ python3 tools/project/conformance.py \
     --actual path/to/consumer/output \
     --map ast/projection/tree-sitter-flix.json \
     --report build/conformance.json \
-    --baseline 83
+    --baseline 85
 ```
 
 Exit status is non-zero when divergences exceed `--baseline`, so the ratchet is the gate. Lower the
@@ -86,15 +96,22 @@ baseline as divergences are fixed; never raise it without saying why.
 
 | Consumer | Fixtures agreeing | Divergences | Nodes compared | Measured against |
 | --- | --- | --- | --- | --- |
-| `tree-sitter-flix` | 72 / 110 | 83 | 667 | `8875cfb4`, tree-sitter CLI 0.26.11 |
+| `tree-sitter-flix` | 74 / 113 | 85 | 685 | `8875cfb4`, tree-sitter CLI 0.26.11 |
 
 Reproducing this needs the `tree-sitter` CLI and a built grammar, so it is **not** part of CI here;
 the consumer repository is the right home for that job. What CI does verify is that the comparison
 itself is sound: `fixtures/expected` must agree with itself at zero divergences, and a deliberately
 mutated copy must be detected.
 
-Three of the 113 fixtures produced no `tree-sitter-flix` output at all and are excluded from the
-110 compared.
+All 113 fixtures are compared, including the negative ones.
+
+An earlier baseline reported 110 and blamed the grammar for three missing outputs. That was wrong,
+and the way it was wrong is worth recording: when a parse contains an `ERROR` node, the
+`tree-sitter` CLI appends a plain-text timing line *after* `</sources>`, which is not XML and
+breaks a strict parser. The three affected files were exactly the three negative fixtures — the
+only ones that produce an `ERROR`. Nothing was wrong with the grammar; the adapter had to truncate
+at the closing tag. A consumer-side adapter that silently drops the inputs it cannot read will
+always flatter its own parser, so count what was skipped and why.
 
 ## Writing a projection map
 
