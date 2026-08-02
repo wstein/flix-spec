@@ -10,10 +10,10 @@ PIN="$ROOT/pin.json"
 CORPUS_SPEC="$ROOT/corpus/corpus.json"
 DEST_DIR="$ROOT/.oracle/flix-repo"
 
-COMMIT="$(python3 -c "import json; print(json.load(open('$PIN'))['upstream']['commit'])")"
-TREE_HASH="$(python3 -c "import json; print(json.load(open('$PIN'))['upstream']['treeHash'])")"
-EXPECT_TOTAL="$(python3 -c "import json; print(json.load(open('$CORPUS_SPEC'))['counts']['totalFlixFiles'])")"
-EXPECT_MAIN="$(python3 -c "import json; print(json.load(open('$CORPUS_SPEC'))['counts']['mainFlixFiles'])")"
+COMMIT="$(jq -r '.upstream.commit' "$PIN")"
+TREE_HASH="$(jq -r '.upstream.treeHash' "$PIN")"
+EXPECT_TOTAL="$(jq -r '.counts.totalFlixFiles' "$CORPUS_SPEC")"
+EXPECT_MAIN="$(jq -r '.counts.mainFlixFiles' "$CORPUS_SPEC")"
 
 if [ ! -d "$DEST_DIR/.git" ]; then
   echo "Cloning upstream flix repository at commit $COMMIT..."
