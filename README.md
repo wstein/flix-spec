@@ -120,8 +120,15 @@ packaging/               # Gradle module: packages pin.json/ast/schemas/fixtures
 Everything in `ast/`, `schemas/`, `fixtures/` and `corpus/corpus.json`, plus `pin.json`, is also
 published as `io.github.wstein:flix-spec` — for a consumer that would rather add a dependency than
 vendor files by hand. Versioning is documented in [`docs/VERSIONING.md`](docs/VERSIONING.md); in
-short, the version is `<toolVersion>-flix<upstream-tag>`, e.g. `0.1.0-flix0.75.1`, so the flix pin
-is always visible in — and load-bearing for — the version string itself.
+short it is plain semver, `<flixMajor>.<flixMinor>.<revision>` — currently `0.75.1`, derived from
+Flix v0.75.1.
+
+The pin is deliberately **not** encoded in the version. A version can advertise a pin but never
+enforce one, and this project has already seen a consumer depend on fixtures from one Flix while
+testing against a checkout of another — a mismatch no naming convention detects. Enforcement is a
+comparison the consumer makes against `pin.json`, which ships inside the artifact. Advertisement is
+handled three ways that do not distort ordering: the `FLIX-PIN-<tag>` marker file, the POM's
+`flix.tag`/`flix.commit`/`flix.treeHash`/`flix.oracleSha256` properties, and `pin.json` itself.
 
 Published to two places, with a real trade-off between them:
 
@@ -140,7 +147,7 @@ repositories {
 }
 
 dependencies {
-    implementation("io.github.wstein:flix-spec:0.1.0-flix0.75.1")
+    implementation("io.github.wstein:flix-spec:0.75.1")
 }
 ```
 

@@ -3,12 +3,19 @@
 // rather add a dependency than vendor files by hand. Published to a Maven
 // repository hosted on GitHub Pages (docs/PIN-BUMP.md, section "Publishing").
 //
-// Versioning (see docs/VERSIONING.md for the full rationale): the flix pin is
-// carried as a semver PRE-RELEASE identifier, not build metadata -- per
-// semver.org rule 10, build metadata is precedence-ignored, which would let a
-// resolver treat two different flix pins as the same version. Pre-release
-// identifiers participate in precedence (rule 11), so `1.0.0-flix0.75.1` and
-// `1.0.0-flix0.76.0` are guaranteed distinct, correctly ordered versions.
+// Versioning (see docs/VERSIONING.md): plain semver, no decoration. major.minor
+// track the upstream Flix line and patch is this repository's own revision
+// counter, so `0.75.1` is derived from Flix 0.75.x and `0.75.2` is the next
+// build of this repository against that line.
+//
+// The pin is deliberately NOT in the version string. A version can only ever
+// advertise a pin, never enforce one, and this repository already had a consumer
+// depending on fixtures from one Flix while testing against a checkout of
+// another -- a mismatch no naming convention can catch. Enforcement is a
+// comparison the consumer makes against pin.json, which ships in the artifact.
+// What remains here is advertisement, done three ways that do not distort
+// ordering: the FLIX-PIN-<tag> marker file, the POM properties below, and
+// pin.json itself.
 plugins {
     base
     `maven-publish`
@@ -27,7 +34,7 @@ val flixVersion = flixTag.removePrefix("v")
 val isSnapshot = (findProperty("flixSpec.snapshot") as String?)?.toBoolean() ?: false
 
 group = rootProject.group
-version = "${rootProject.version}-flix$flixVersion" + if (isSnapshot) "-SNAPSHOT" else ""
+version = rootProject.version.toString() + if (isSnapshot) "-SNAPSHOT" else ""
 
 val assembled = layout.buildDirectory.dir("assembled")
 
@@ -42,8 +49,23 @@ val assembleArtifacts = tasks.register<Copy>("assembleArtifacts") {
     into("corpus") { from(rootProject.file("corpus/corpus.json")) }
 }
 
+// A marker whose *name* carries the pin: visible in `jar tf`, greppable, and
+// assertable without parsing anything. pin.json remains the authority; this makes
+// the pin impossible to miss when looking at the artifact rather than into it.
+val flixPinMarker = tasks.register("flixPinMarker") {
+    val out = assembled.map { it.file("FLIX-PIN-$flixTag").asFile }
+    outputs.file(out)
+    doLast {
+        out.get().writeText(
+            "flix-spec is derived from flix/flix $flixTag\n" +
+                "commit ${(pinJson["upstream"] as Map<*, *>)["commit"]}\n" +
+                "See pin.json for the authoritative record, including the oracle jar digest.\n",
+        )
+    }
+}
+
 val artifactsJar = tasks.register<Jar>("artifactsJar") {
-    dependsOn(assembleArtifacts)
+    dependsOn(assembleArtifacts, flixPinMarker)
     from(assembled)
     archiveBaseName.set("flix-spec")
 }
@@ -109,6 +131,17 @@ publishing {
                 scm {
                     url.set("https://github.com/wstein/flix-spec")
                 }
+                // Structured provenance, readable without downloading the jar. The version no
+                // longer carries the pin, so this is where a resolver-side tool or a human
+                // reviewing a dependency graph finds it.
+                properties.set(
+                    mapOf(
+                        "flix.tag" to flixTag,
+                        "flix.commit" to (pinJson["upstream"] as Map<*, *>)["commit"].toString(),
+                        "flix.treeHash" to (pinJson["upstream"] as Map<*, *>)["treeHash"].toString(),
+                        "flix.oracleSha256" to (pinJson["oracleArtifact"] as Map<*, *>)["sha256"].toString(),
+                    ),
+                )
             }
         }
     }

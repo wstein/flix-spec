@@ -2,58 +2,72 @@
 
 `flix-spec` publishes a Maven artifact (`io.github.wstein:flix-spec`) bundling `pin.json`, `ast/`,
 `schemas/`, `fixtures/` and `corpus/corpus.json`, hosted on GitHub Pages
-(`https://wstein.github.io/flix-spec/maven/`). This records the versioning scheme and why the
-obvious alternatives don't hold up.
+(`https://wstein.github.io/flix-spec/maven/`).
 
 ## The scheme
 
 ```
-<schemaMajor>.<schemaMinor>.<toolPatch>-flix<upstream-version>[-SNAPSHOT]
+<flixMajor>.<flixMinor>.<revision>[-SNAPSHOT]
 ```
 
-Example: `0.1.0-flix0.75.1`.
+Current: `0.75.1`, derived from `flix/flix` v0.75.1.
 
-- `schemaMajor.schemaMinor.toolPatch` (`gradle.properties`' `version`, hand-maintained) is ordinary
-  semver over **this repository's own generated shape**: major on a breaking schema change (a
-  `TreeKind` removed or reparented, `pin.json.schemaVersion` bumped), minor on additive change (new
-  kinds, new fixtures), patch on any regeneration that changes bytes without changing shape (an
-  extractor bugfix, a pin bump with no schema change).
-- `-flix<upstream-version>` (computed from `pin.json.upstream.tag`) is a semver **pre-release
-  identifier**, deliberately not build metadata. Per [semver.org rule
-  10](https://semver.org/#spec-item-10), build metadata (`+...`) is precedence-ignored — a resolver
-  would treat `1.0.0+flix0.75.1` and `1.0.0+flix0.76.0` as the *same* version. Pre-release
-  identifiers participate in ordering (rule 11), so the flix pin actually changes the version
-  consumers see and compare.
-- `-SNAPSHOT` marks a floating, mutable build (`main`-branch CI, via `-PflixSpec.snapshot=true`).
-  Tagged releases omit it and must be immutable once published.
+- **`flixMajor.flixMinor`** track the upstream Flix line. `0.75.x` is derived from Flix 0.75.x.
+- **`revision`** is this repository's own counter within that line. It advances on every published
+  build, whether the cause was an upstream patch release or a change here.
+- **`-SNAPSHOT`** marks a floating build from `main`. Tagged releases omit it and are immutable
+  once published; `pages.yml` refuses to republish an existing release path.
 
-## Why not the plan's original `v<n>+flix0.75.1`
+Plain semver, no decoration. It orders correctly in every ecosystem, and `latest.release` and
+version ranges behave normally — none of which was true of the previous
+`0.1.0-flix0.75.1` form, where the `-flix…` pre-release identifier sorted *below* a `0.1.0`
+that would never exist.
 
-An earlier draft proposed encoding the pin as build metadata on a release-asset tag. That was fine
-when the target was a GitHub Releases zip — tags don't have resolver semantics. It stops being fine
-the moment the same string becomes an actual Maven coordinate: rule 10 above means two different
-flix pins would compare equal, and a dependency graph containing both (transitively, from two
-different consumers) could silently coalesce or arbitrarily pick one.
+## Why the pin is not in the version
 
-## Why not bare Debian-style `<upstream>-<revision>`
+It used to be, and that was a category error.
 
-`0.75.1-1`, `0.75.1-2`, ... is legible and has real precedent (Debian, Homebrew formula revisions),
-but the counter carries no signal about *what kind* of change happened. This repository's revisions
-are not packaging-only touch-ups the way Debian's are — they can be schema-breaking. Folding
-`schemaMajor.schemaMinor` into the base version keeps that distinction visible without a second,
-uncorrelated counter.
+**A version string can advertise a pin. It can never enforce one.** This repository had a consumer
+depending on fixtures derived from Flix `318bb51a` while its own tests read a checkout of a
+different Flix entirely — a mismatch no naming convention detects, because the coordinate describes
+the artifact and says nothing about the consumer.
 
-## The immutability constraint
+Enforcement is a comparison someone makes. `flix-jetbrains-plugin` reads `pin.json` out of the
+artifact and fails when it disagrees with the Flix that repository tests against. That is the lock.
+Everything below is advertisement, and none of it distorts ordering:
 
-GitHub Pages is not Maven Central: nothing at the transport layer stops a second publish from
-overwriting a release version's files with different bytes. Every pin bump changes generated
-content (`ast/treekind.json`, `fixtures/expected/`) even when no Scala code changed, so **every pin
-bump must move the version** — there is no "just a metadata refresh" case. CI (`pages.yml`) enforces
-this directly: it refuses to publish a non-`SNAPSHOT` version whose path already exists in the
-published repository, because nothing else will catch a repeat.
+| Where | What | Read by |
+| --- | --- | --- |
+| `FLIX-PIN-<tag>` | a marker file whose *name* is the pin | `jar tf`, `grep`, a one-line assertion |
+| POM `<properties>` | `flix.tag`, `flix.commit`, `flix.treeHash`, `flix.oracleSha256` | tooling, without downloading the jar |
+| `pin.json` | the authoritative record, including the oracle digest | anything that needs the truth |
 
-## Not decided here
+## What a version bump does and does not tell you
 
-- Exact criteria for `schemaMajor` vs `schemaMinor` beyond "`schemaVersion` bump = major" (e.g.
-  whether a coverage-only change ever counts as breaking).
-- Retention policy for the accumulated snapshot history on the `gh-pages` branch.
+Because major and minor belong to the upstream line, **this scheme cannot signal a breaking change
+to flix-spec's own schemas** while Flix stands still. That is deliberate, and it is covered
+elsewhere: every generated artifact carries its own `schemaVersion` — `treekind.json`,
+`tokenkind.json`, `coverage.json`, `reachability.json`, every projected tree, every JSON Schema.
+Compatibility is declared in-band, where it is checked, rather than inferred from a coordinate.
+
+A consumer that cares about schema compatibility should assert `schemaVersion`, not a version range.
+
+## Worked examples
+
+| Event | Version |
+| --- | --- |
+| Pinned to Flix v0.75.1 | `0.75.1` |
+| Fixtures regenerated, pin unchanged | `0.75.2` |
+| Pin moves to Flix v0.75.2 | `0.75.3` |
+| Pin moves to Flix v0.76.0 | `0.76.0` |
+| Build from `main` between releases | `0.76.0-SNAPSHOT` |
+
+The base version does not identify which upstream *patch* a build came from — `0.75.1` and `0.75.2`
+may share a pin or not. Read `pin.json`, or the POM properties, or the marker file. That is the
+trade for a version that orders cleanly.
+
+## Bumping
+
+`version` in `gradle.properties` is hand-maintained. On a pin bump, set `flixMajor.flixMinor` from
+the new upstream tag and reset `revision` to `0` if the line changed, or increment it if it did not.
+See [`PIN-BUMP.md`](PIN-BUMP.md).

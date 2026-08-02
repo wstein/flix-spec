@@ -65,8 +65,10 @@ jobs:
         run: |
           set -euo pipefail
           VERSION="${GITHUB_REF_NAME}"
-          FLIX_TAG="$(jq -r '.upstream.tag' pin.json)"
-          BUNDLE="flix-spec-${VERSION}+flix${FLIX_TAG}"
+          # Named to match the Maven coordinate. The previous form used `+`, which is semver
+          # build metadata and precedence-ignored -- a decoration that reads like a version but
+          # cannot order. One release should not answer to two conventions.
+          BUNDLE="flix-spec-${VERSION#v}"
 
           mkdir -p "dist/${BUNDLE}/corpus"
           cp -r pin.json ast schemas fixtures \
