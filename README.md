@@ -1,5 +1,18 @@
 # flix-spec
 
+[![verify](https://img.shields.io/github/actions/workflow/status/wstein/flix-spec/verify.yml?branch=main&label=verify)](https://github.com/wstein/flix-spec/actions/workflows/verify.yml)
+[![corpus](https://img.shields.io/github/actions/workflow/status/wstein/flix-spec/corpus.yml?label=corpus)](https://github.com/wstein/flix-spec/actions/workflows/corpus.yml)
+[![flix pin](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fwstein%2Fflix-spec%2Fmain%2Fpin.json&query=%24.upstream.tag&label=flix&color=blue)](pin.json)
+[![TreeKinds](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fwstein%2Fflix-spec%2Fmain%2Fast%2Ftreekind.json&query=%24.treeKindCount&label=TreeKinds&color=blue)](ast/treekind.json)
+[![maven](https://img.shields.io/maven-metadata/v?metadataUrl=https%3A%2F%2Fwstein.github.io%2Fflix-spec%2Fmaven%2Fio%2Fgithub%2Fwstein%2Fflix-spec%2Fmaven-metadata.xml&label=maven)](docs/VERSIONING.md)
+[![license](https://img.shields.io/github/license/wstein/flix-spec)](LICENSE.md)
+
+Every badge above except license reads a live file (`pin.json`, `ast/treekind.json`, the published
+`maven-metadata.xml`) rather than a hardcoded number, on purpose — the same reason nothing else in
+this repository asserts a fact it can't re-derive. The `maven` badge goes red until the Pages
+package is actually published (see "Consuming as a Maven package" below); that's accurate, not
+broken.
+
 Shared test infrastructure for parsers of [Flix](https://github.com/flix/flix): a machine-readable
 inventory of the language's syntax tree kinds, a corpus definition pinned to an upstream release,
 and fixtures with expected tree shapes — all derived from the reference compiler at a pinned
