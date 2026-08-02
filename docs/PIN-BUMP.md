@@ -82,6 +82,19 @@ flowchart TD
    - whether `oracleArtifact.attestation` still reads `digest-only`, or whether upstream has since
      started publishing build attestations.
 
+## Bumping the published Maven version
+
+The pin bump alone moves the published artifact's version automatically: `packaging/build.gradle.kts`
+derives the `-flix<version>` suffix from `pin.json.upstream.tag` at build time (see
+[`docs/VERSIONING.md`](VERSIONING.md)). Nothing to do there.
+
+What the pin bump does **not** do automatically: if step 7's PR body says a kind was removed or
+re-parented (a breaking change for consumers), bump `gradle.properties`' `version` field's major
+component by hand, in the same PR. A kind added with no removal is a minor bump; a bump with no
+schema change at all (pure content refresh) is a patch bump. `.github/workflows/pages.yml` will
+refuse to publish if the resulting full version already exists, so getting this wrong fails loudly
+rather than silently overwriting a prior release.
+
 ## If the release has no `flix.jar` asset
 
 Use `tools/oracle/build-from-source.sh`. It builds the assembly from a throwaway checkout at the
