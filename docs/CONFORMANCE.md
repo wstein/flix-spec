@@ -254,6 +254,19 @@ only ones that produce an `ERROR`. Nothing was wrong with the grammar; the adapt
 at the closing tag. A consumer-side adapter that silently drops the inputs it cannot read will
 always flatter its own parser, so count what was skipped and why.
 
+## Precedence chains
+
+`flix-jetbrains-plugin` is a Grammar-Kit grammar, and its shape differs from the reference far more
+than tree-sitter's does. Every expression descends through roughly seventeen precedence levels --
+`LAZY_FORCE_EXPR`, `NOT_EXPR`, `SIGN_EXPR`, `ADDITIVE_EXPR`, … -- each of which is a pass-through
+when its operator is absent. **30% of its nodes are always single-child wrappers**, against 11.4%
+on the canonical side.
+
+This is why a node may appear in both `ignored` and `mappings`. `ADDITIVE_EXPR` is transparent on
+every expression without a `+` and a real `Expr.Binary` when one is present; elision fires only at
+arity ≤ 1, so the two entries describe different positions rather than contradicting each other.
+An earlier validator rejected the overlap, and this consumer is what proved the rule wrong.
+
 ## Writing a projection map
 
 Start empty and let the report drive it: every run lists `unmappedNames` in frequency order, so the
