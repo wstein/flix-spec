@@ -40,6 +40,7 @@ Key components established:
 - **Projection contract ([`docs/PROJECTION.md`](docs/PROJECTION.md))**: canonical projected tree format, load-bearing versus advisory elements, normalisation rules, and consumer projection maps.
 - **JSON schemas ([`schemas/`](schemas/))**: draft-07 definitions for `ast/treekind.json` and canonical projected trees, enforced in CI by [`TreeKindSchemaValidator`](tools/project/src/main/scala/flix/spec/TreeKindSchemaValidator.scala).
 - **Committed AST inventory ([`ast/treekind.json`](ast/treekind.json))**: 192 `TreeKind` nodes with qualified names, parent traits and forms, name-set digest `ef4c5a85…`, and a provenance header naming the generator, tool version, upstream commit and the exact oracle jar it was derived from.
+- **Token inventory ([`ast/tokenkind.json`](ast/tokenkind.json))**: 160 `TokenKind`s (159 case objects plus `Err`), digest-pinned in `pin.json`. This is the contract for **lexical** consumers such as `flix-textmate`, which have no parse tree and cannot consume `fixtures/expected/`. Every `token` in a projected tree is validated against it — previously the projection schema declared `token` as an unconstrained string, so 134 distinct names were committed and checked against nothing.
 - **Corpus definition ([`corpus/`](corpus/))**: 873 pinned `.flix` files (688 under `main/`, 185 under `examples/`), inclusion rules, and a tree-hash-verified fetch script.
 - **Projected fixtures ([`fixtures/`](fixtures/))**: 113 fixtures — 108 positive, 5 negative — with expected trees generated from the pinned oracle and held under a diff gate. Kind names are sub-trait qualified, sources are repository-relative, and diagnostics record `kind`/`line` as gated with `col`/`message` advisory.
 - **Coverage ([`ast/coverage.json`](ast/coverage.json))**: 184 of 192 kinds exercised by fixtures — measured, not claimed.
@@ -84,11 +85,13 @@ docs/
   VERSIONING.md          # Maven package versioning scheme and rationale
 schemas/
   treekind.schema.json      # JSON Schema for ast/treekind.json
+  tokenkind.schema.json     # JSON Schema for ast/tokenkind.json
   projection.schema.json    # JSON Schema for canonical projected trees
   projection-map.schema.json # JSON Schema for consumer projection maps
 ast/
   projection/            # Consumer vocabulary maps (tree-sitter-flix, ...)
   treekind.json          # GENERATED — 192 qualified syntax tree kinds, digest, provenance header
+  tokenkind.json         # GENERATED — 160 lexical token kinds, digest, provenance header
   coverage.json          # GENERATED — which kinds the fixture suite exercises
   reachability.json      # GENERATED — which kinds the reference emits across the whole corpus
 corpus/
@@ -151,6 +154,8 @@ additionally needs `credentials { username = ...; password = /* a token with rea
 ./corpus/fetch                                             # Fetch and verify the pinned source corpus
 ./gradlew :tools:project:generateTreeKind                  # Regenerate ast/treekind.json (asserts against pin.json)
 ./gradlew :tools:project:proposeTreeKind                   # Report count + digest without asserting (pin bumps)
+./gradlew :tools:project:generateTokenKind                 # Regenerate ast/tokenkind.json (asserts against pin.json)
+./gradlew :tools:project:proposeTokenKind                  # Report token count + digest without asserting
 ./gradlew :tools:project:extract --args=path/to/file.flix  # Emit a projected concrete syntax tree
 ./gradlew :tools:project:generateFixtures                  # Regenerate fixtures/expected/*.json
 ./gradlew :tools:project:reachability                      # Regenerate ast/reachability.json (needs ./corpus/fetch)

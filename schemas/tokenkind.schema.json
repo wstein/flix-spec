@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/wstein/flix-spec/main/schemas/tokenkind.schema.json",
+  "title": "Flix TokenKind Inventory Schema",
+  "description": "Schema for ast/tokenkind.json, enumerating every lexical token kind reflected from the pinned Flix reference compiler. This is the contract for lexical consumers -- syntax highlighters and TextMate grammars -- which have no parse tree and cannot consume fixtures/expected/.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "generatedBy",
+    "toolVersion",
+    "upstreamCommit",
+    "oracleSha256",
+    "tokenKindCount",
+    "tokenKindDigest",
+    "kinds"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "minimum": 1 },
+    "generatedBy": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Fully qualified generator that produced this file."
+    },
+    "toolVersion": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Generator version; bumped when output format or selection logic changes."
+    },
+    "upstreamCommit": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$",
+      "description": "flix/flix commit this inventory was derived from."
+    },
+    "oracleSha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "SHA-256 of the oracle jar actually used."
+    },
+    "tokenKindCount": { "type": "integer", "minimum": 1 },
+    "tokenKindDigest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "SHA-256 over the sorted token name set."
+    },
+    "kinds": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/TokenKindItem" }
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "TokenKindItem": {
+      "type": "object",
+      "required": ["name", "form"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Token kind name, e.g. KeywordDef, ParenL, NameLowercase. TokenKind is a flat hierarchy, so names need no qualification and cannot collide."
+        },
+        "form": {
+          "type": "string",
+          "enum": ["case-object", "case-class"],
+          "description": "JVM representation form, decided by the presence of Scala's MODULE$ field."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

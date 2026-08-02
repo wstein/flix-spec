@@ -97,6 +97,31 @@ tasks.register<JavaExec>("generateTreeKind") {
 // present on their classpath because the whole module fails to compile without it (every other
 // file in this module imports ca.uwaterloo.flix.*), not because these tasks use it.
 
+tasks.register<JavaExec>("proposeTokenKind") {
+    description =
+        "Reports the TokenKind count and digest for the pinned jar without asserting or writing. " +
+            "Use during a pin bump, before updating pin.json."
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("flix.spec.TokenKindExtractor")
+    args = listOf("--propose")
+    workingDir = rootProject.projectDir
+}
+
+tasks.register<JavaExec>("generateTokenKind") {
+    description = "Generates ast/tokenkind.json from reflection over the pinned jar."
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("flix.spec.TokenKindExtractor")
+    args = listOf(rootProject.layout.projectDirectory.file("ast/tokenkind.json").asFile.absolutePath)
+    workingDir = rootProject.projectDir
+}
+
+tasks.register<JavaExec>("validateTokenKind") {
+    description = "Validates ast/tokenkind.json against schemas/tokenkind.schema.json."
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("flix.spec.TokenKindSchemaValidator")
+    workingDir = rootProject.projectDir
+}
+
 tasks.register<JavaExec>("validateTreeKind") {
     description = "Validates ast/treekind.json against schemas/treekind.schema.json."
     classpath = sourceSets["main"].runtimeClasspath
@@ -134,7 +159,7 @@ tasks.register<JavaExec>("conformance") {
     workingDir = rootProject.projectDir
 }
 
-tasks.matching { it.name in setOf("run", "extract", "proposeTreeKind", "generateTreeKind", "generateFixtures", "reachability") }.configureEach {
+tasks.matching { it.name in setOf("run", "extract", "proposeTreeKind", "generateTreeKind", "proposeTokenKind", "generateTokenKind", "generateFixtures", "reachability") }.configureEach {
     (this as JavaExec).doFirst {
         check(oracleJar.asFile.exists()) {
             "Missing ${oracleJar.asFile}. Run tools/oracle/fetch.sh first."

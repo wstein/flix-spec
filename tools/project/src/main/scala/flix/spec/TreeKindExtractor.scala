@@ -108,13 +108,16 @@ object TreeKindExtractor {
 
   // ----------------------------------------------------------------- digests
 
-  private def sha256(bytes: Array[Byte]): String =
+  /** Shared with [[TokenKindExtractor]] and [[ProjectionExtractor]]: one digest implementation, so the inventories
+    * cannot disagree about what a digest means.
+    */
+  def sha256Hex(bytes: Array[Byte]): String =
     MessageDigest.getInstance("SHA-256").digest(bytes).map("%02x".format(_)).mkString
 
   def calculateDigest(kinds: List[TreeKindInfo]): String =
-    sha256(kinds.map(_.name).sorted.mkString("\n").getBytes(StandardCharsets.UTF_8))
+    sha256Hex(kinds.map(_.name).sorted.mkString("\n").getBytes(StandardCharsets.UTF_8))
 
-  def fileDigest(p: Path): String = sha256(Files.readAllBytes(p))
+  def fileDigest(p: Path): String = sha256Hex(Files.readAllBytes(p))
 
   // ------------------------------------------------------------------ output
 

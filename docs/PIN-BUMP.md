@@ -39,7 +39,7 @@ flowchart TD
    - `upstream.tag`, `upstream.commit`, `upstream.treeHash`
    - `oracleArtifact.url`, `.sha256`, `.sizeBytes`, `.jarEntries`, `.attestation`
    - `buildProvenance` if upstream changed build tool, Scala version or JDK target
-   - Leave `treeKindCount` and `treeKindDigest` alone for now.
+   - Leave `treeKindCount`, `treeKindDigest`, `tokenKindCount` and `tokenKindDigest` alone for now.
 
 2. **Fetch and verify the oracle artifact:**
    ```sh
@@ -47,20 +47,22 @@ flowchart TD
    ```
    Fails loudly unless the download matches `oracleArtifact.sha256`.
 
-3. **Discover the new TreeKind values:**
+3. **Discover the new TreeKind and TokenKind values:**
    ```sh
    ./gradlew -q :tools:project:proposeTreeKind
+   ./gradlew -q :tools:project:proposeTokenKind
    ```
-   Reports `treeKindCount` and `treeKindDigest` for the new jar without asserting or writing.
-   This step exists because asserting here would be circular — the new values cannot be known
-   until the new jar has been read.
+   Reports `treeKindCount`/`treeKindDigest` and `tokenKindCount`/`tokenKindDigest` for the new jar
+   without asserting or writing. This step exists because asserting here would be circular — the
+   new values cannot be known until the new jar has been read.
 
-4. **Paste both values into `pin.json`.** This is the point of the two-pass design: the numbers
+4. **Paste all four values into `pin.json`.** This is the point of the two-pass design: the numbers
    enter the repository through a human, in the same commit as the bump.
 
 5. **Regenerate under assertion:**
    ```sh
    ./gradlew :tools:project:generateTreeKind
+   ./gradlew :tools:project:generateTokenKind
    ```
    Now that `pin.json` carries the new values, this must succeed. If it does not, the jar and the
    pin disagree and the bump is wrong.
@@ -76,8 +78,10 @@ flowchart TD
 
 7. **Write the PR body.** The diff is the review, so state plainly:
    - upstream release tag and commit range;
-   - **TreeKinds added, removed, or re-parented.** A removed kind or a changed parent is breaking
-     for consumers and must be called out explicitly, never left for a reader to spot in the diff;
+   - **TreeKinds added, removed, or re-parented**, and **TokenKinds added or removed**. A removed
+     token breaks lexical consumers exactly as a removed kind breaks structural ones. A removed kind or a changed parent is breaking
+     Either is breaking for consumers and must be called out explicitly, never left for a reader
+     to spot in the diff;
    - fixture output changes and any shift in negative-fixture diagnostic class or line;
    - whether `oracleArtifact.attestation` still reads `digest-only`, or whether upstream has since
      started publishing build attestations.

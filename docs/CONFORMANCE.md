@@ -69,6 +69,20 @@ Each rule was added because measurement demanded it, not by design. Against `tre
 Those four are measured on the 110 fixtures the first adapter could read; the baseline below covers
 all 113.
 
+## Lexical consumers
+
+A syntax highlighter or TextMate grammar has no parse tree, so it can never consume
+`fixtures/expected/`. Its contract is [`ast/tokenkind.json`](../ast/tokenkind.json) — the 160
+`TokenKind`s the reference lexer defines, 159 case objects plus `Err`, reflected from the pinned
+jar and pinned by digest in `pin.json`.
+
+That exists so lexical consumers stop scraping `Lexer.scala` as text. Text scraping cannot be
+checked against a digest, breaks silently when upstream reformats, and has already produced a
+committed lexicon in this ecosystem provenanced to a *fork* rather than to the pin.
+
+`TokenKind` is a flat hierarchy, so unlike `TreeKind` its names need no qualification and cannot
+collide.
+
 ## Unmapped is not divergent
 
 A native node that is neither mapped nor ignored is counted as **unmapped**, never as a

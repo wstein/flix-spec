@@ -1,0 +1,651 @@
+{
+  "schemaVersion": 1,
+  "generatedBy": "flix.spec.TokenKindExtractor",
+  "toolVersion": "1.0.0",
+  "upstreamCommit": "318bb51a953c58a8785251a80fad8aea005f729f",
+  "oracleSha256": "e3177700aead8a22a42c910e73bfb8a326fefdbab4e3eaeaf6d55c328a6bd938",
+  "tokenKindCount": 160,
+  "tokenKindDigest": "e128966595f94131cbb2bcd33793d55c40e11ad40c816cb9229baf7e48d109a8",
+  "kinds": [
+    {
+      "name": "Ampersand",
+      "form": "case-object"
+    },
+    {
+      "name": "AngleL",
+      "form": "case-object"
+    },
+    {
+      "name": "AngleLEqual",
+      "form": "case-object"
+    },
+    {
+      "name": "AngleR",
+      "form": "case-object"
+    },
+    {
+      "name": "AngleREqual",
+      "form": "case-object"
+    },
+    {
+      "name": "AngledEqual",
+      "form": "case-object"
+    },
+    {
+      "name": "AngledPlus",
+      "form": "case-object"
+    },
+    {
+      "name": "Annotation",
+      "form": "case-object"
+    },
+    {
+      "name": "ArrayHash",
+      "form": "case-object"
+    },
+    {
+      "name": "ArrowThickR",
+      "form": "case-object"
+    },
+    {
+      "name": "ArrowThinL",
+      "form": "case-object"
+    },
+    {
+      "name": "ArrowThinRTight",
+      "form": "case-object"
+    },
+    {
+      "name": "ArrowThinRWhitespace",
+      "form": "case-object"
+    },
+    {
+      "name": "At",
+      "form": "case-object"
+    },
+    {
+      "name": "Backslash",
+      "form": "case-object"
+    },
+    {
+      "name": "Bang",
+      "form": "case-object"
+    },
+    {
+      "name": "BangEqual",
+      "form": "case-object"
+    },
+    {
+      "name": "Bar",
+      "form": "case-object"
+    },
+    {
+      "name": "BarHash",
+      "form": "case-object"
+    },
+    {
+      "name": "BracketL",
+      "form": "case-object"
+    },
+    {
+      "name": "BracketR",
+      "form": "case-object"
+    },
+    {
+      "name": "BuiltIn",
+      "form": "case-object"
+    },
+    {
+      "name": "Caret",
+      "form": "case-object"
+    },
+    {
+      "name": "Colon",
+      "form": "case-object"
+    },
+    {
+      "name": "ColonColon",
+      "form": "case-object"
+    },
+    {
+      "name": "ColonColonColon",
+      "form": "case-object"
+    },
+    {
+      "name": "ColonMinus",
+      "form": "case-object"
+    },
+    {
+      "name": "Comma",
+      "form": "case-object"
+    },
+    {
+      "name": "CommentBlock",
+      "form": "case-object"
+    },
+    {
+      "name": "CommentDoc",
+      "form": "case-object"
+    },
+    {
+      "name": "CommentLine",
+      "form": "case-object"
+    },
+    {
+      "name": "CurlyL",
+      "form": "case-object"
+    },
+    {
+      "name": "CurlyR",
+      "form": "case-object"
+    },
+    {
+      "name": "DebugInterpolator",
+      "form": "case-object"
+    },
+    {
+      "name": "Dollar",
+      "form": "case-object"
+    },
+    {
+      "name": "Dot",
+      "form": "case-object"
+    },
+    {
+      "name": "DotWhiteSpace",
+      "form": "case-object"
+    },
+    {
+      "name": "Eof",
+      "form": "case-object"
+    },
+    {
+      "name": "Equal",
+      "form": "case-object"
+    },
+    {
+      "name": "EqualEqual",
+      "form": "case-object"
+    },
+    {
+      "name": "Err",
+      "form": "case-class"
+    },
+    {
+      "name": "GenericOperator",
+      "form": "case-object"
+    },
+    {
+      "name": "Hash",
+      "form": "case-object"
+    },
+    {
+      "name": "HashBar",
+      "form": "case-object"
+    },
+    {
+      "name": "HashCurlyL",
+      "form": "case-object"
+    },
+    {
+      "name": "HashParenL",
+      "form": "case-object"
+    },
+    {
+      "name": "HoleAnonymous",
+      "form": "case-object"
+    },
+    {
+      "name": "HoleNamed",
+      "form": "case-object"
+    },
+    {
+      "name": "HoleVariable",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordAlias",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordAnd",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordAs",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordCase",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordCatch",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordCheckedCast",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordCheckedECast",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordChoose",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordChooseStar",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordDef",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordDiscard",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordEMatch",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordEff",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordElse",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordEnum",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordFalse",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordFix",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordForA",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordForM",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordForall",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordForce",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordForeach",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordFrom",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordHandler",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordIf",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordImport",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordInject",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordInstance",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordInstanceOf",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordInto",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordLaw",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordLawful",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordLazy",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordLet",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordMatch",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordMod",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordMut",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordNew",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordNot",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordNull",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordOpenVariant",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordOpenVariantAs",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordOr",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordPQuery",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordPSolve",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordPar",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordProject",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordPub",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordQuery",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordRedef",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordRegion",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordRestrictable",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordRun",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordRvadd",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordRvand",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordRvnot",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordRvsub",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordSealed",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordSelect",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordSolve",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordSpawn",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordStaticLowercase",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordStaticUppercase",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordStruct",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordSuper",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordThrow",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordTrait",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordTrue",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordTry",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordType",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordUncheckedCast",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordUniv",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordUnsafe",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordUse",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordWhere",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordWith",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordXor",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordXvar",
+      "form": "case-object"
+    },
+    {
+      "name": "KeywordYield",
+      "form": "case-object"
+    },
+    {
+      "name": "ListHash",
+      "form": "case-object"
+    },
+    {
+      "name": "LiteralBigDecimal",
+      "form": "case-object"
+    },
+    {
+      "name": "LiteralBigInt",
+      "form": "case-object"
+    },
+    {
+      "name": "LiteralChar",
+      "form": "case-object"
+    },
+    {
+      "name": "LiteralFloat",
+      "form": "case-object"
+    },
+    {
+      "name": "LiteralFloat32",
+      "form": "case-object"
+    },
+    {
+      "name": "LiteralFloat64",
+      "form": "case-object"
+    },
+    {
+      "name": "LiteralInt",
+      "form": "case-object"
+    },
+    {
+      "name": "LiteralInt16",
+      "form": "case-object"
+    },
+    {
+      "name": "LiteralInt32",
+      "form": "case-object"
+    },
+    {
+      "name": "LiteralInt64",
+      "form": "case-object"
+    },
+    {
+      "name": "LiteralInt8",
+      "form": "case-object"
+    },
+    {
+      "name": "LiteralRegex",
+      "form": "case-object"
+    },
+    {
+      "name": "LiteralString",
+      "form": "case-object"
+    },
+    {
+      "name": "LiteralStringInterpolationL",
+      "form": "case-object"
+    },
+    {
+      "name": "LiteralStringInterpolationR",
+      "form": "case-object"
+    },
+    {
+      "name": "MapHash",
+      "form": "case-object"
+    },
+    {
+      "name": "Minus",
+      "form": "case-object"
+    },
+    {
+      "name": "NameLowercase",
+      "form": "case-object"
+    },
+    {
+      "name": "NameMath",
+      "form": "case-object"
+    },
+    {
+      "name": "NameUppercase",
+      "form": "case-object"
+    },
+    {
+      "name": "ParenL",
+      "form": "case-object"
+    },
+    {
+      "name": "ParenR",
+      "form": "case-object"
+    },
+    {
+      "name": "Plus",
+      "form": "case-object"
+    },
+    {
+      "name": "Semi",
+      "form": "case-object"
+    },
+    {
+      "name": "SetHash",
+      "form": "case-object"
+    },
+    {
+      "name": "Slash",
+      "form": "case-object"
+    },
+    {
+      "name": "Star",
+      "form": "case-object"
+    },
+    {
+      "name": "Tick",
+      "form": "case-object"
+    },
+    {
+      "name": "Tilde",
+      "form": "case-object"
+    },
+    {
+      "name": "Underscore",
+      "form": "case-object"
+    },
+    {
+      "name": "VectorHash",
+      "form": "case-object"
+    }
+  ]
+}

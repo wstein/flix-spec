@@ -8,8 +8,9 @@ import scala.jdk.CollectionConverters._
   *
   * Two checks the schema alone cannot express, on top of [[SchemaValidator]]'s generic walk:
   *
-  *   - every `kind` must exist in `ast/treekind.json` -- the schema can only say "a string", but a projected tree whose
-  *     vocabulary has drifted from the inventory is exactly the failure this repository exists to catch;
+  *   - every `kind` must exist in `ast/treekind.json`, and every `token` in `ast/tokenkind.json` -- the schema can only
+  *     say "a string", but a projected tree whose vocabulary has drifted from the inventory is exactly the failure this
+  *     repository exists to catch;
   *   - `source` must be repository-relative, and diagnostic messages must not embed an absolute path. Either would make
   *     a committed expectation machine-specific and fail the diff gate on any other checkout.
   *
@@ -23,7 +24,9 @@ object ProjectionSchemaValidator {
       node: Json,
       path: String,
       inventory: Set[String],
+      tokenInventory: Set[String],
       kindsSeen: scala.collection.mutable.Set[String],
+      tokensSeen: scala.collection.mutable.Set[String],
       errors: SchemaValidator.Errors
   ): Unit = {
     if (node.get("kind").isEmpty) {
@@ -31,13 +34,21 @@ object ProjectionSchemaValidator {
       List("token", "text", "start", "end").foreach { key =>
         if (node.get(key).isEmpty) errors.add(s"$path: token node missing '$key'")
       }
+      // The schema can only say `token` is a string. Checking it against the inventory is the
+      // lexical counterpart of the `kind` check: without it a renamed or misspelled token name
+      // passes every gate, which is precisely the drift this repository exists to catch.
+      node.get("token").map(_.asString).foreach { token =>
+        tokensSeen += token
+        if (!tokenInventory.contains(token))
+          errors.add(s"$path: token '$token' is not in ast/tokenkind.json")
+      }
       return
     }
     val kind = node("kind").asString
     kindsSeen += kind
     if (!inventory.contains(kind)) errors.add(s"$path: kind '$kind' is not in ast/treekind.json")
     node.get("children").map(_.asArray).getOrElse(Nil).zipWithIndex.foreach { case (child, i) =>
-      walk(child, s"$path.children[$i]", inventory, kindsSeen, errors)
+      walk(child, s"$path.children[$i]", inventory, tokenInventory, kindsSeen, tokensSeen, errors)
     }
   }
 
@@ -46,6 +57,8 @@ object ProjectionSchemaValidator {
   def main(args: Array[String]): Unit = {
     val schema = Json.parseFile(Paths.get("schemas/projection.schema.json"))
     val inventory = Json.parseFile(Paths.get("ast/treekind.json"))("kinds").asArray.map(_("name").asString).toSet
+    val tokenInventory =
+      Json.parseFile(Paths.get("ast/tokenkind.json"))("kinds").asArray.map(_("name").asString).toSet
     val errors = new SchemaValidator.Errors
 
     val files = Files
@@ -63,6 +76,7 @@ object ProjectionSchemaValidator {
     }
 
     val allKinds = scala.collection.mutable.Set.empty[String]
+    val allTokens = scala.collection.mutable.Set.empty[String]
     files.foreach { f =>
       val doc = Json.parseFile(Paths.get(f))
       SchemaValidator.check(doc, schema, schema, f, errors)
@@ -79,7 +93,9 @@ object ProjectionSchemaValidator {
             errors.add(s"$p.diagnostics[$j].message: contains an absolute path")
         }
 
-        unit.get("tree").foreach(tree => walk(tree, s"$p.tree", inventory, allKinds, errors))
+        unit
+          .get("tree")
+          .foreach(tree => walk(tree, s"$p.tree", inventory, tokenInventory, allKinds, allTokens, errors))
       }
     }
 
@@ -91,7 +107,8 @@ object ProjectionSchemaValidator {
 
     println(
       s"OK: ${files.length} expectation(s) conform to projection.schema.json; " +
-        s"${allKinds.size} distinct kinds, all present in ast/treekind.json"
+        s"${allKinds.size} distinct kinds and ${allTokens.size} distinct tokens, " +
+        s"all present in ast/treekind.json and ast/tokenkind.json"
     )
   }
 }
