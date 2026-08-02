@@ -26,7 +26,6 @@ val pinJson = groovy.json.JsonSlurper()
     .let { it as Map<*, *> }
 
 val flixTag = (pinJson["upstream"] as Map<*, *>)["tag"] as String
-val flixVersion = flixTag.removePrefix("v")
 
 // -PflixSpec.snapshot=true marks a floating, mutable build (main-branch CI);
 // omitted (the default) for tagged releases, which must be immutable once
