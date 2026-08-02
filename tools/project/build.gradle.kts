@@ -136,6 +136,15 @@ tasks.register<JavaExec>("validateProjection") {
     workingDir = rootProject.projectDir
 }
 
+tasks.register<JavaExec>("lossless") {
+    description =
+        "Asserts every projected tree reconstructs its source, ignoring whitespace. Oracle-free: " +
+            "compares the tree against the input, not against the reference."
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("flix.spec.LosslessCheck")
+    workingDir = rootProject.projectDir
+}
+
 tasks.register<JavaExec>("validateProjectionMap") {
     description = "Validates ast/projection/*.json against schemas/projection-map.schema.json and ast/treekind.json."
     classpath = sourceSets["main"].runtimeClasspath

@@ -48,6 +48,12 @@ echo "== validating regenerated fixtures/expected =="
 echo "== regenerating ast/coverage.json =="
 ./gradlew -q :tools:project:generateCoverage
 
+echo "== losslessness: trees must reconstruct their source =="
+# Oracle-free: compares each tree against its *input*, so unlike every other gate here it needs no
+# independent specification and can say something about the reference itself. Catches dropped,
+# duplicated or corrupted token text, none of which a structural comparison can see.
+./gradlew -q :tools:project:lossless
+
 echo "== validating projection maps =="
 ./gradlew -q :tools:project:validateProjectionMap
 

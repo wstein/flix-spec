@@ -127,6 +127,22 @@ committed lexicon in this ecosystem provenanced to a *fork* rather than to the p
 `TokenKind` is a flat hierarchy, so unlike `TreeKind` its names need no qualification and cannot
 collide.
 
+## Losslessness: the one gate that needs no oracle
+
+Every other check here compares a consumer against expectations derived from the reference, so it
+inherits the reference's bugs by construction. Losslessness does not: it compares a tree against
+its **input**.
+
+> Concatenating every token's `text`, in order, must reproduce the source file — ignoring
+> whitespace, which Flix does not emit as tokens.
+
+It holds on every fixture, and it catches what a structural comparison cannot: dropped tokens,
+duplicated tokens, and tokens whose recorded text does not match the source. A tree can be
+perfectly well-shaped and still have lost a token's contents.
+
+It needs no projection map and no vocabulary agreement, so it is the one gate a purely lexical
+consumer can pass today. `./gradlew :tools:project:lossless`.
+
 ## Unmapped is not divergent
 
 A native node that is neither mapped nor ignored is counted as **unmapped**, never as a
