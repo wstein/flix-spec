@@ -13,8 +13,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PIN="$ROOT/pin.json"
 
-COMMIT="$(python3 -c "import json; print(json.load(open('$PIN'))['upstream']['commit'])")"
-TAG="$(python3 -c "import json; print(json.load(open('$PIN'))['upstream']['tag'])")"
+COMMIT="$(jq -r '.upstream.commit' "$PIN")"
+TAG="$(jq -r '.upstream.tag' "$PIN")"
 
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT

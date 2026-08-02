@@ -65,7 +65,7 @@ jobs:
         run: |
           set -euo pipefail
           VERSION="${GITHUB_REF_NAME}"
-          FLIX_TAG="$(python3 -c "import json; print(json.load(open('pin.json'))['upstream']['tag'])")"
+          FLIX_TAG="$(jq -r '.upstream.tag' pin.json)"
           BUNDLE="flix-spec-${VERSION}+flix${FLIX_TAG}"
 
           mkdir -p "dist/${BUNDLE}/corpus"
@@ -87,10 +87,10 @@ jobs:
           BUNDLE: ${{ steps.bundle.outputs.bundle }}
         run: |
           set -euo pipefail
-          FLIX_TAG="$(python3 -c "import json; print(json.load(open('pin.json'))['upstream']['tag'])")"
-          ORACLE="$(python3 -c "import json; print(json.load(open('pin.json'))['oracleArtifact']['sha256'])")"
-          DIGEST="$(python3 -c "import json; print(json.load(open('ast/treekind.json'))['treeKindDigest'])")"
-          COUNT="$(python3 -c "import json; print(json.load(open('ast/treekind.json'))['treeKindCount'])")"
+          FLIX_TAG="$(jq -r '.upstream.tag' pin.json)"
+          ORACLE="$(jq -r '.oracleArtifact.sha256' pin.json)"
+          DIGEST="$(jq -r '.treeKindDigest' ast/treekind.json)"
+          COUNT="$(jq -r '.treeKindCount' ast/treekind.json)"
 
           {
             echo "Derived from \`flix/flix\` ${FLIX_TAG}."

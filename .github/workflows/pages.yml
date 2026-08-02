@@ -89,7 +89,7 @@ jobs:
         run: |
           set -euo pipefail
           BASE_VERSION="$(grep '^version=' gradle.properties | cut -d= -f2)"
-          FLIX_TAG="$(python3 -c "import json; print(json.load(open('pin.json'))['upstream']['tag'])")"
+          FLIX_TAG="$(jq -r '.upstream.tag' pin.json)"
           FULL_VERSION="${BASE_VERSION}-flix${FLIX_TAG#v}"
           DEST="gh-pages-worktree/maven/io/github/wstein/flix-spec/${FULL_VERSION}"
           if [ -d "$DEST" ]; then

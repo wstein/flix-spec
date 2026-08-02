@@ -13,8 +13,8 @@ PIN="$ROOT/pin.json"
 DEST_DIR="$ROOT/.oracle"
 DEST="$DEST_DIR/flix.jar"
 
-URL="$(python3 -c "import json; print(json.load(open('$PIN'))['oracleArtifact']['url'])")"
-EXPECT_SHA256="$(python3 -c "import json; print(json.load(open('$PIN'))['oracleArtifact']['sha256'])")"
+URL="$(jq -r '.oracleArtifact.url' "$PIN")"
+EXPECT_SHA256="$(jq -r '.oracleArtifact.sha256' "$PIN")"
 
 mkdir -p "$DEST_DIR"
 
