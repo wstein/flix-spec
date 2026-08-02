@@ -97,15 +97,35 @@ jobs:
           fi
 
       - name: Checkout gh-pages Worktree
+        # The orphan-branch path is destructive: it discards the whole publish history, including
+        # every prior Maven version. It found that out the hard way -- an earlier run took this path
+        # when it should not have, and the release version 0.75.1 vanished with no error, because
+        # `git ls-remote` failing for *any* reason (a transient network or auth error, not just "the
+        # branch does not exist") fell through to the same branch as a genuinely first-ever publish.
+        #
+        # `ls-remote --exit-code` distinguishes them: exit 2 means the ref genuinely does not exist
+        # (safe to create fresh); any other non-zero exit is a real error and must fail loudly rather
+        # than be silently treated as "branch is empty, start over."
         run: |
           set -euo pipefail
-          if git ls-remote --exit-code --heads origin gh-pages >/dev/null 2>&1; then
+          set +e
+          git ls-remote --exit-code --heads origin gh-pages >/dev/null 2>&1
+          RC=$?
+          set -e
+
+          if [ "$RC" -eq 0 ]; then
             git fetch origin gh-pages
             git worktree add gh-pages-worktree origin/gh-pages
-          else
+          elif [ "$RC" -eq 2 ]; then
+            echo "gh-pages does not exist yet; creating it fresh."
             git worktree add --detach gh-pages-worktree
             git -C gh-pages-worktree checkout --orphan gh-pages
             git -C gh-pages-worktree rm -rf . > /dev/null 2>&1 || true
+          else
+            echo "FATAL: git ls-remote for gh-pages failed with exit $RC, which is not" >&2
+            echo "       'branch does not exist' (that is exit 2). Refusing to create an" >&2
+            echo "       orphan branch, which would discard the entire publish history." >&2
+            exit "$RC"
           fi
 
       - name: Determine Full Version
