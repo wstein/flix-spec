@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <groupId>io.github.wstein</groupId>
+  <artifactId>flix-spec</artifactId>
+  <versioning>
+    <latest>0.75.1-SNAPSHOT</latest>
+    <versions>
+      <version>0.75.1-SNAPSHOT</version>
+    </versions>
+    <lastUpdated>20260802182838</lastUpdated>
+  </versioning>
+</metadata>

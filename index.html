@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>flix-spec</title>
+<meta name="description" content="Shared test infrastructure for parsers of Flix, derived from the reference compiler at a pinned release.">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #ffffff; --fg: #1a1a1a; --muted: #5b5b5b; --border: #e2e2e2;
+    --card: #f7f7f7; --accent: #0969da; --code-bg: #f0f0f0;
+    --badge-release-bg: #dafbe1; --badge-release-fg: #116329;
+    --badge-snapshot-bg: #fff8c5; --badge-snapshot-fg: #7d5a00;
+    --badge-build-bg: #eaeaea; --badge-build-fg: #444;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1117; --fg: #e6edf3; --muted: #9198a1; --border: #30363d;
+      --card: #161b22; --accent: #4493f8; --code-bg: #1c2128;
+      --badge-release-bg: #133a24; --badge-release-fg: #56d364;
+      --badge-snapshot-bg: #3d3211; --badge-snapshot-fg: #e3b341;
+      --badge-build-bg: #21262d; --badge-build-fg: #c9d1d9;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0 1.25rem 4rem;
+    background: var(--bg); color: var(--fg);
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  main { max-width: 46rem; margin: 0 auto; }
+  header { padding: 3rem 0 1.5rem; border-bottom: 1px solid var(--border); margin-bottom: 2rem; }
+  h1 { font-size: 1.9rem; margin: 0 0 0.4rem; }
+  h2 { font-size: 1.2rem; margin: 2.5rem 0 0.75rem; padding-top: 0.5rem; border-top: 1px solid var(--border); }
+  .tagline { color: var(--muted); font-size: 1.05rem; margin: 0; }
+  .limitation {
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 1rem 1.25rem; margin: 1.25rem 0; font-size: 0.95rem; color: var(--muted);
+  }
+  .limitation strong { color: var(--fg); }
+  .stat-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: 0.75rem; margin: 1rem 0;
+  }
+  .stat {
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 0.85rem 1rem;
+  }
+  .stat .n { font-size: 1.5rem; font-weight: 600; display: block; }
+  .stat .l { font-size: 0.8rem; color: var(--muted); }
+  .note { font-size: 0.92rem; color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; margin: 0.5rem 0; font-size: 0.92rem; }
+  th, td { text-align: left; padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 500; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.02em; }
+  code { background: var(--code-bg); padding: 0.15em 0.4em; border-radius: 4px; font-size: 0.9em; }
+  a { color: var(--accent); }
+  .badge { display: inline-block; padding: 0.1rem 0.55rem; border-radius: 999px; font-size: 0.78rem; font-weight: 500; }
+  .badge-release { background: var(--badge-release-bg); color: var(--badge-release-fg); }
+  .badge-snapshot { background: var(--badge-snapshot-bg); color: var(--badge-snapshot-fg); }
+  .badge-build { background: var(--badge-build-bg); color: var(--badge-build-fg); }
+  .self-declared { font-size: 0.85rem; color: var(--muted); margin-top: 0.4rem; }
+  footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.85rem; }
+  pre { overflow-x: auto; background: var(--code-bg); padding: 0.9rem 1rem; border-radius: 8px; font-size: 0.85rem; }
+  .overflow { overflow-x: auto; }
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <h1>flix-spec</h1>
+  <p class="tagline">Shared test infrastructure for parsers of <a href="https://github.com/flix/flix">Flix</a></p>
+</header>
+
+<p>
+  A machine-readable inventory of the language's syntax tree and token kinds, a pinned corpus
+  definition, and fixtures with expected tree shapes &mdash; all derived from the reference compiler at
+  <a href="https://github.com/flix/flix/releases/tag/v0.75.1"><code>v0.75.1</code></a>,
+  and used by independent parser implementations to check that they agree with it.
+</p>
+
+<div class="limitation">
+  <strong>What this is not:</strong> a specification of Flix. It has no independent authority over
+  the language. A derived suite cannot falsify the reference compiler &mdash; if Flix has a bug, this
+  suite inherits it. Full rationale in
+  <a href="https://github.com/wstein/flix-spec/blob/main/docs/PROJECTION.md">docs/PROJECTION.md</a>.
+</div>
+
+<h2>What's in the pin</h2>
+<div class="stat-grid">
+  <div class="stat"><span class="n">192</span><span class="l">TreeKinds</span></div>
+  <div class="stat"><span class="n">160</span><span class="l">TokenKinds</span></div>
+  <div class="stat"><span class="n">136</span><span class="l">fixtures</span></div>
+  <div class="stat"><span class="n">873</span><span class="l">corpus files</span></div>
+</div>
+<p class="note">
+  184/192 TreeKinds and
+  153/160 TokenKinds are reachable somewhere in the
+  873-file corpus (870 parse cleanly).
+  Independently, 186/192 TreeKinds are exercised by a fixture.
+  The two numbers come from separate generators &mdash; coverage from the fixture suite, reachability
+  from a weekly corpus walk &mdash; and are not asserted equal here: a fixture can exercise a kind the
+  873-file corpus never produces naturally.
+  870/870 cleanly-parsed
+  corpus files are <strong>lossless</strong> &mdash; concatenating every emitted token's text reproduces
+  the source exactly, ignoring whitespace. This is the one property here that needs no oracle: it checks
+  the parser against its own input, not against an expectation derived from it. Details in
+  <a href="https://github.com/wstein/flix-spec/blob/main/docs/CONFORMANCE.md">docs/CONFORMANCE.md</a>.
+</p>
+
+<h2>Oracle</h2>
+<table>
+  <tr><th>Field</th><th>Value</th></tr>
+  <tr><td>Upstream release</td><td><code>v0.75.1</code></td></tr>
+  <tr><td>Commit</td><td><code>318bb51a953c&hellip;</code></td></tr>
+  <tr><td>Oracle jar SHA-256</td><td><code>e3177700aead8a22&hellip;</code></td></tr>
+  <tr><td>Attestation</td><td>digest-only -- release asset without provenance attestation or build commit stamp</td></tr>
+</table>
+
+<h2>Versions</h2>
+<div class="overflow">
+<table>
+  <tr><th>Version</th><th></th><th></th></tr>
+        <tr>
+          <td><code>0.75.1-SNAPSHOT</code></td>
+          <td><span class="badge badge-snapshot">snapshot</span></td>
+          <td><a href="maven/io/github/wstein/flix-spec/0.75.1-SNAPSHOT/">browse</a></td>
+        </tr>
+</table>
+</div>
+<p style="font-size: 0.85rem; color: var(--muted);">
+  Read from this repository's own <code>maven-metadata.xml</code> &mdash; not maintained separately here.
+</p>
+
+<h2>Dependents</h2>
+<p class="note">
+  Parsers with a committed projection map in
+  <a href="https://github.com/wstein/flix-spec/tree/main/ast/projection">ast/projection/</a>,
+  mapping their own node vocabulary onto the kinds above.
+</p>
+<div class="overflow">
+<table>
+  <tr><th>Consumer</th><th>Coverage</th><th></th></tr>
+        <tr>
+          <td>flix-jetbrains-plugin</td>
+          <td>32 mapped node kinds</td>
+          <td><a href="https://github.com/wstein/flix-spec/blob/main/ast/projection/flix-jetbrains-plugin.json">projection map</a></td>
+        </tr>
+        <tr>
+          <td>tree-sitter-flix</td>
+          <td>41 mapped node kinds</td>
+          <td><a href="https://github.com/wstein/flix-spec/blob/main/ast/projection/tree-sitter-flix.json">projection map</a></td>
+        </tr>
+</table>
+</div>
+<p class="self-declared">
+  Self-declared by this repository, not discovered from external usage &mdash; there is no registry
+  of who depends on flix-spec, only the projection maps committed here.
+</p>
+
+<h2>Use it</h2>
+<pre><code>repositories {
+    maven { url = uri("https://wstein.github.io/flix-spec/maven/") }
+}
+
+dependencies {
+    implementation("io.github.wstein:flix-spec:0.75.1-SNAPSHOT")
+}</code></pre>
+<p style="font-size: 0.9rem;">
+  See <a href="https://github.com/wstein/flix-spec/blob/main/docs/VERSIONING.md">docs/VERSIONING.md</a>
+  &mdash; the version is plain semver and does not encode the Flix pin; a version can advertise a pin
+  but never enforce one, so consumers assert <code>pin.json</code> directly.
+</p>
+
+<footer>
+  <a href="https://github.com/wstein/flix-spec">github.com/wstein/flix-spec</a> &middot; Apache-2.0 &middot;
+  generated from <code>pin.json</code>, <code>ast/*.json</code> and <code>maven-metadata.xml</code> by
+  <a href="https://github.com/wstein/flix-spec/blob/main/tools/project/src/main/scala/flix/spec/LandingPage.scala">LandingPage.scala</a>,
+  never hand-edited
+</footer>
+
+</main>
+</body>
+</html>
