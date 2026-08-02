@@ -115,6 +115,16 @@ packaging/               # Gradle module: packages pin.json/ast/schemas/fixtures
                           # into the io.github.wstein:flix-spec Maven artifact
 ```
 
+## Landing page
+
+[`https://wstein.github.io/flix-spec/`](https://wstein.github.io/flix-spec/) — versions, the
+pinned oracle, coverage/reachability numbers, and known consumers, all generated from `pin.json`,
+`ast/*.json` and `maven-metadata.xml` on every publish
+([`LandingPage.scala`](tools/project/src/main/scala/flix/spec/LandingPage.scala), `:tools:project:generateLandingPage`). One
+plain page, not a Maven-Central-style artifact browser: "Dependencies" would be empty (this ships
+data, not code with a resolvable graph) and "Dependents" would borrow more authority than two
+self-declared projection maps can back.
+
 ## Consuming as a Maven package
 
 Everything in `ast/`, `schemas/`, `fixtures/` and `corpus/corpus.json`, plus `pin.json`, is also

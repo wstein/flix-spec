@@ -121,13 +121,29 @@ jobs:
             "-PflixSpec.snapshot=${{ steps.mode.outputs.snapshot }}" \
             "-PflixSpec.publishRepo=file://$(pwd)/gh-pages-worktree/maven"
 
+      - name: Generate Landing Page
+        # Regenerated on every publish so it never drifts from what was just published: every fact
+        # on it is read from pin.json, ast/*.json, and the maven-metadata.xml this job just wrote,
+        # never hand-maintained. A Gradle-invoked Scala tool (LandingPage.scala), not a shell
+        # script: an earlier bash version had a prose sentence quietly reading the wrong variable
+        # (coverage where it meant reachability), only coincidentally correct because the two
+        # numbers matched at the time it was written. A typed render function whose parameters are
+        # the facts it renders cannot make that mistake silently -- using the wrong one is a
+        # compile error. See the file for why this is one plain page and not a Maven-Central-style
+        # artifact browser with tabs the data here can't honestly fill.
+        run: |
+          set -euo pipefail
+          ./gradlew -q :tools:project:generateLandingPage --args="\
+            gh-pages-worktree/maven/io/github/wstein/flix-spec/maven-metadata.xml \
+            gh-pages-worktree/index.html"
+
       - name: Commit and Push gh-pages
         run: |
           set -euo pipefail
           cd gh-pages-worktree
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add maven
+          git add maven index.html
           if git diff --cached --quiet; then
             echo "Nothing new to publish."
             exit 0
@@ -156,4 +172,25 @@ jobs:
 
           echo "FATAL: $FULL_VERSION never became resolvable." >&2
           echo "       Check Settings -> Pages: source must be 'Deploy from a branch' -> gh-pages / (root)." >&2
+          exit 1
+
+      - name: Verify the Landing Page Actually Resolves
+        # The same lesson, applied to index.html: a page that was pushed is not a page that is
+        # served. Checked with a plain HTTP GET rather than a Gradle resolve, since it is a static
+        # file rather than a Maven coordinate.
+        run: |
+          set -euo pipefail
+          URL="https://wstein.github.io/flix-spec/"
+
+          for attempt in $(seq 1 20); do
+            CODE="$(curl -s -o /dev/null -w '%{http_code}' -L "$URL")"
+            if [ "$CODE" = "200" ]; then
+              echo "OK: $URL resolves"
+              exit 0
+            fi
+            echo "not resolvable yet (attempt $attempt, HTTP $CODE); Pages may still be building"
+            sleep 30
+          done
+
+          echo "FATAL: $URL never returned 200." >&2
           exit 1

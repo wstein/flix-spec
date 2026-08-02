@@ -145,6 +145,15 @@ tasks.register<JavaExec>("lossless") {
     workingDir = rootProject.projectDir
 }
 
+tasks.register<JavaExec>("generateLandingPage") {
+    description =
+        "Generates index.html from pin.json, ast/*.json and a maven-metadata.xml. " +
+            "Usage: generateLandingPage --args=\"<maven-metadata.xml> <output>\""
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("flix.spec.LandingPage")
+    workingDir = rootProject.projectDir
+}
+
 tasks.register<JavaExec>("validateProjectionMap") {
     description = "Validates ast/projection/*.json against schemas/projection-map.schema.json and ast/treekind.json."
     classpath = sourceSets["main"].runtimeClasspath
