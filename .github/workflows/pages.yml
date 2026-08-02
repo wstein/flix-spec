@@ -119,3 +119,31 @@ jobs:
           fi
           git commit -m "publish: ${GITHUB_REF_NAME} (${{ steps.mode.outputs.snapshot == 'true' && 'snapshot' || 'release' }})"
           git push origin HEAD:gh-pages
+
+      - name: Verify the Published Coordinate Actually Resolves
+        # Pushing gh-pages is not publishing. This repository served 404 on every URL for days
+        # while this job reported success, because Pages was configured to expect an Actions
+        # deployment and never received one. Resolving the coordinate from a clean Gradle project
+        # against the public URL is the only step here that proves a consumer can obtain the files.
+        #
+        # Pages serves asynchronously after the push, so allow it time to build before failing.
+        run: |
+          set -euo pipefail
+          BASE_VERSION="$(grep -E '^version=' gradle.properties | cut -d= -f2)"
+          FLIX_TAG="$(jq -r '.upstream.tag' pin.json)"
+          FULL_VERSION="${BASE_VERSION}-flix${FLIX_TAG#v}"
+          if [ "${{ steps.mode.outputs.snapshot }}" = "true" ]; then
+            FULL_VERSION="${FULL_VERSION}-SNAPSHOT"
+          fi
+
+          for attempt in $(seq 1 20); do
+            if ./tools/packaging/verify-published.sh "$FULL_VERSION"; then
+              exit 0
+            fi
+            echo "not resolvable yet (attempt $attempt); Pages may still be building"
+            sleep 30
+          done
+
+          echo "FATAL: $FULL_VERSION never became resolvable." >&2
+          echo "       Check Settings -> Pages: source must be 'Deploy from a branch' -> gh-pages / (root)." >&2
+          exit 1
