@@ -57,9 +57,7 @@
     "CONSTANT_TYPE",
     "CONS_EXPR",
     "DEBUG_INTERPOLATOR_EXPR",
-    "DECLARATION",
     "DISCARD_EXPR",
-    "DUMMY_BLOCK",
     "ENUM_CASE",
     "ENUM_DECL",
     "EQUALITY_EXPR",
@@ -215,6 +213,10 @@
   "notes": {
     "ADDITIVE_EXPR": "Both mapped and ignored, deliberately: a pass-through on every expression without a `+`, a real binary expression when one is present. Elision fires only at arity <= 1, so the two entries describe different positions.",
     "PsiErrorElement": "IntelliJ's error node, the counterpart of the reference's ErrorTree.",
-    "DECLARATION": "Transparent only, never mapped: it wraps whichever concrete declaration follows (DEF_DECL, ENUM_DECL, ...) and is not itself a declaration kind."
-  }
+    "DECLARATION": "Flattened, not merely ignored: it groups a declaration with its doc, annotations and modifiers, which the reference makes direct children of Decl.Def. Elision only fires at arity <= 1, so without flattening its whole subtree went uncompared and depth sat at 51%."
+  },
+  "flatten": [
+    "DECLARATION",
+    "DUMMY_BLOCK"
+  ]
 }

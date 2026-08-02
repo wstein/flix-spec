@@ -52,6 +52,14 @@
         "type": "string",
         "minLength": 1
       }
+    },
+    "flatten": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Native grouping nodes whose children are spliced into the parent at any arity. Stronger and more dangerous than `ignored`, which only fires at arity <= 1: flattening a node that carries real structure would hide a genuine disagreement. Use only for pure grouping constructs with no counterpart in the reference, and justify each entry in `notes`."
     }
   },
   "additionalProperties": false

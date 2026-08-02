@@ -64,6 +64,7 @@ object ProjectionMapValidator {
       }
 
       val ignored = doc.get("ignored").map(_.asArray.map(_.asString).toSet).getOrElse(Set.empty)
+      val flatten = doc.get("flatten").map(_.asArray.map(_.asString).toSet).getOrElse(Set.empty)
       doc.get("elide").map(_.asArray.map(_.asString)).getOrElse(Nil).sorted.foreach { kind =>
         if (!inventory.contains(kind)) errors.add(s"$path.elide: '$kind' is not in ast/treekind.json")
       }
@@ -72,7 +73,9 @@ object ProjectionMapValidator {
       // node can be transparent in one position and substantive in another.
 
       doc.get("notes").map(_.asObject.keySet).getOrElse(Set.empty).toList.sorted.foreach { native =>
-        val known = mappings.contains(native) || ignored.contains(native) || inventory.contains(native)
+        val known =
+          mappings.contains(native) || ignored.contains(native) || flatten.contains(native) ||
+            inventory.contains(native)
         if (!known) errors.add(s"$path.notes['$native']: notes an unknown node")
       }
     }

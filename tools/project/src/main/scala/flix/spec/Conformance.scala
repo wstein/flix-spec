@@ -55,6 +55,24 @@ object Conformance {
     * node is dropped when empty and replaced by its child when it has exactly one; a node with two or more children is
     * kept, since splicing its children into the parent would discard real structure.
     */
+  /** Splices a grouping node's children into its parent, at any arity.
+    *
+    * Stronger and more dangerous than elision, which only fires at arity <= 1. Flattening a node that carries real
+    * structure would hide a genuine disagreement, so it is opt-in per node name and belongs only on pure grouping
+    * constructs with no counterpart in the reference.
+    *
+    * Grammar-Kit needs it: `DECLARATION` wraps every declaration together with its doc, annotations and modifiers,
+    * while the reference makes those direct children of `Decl.Def`. It appears 134 times across the fixtures, and
+    * without flattening its whole subtree is never compared -- which is why comparison depth was 51%.
+    */
+  private def applyFlatten(children: List[KTree], flatten: Set[String], stats: Stats): List[KTree] =
+    children.flatMap { c =>
+      if (flatten.contains(c.kind)) {
+        stats.inc("flattened")
+        applyFlatten(c.children, flatten, stats)
+      } else List(c)
+    }
+
   private def applyElision(children: List[KTree], elide: Set[String], stats: Stats, counter: String): List[KTree] = {
     val out = List.newBuilder[KTree]
     children.foreach { start =>
@@ -81,6 +99,7 @@ object Conformance {
       mapping: Option[Map[String, String]],
       ignored: Set[String],
       elide: Set[String],
+      flatten: Set[String],
       path: String,
       out: scala.collection.mutable.Buffer[Divergence],
       stats: Stats
@@ -99,7 +118,8 @@ object Conformance {
     }
 
     val expChildren = applyElision(expected.children, elide, stats, "elided")
-    val actChildren = applyElision(actual.children, ignored, stats, "ignored")
+    val actChildren =
+      applyElision(applyFlatten(actual.children, flatten, stats), ignored, stats, "ignored")
 
     stats.inc("compared")
     if (expected.kind != actKind) {
@@ -111,7 +131,7 @@ object Conformance {
       out += Divergence(path, s"${expChildren.length} children", s"${actChildren.length} children", "arity")
 
     expChildren.zip(actChildren).zipWithIndex.foreach { case ((e, a), i) =>
-      compare(e, a, mapping, ignored, elide, s"$path.${expected.kind}[$i]", out, stats)
+      compare(e, a, mapping, ignored, elide, flatten, s"$path.${expected.kind}[$i]", out, stats)
     }
   }
 
@@ -161,6 +181,7 @@ object Conformance {
     var mapping: Option[Map[String, String]] = None
     var ignored: Set[String] = Set.empty
     var elide: Set[String] = Set.empty
+    var flatten: Set[String] = Set.empty
     var consumer = Paths.get(args.actual.stripSuffix("/")).getFileName.toString
 
     args.map.foreach { mapFile =>
@@ -169,6 +190,7 @@ object Conformance {
       mapping = Some(mappings)
       ignored = m.get("ignored").map(_.asArray.map(_.asString).toSet).getOrElse(Set.empty)
       elide = m.get("elide").map(_.asArray.map(_.asString).toSet).getOrElse(Set.empty)
+      flatten = m.get("flatten").map(_.asArray.map(_.asString).toSet).getOrElse(Set.empty)
       consumer = m("consumer").asString
 
       val inventory = Json.parseFile(Paths.get("ast/treekind.json"))("kinds").asArray.map(_("name").asString).toSet
@@ -203,7 +225,7 @@ object Conformance {
         expUnits.foreach { case (source, expTree) =>
           actUnits.get(source).orElse(actUnits.values.headOption) match {
             case None          => found += Divergence(source, "tree", "nothing", "missing-unit")
-            case Some(actTree) => compare(expTree, actTree, mapping, ignored, elide, source, found, stats)
+            case Some(actTree) => compare(expTree, actTree, mapping, ignored, elide, flatten, source, found, stats)
           }
         }
         if (found.nonEmpty) divergences ++= found.map(name -> _)
@@ -237,6 +259,7 @@ object Conformance {
       sb.append(s"  \"nodesMapped\": ${stats.counts("mapped")},\n")
       sb.append(s"  \"nodesIgnored\": ${stats.counts("ignored")},\n")
       sb.append(s"  \"nodesElided\": ${stats.counts("elided")},\n")
+      sb.append(s"  \"nodesFlattened\": ${stats.counts("flattened")},\n")
       sb.append(s"  \"nodesUnmapped\": ${stats.counts("unmapped")},\n")
       sb.append(s"""  "unmappedNames": ${jsonStringArray(stats.unmappedNames.toList.sorted, "  ")},\n""")
       sb.append(s"  \"divergenceCount\": ${divergenceList.length},\n")
