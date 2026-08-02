@@ -23,8 +23,14 @@ name: Publish Maven Package
 # uploaded to deploy-pages must be the branch's full current tree, not just this run's additions
 # -- otherwise every version but the newest would vanish from what is actually served.
 #
-# One-time repo setup (not automated here, and only needed once): Settings -> Pages -> Source ->
-# GitHub Actions.
+# One-time repo setup (not automated here, and only needed once):
+#   - Settings -> Pages -> Source -> GitHub Actions.
+#   - Settings -> Environments -> github-pages -> Deployment branches and tags: add a tag rule
+#     matching `v*`. GitHub creates this environment with branches allowed but NOT tags, so a
+#     tag-triggered release publish is rejected by environment protection before any step runs --
+#     found by dispatching against a real release tag, which failed with "not allowed to deploy to
+#     github-pages due to environment protection rules" and an empty step list, because the job
+#     never started.
 
 on:
   push:
