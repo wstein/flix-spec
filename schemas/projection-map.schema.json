@@ -32,7 +32,7 @@
     },
     "ignored": {
       "type": "array",
-      "description": "Native nodes deliberately not mapped -- purely syntactic wrappers, punctuation containers, or nodes with no counterpart in the reference tree. Listing a node here asserts the omission is intentional; anything neither mapped nor ignored is reported as unmapped, which is a gap rather than a decision.",
+      "description": "Native nodes that are transparent when they wrap at most one child: dropped when empty, replaced by their child when they wrap exactly one. A node may also appear in `mappings`, which is not a contradiction -- elision only fires at arity <= 1, so the two entries describe different positions. Precedence-chain grammars require this: a level like ADDITIVE_EXPR is a pass-through on every expression without a `+`, and a real binary expression when one is present. Anything neither mapped nor ignored is reported as unmapped, which is a gap rather than a decision.",
       "items": {
         "type": "string",
         "minLength": 1

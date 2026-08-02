@@ -11,7 +11,13 @@ import scala.jdk.CollectionConverters._
   *
   *   - every `mappings` value and every `elide` entry must name a kind that exists in `ast/treekind.json` -- a typo or
   *     a stale kind name would otherwise silently never match and read as agreement;
-  *   - a native node may not be both mapped and ignored, which is contradictory.
+  *   - a node listed in `ignored` but never in `mappings` must actually be transparent in practice.
+  *
+  * A node may legitimately appear in **both** `ignored` and `mappings`. That is not a contradiction: elision only fires
+  * when a node has at most one child, so the two entries describe different situations -- "splice me when I wrap a
+  * single child" and "interpret me this way when I do not". Precedence-chain grammars need exactly this. In
+  * `flix-jetbrains-plugin`, `ADDITIVE_EXPR` is a pass-through on every expression that contains no `+`, and a real
+  * binary expression when it does; forbidding the overlap would make one of those two cases unexpressible.
   */
 object ProjectionMapValidator {
 
@@ -62,8 +68,8 @@ object ProjectionMapValidator {
         if (!inventory.contains(kind)) errors.add(s"$path.elide: '$kind' is not in ast/treekind.json")
       }
 
-      val both = (mappings.keySet & ignored).toList.sorted
-      if (both.nonEmpty) errors.add(s"$path: nodes both mapped and ignored: $both")
+      // Deliberately not an error: see the class comment. Elision fires only at arity <= 1, so a
+      // node can be transparent in one position and substantive in another.
 
       doc.get("notes").map(_.asObject.keySet).getOrElse(Set.empty).toList.sorted.foreach { native =>
         val known = mappings.contains(native) || ignored.contains(native) || inventory.contains(native)
