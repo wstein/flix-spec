@@ -1,14 +1,30 @@
 name: Publish Maven Package
 
-# Publishes io.github.wstein:flix-spec to a Maven repository hosted on GitHub
-# Pages, serving from the gh-pages branch (docs/VERSIONING.md). Tags publish an
-# immutable release version; pushes to main publish a floating -SNAPSHOT build.
-# Every publish accumulates into gh-pages -- a Maven repository is additive,
-# never replaced wholesale, so this checks out the existing branch (or creates
-# it) rather than regenerating it from scratch.
+# Publishes io.github.wstein:flix-spec to a Maven repository, plus a generated landing page, on
+# GitHub Pages. Tags publish an immutable release version; pushes to main publish a floating
+# -SNAPSHOT build.
 #
-# One-time manual step (not automated here): repo Settings -> Pages -> Source
-# -> Deploy from a branch -> gh-pages / (root).
+# Two roles, deliberately kept separate:
+#
+#   - gh-pages (a branch) is the durable, ADDITIVE accumulator. A Maven repository must keep every
+#     version it has ever published coexisting, so each run checks out the existing branch (or
+#     creates it) and adds this run's artifacts to what is already there, never regenerating from
+#     scratch. It is also what "Refuse to Republish an Existing Release Version" checks against,
+#     and it is a free, diffable publish history.
+#   - actions/deploy-pages SERVES the branch's current contents. Not the "Deploy from a branch"
+#     repo setting: that setting is what broke silently the first time this workflow ran -- it
+#     pushed gh-pages while Pages was configured to expect an Actions deployment that never came,
+#     and every URL under the site 404'd for days because nothing checked. deploy-pages is the
+#     workflow performing its own deployment instead of depending on an unchecked manual setting
+#     staying correct -- the same fix already applied everywhere else in this repository (assert
+#     the thing, not a proxy for it).
+#
+# Because Actions-based Pages deployment replaces the whole site on every deploy, the artifact
+# uploaded to deploy-pages must be the branch's full current tree, not just this run's additions
+# -- otherwise every version but the newest would vanish from what is actually served.
+#
+# One-time repo setup (not automated here, and only needed once): Settings -> Pages -> Source ->
+# GitHub Actions.
 
 on:
   push:
@@ -29,9 +45,17 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
-      # Required to push the gh-pages branch. Scoped to this job only; the
+      # contents: write pushes the gh-pages branch (the accumulator, see above).
+      # pages: write and id-token: write are what actions/deploy-pages needs to
+      # perform the actual deployment. All three scoped to this job only; the
       # workflow default above stays read-only.
       contents: write
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Checkout Repository
@@ -138,6 +162,7 @@ jobs:
             gh-pages-worktree/index.html"
 
       - name: Commit and Push gh-pages
+        id: commit
         run: |
           set -euo pipefail
           cd gh-pages-worktree
@@ -146,18 +171,38 @@ jobs:
           git add maven index.html
           if git diff --cached --quiet; then
             echo "Nothing new to publish."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           git commit -m "publish: ${GITHUB_REF_NAME} (${{ steps.mode.outputs.snapshot == 'true' && 'snapshot' || 'release' }})"
           git push origin HEAD:gh-pages
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Pages
+        if: steps.commit.outputs.changed == 'true'
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      - name: Upload Pages Artifact
+        if: steps.commit.outputs.changed == 'true'
+        # The whole accumulated tree, not just this run's additions: Actions-based Pages
+        # deployment replaces the entire site on every deploy, so what is uploaded here has to be
+        # everything gh-pages now contains, including versions published by earlier runs.
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: gh-pages-worktree
+
+      - name: Deploy to GitHub Pages
+        if: steps.commit.outputs.changed == 'true'
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
 
       - name: Verify the Published Coordinate Actually Resolves
-        # Pushing gh-pages is not publishing. This repository served 404 on every URL for days
-        # while this job reported success, because Pages was configured to expect an Actions
-        # deployment and never received one. Resolving the coordinate from a clean Gradle project
-        # against the public URL is the only step here that proves a consumer can obtain the files.
+        # Deploying is not publishing. Resolving the coordinate from a clean Gradle project against
+        # the public URL is the only step here that proves a consumer can actually obtain the
+        # files -- deploy-pages reports success once GitHub has accepted the deployment, which is
+        # not the same guarantee.
         #
-        # Pages serves asynchronously after the push, so allow it time to build before failing.
+        # Pages serves asynchronously after the deploy, so allow it time to propagate before failing.
         run: |
           set -euo pipefail
           FULL_VERSION="${{ steps.version.outputs.full_version }}"
@@ -166,12 +211,12 @@ jobs:
             if ./tools/packaging/verify-published.sh "$FULL_VERSION"; then
               exit 0
             fi
-            echo "not resolvable yet (attempt $attempt); Pages may still be building"
+            echo "not resolvable yet (attempt $attempt); Pages may still be propagating"
             sleep 30
           done
 
           echo "FATAL: $FULL_VERSION never became resolvable." >&2
-          echo "       Check Settings -> Pages: source must be 'Deploy from a branch' -> gh-pages / (root)." >&2
+          echo "       Check Settings -> Pages: source must be 'GitHub Actions'." >&2
           exit 1
 
       - name: Verify the Landing Page Actually Resolves
