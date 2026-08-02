@@ -7,6 +7,21 @@
   "coveredCount": 184,
   "uncoveredCount": 8,
   "fixtureCount": 121,
+  "nodeCount": 3841,
+  "singleChildWrapperNodes": 451,
+  "alwaysSingleChildWrapper": {
+    "Argument": 81,
+    "Expr.DebugInterpolator": 1,
+    "Expr.HoleVariable": 1,
+    "Expr.StructPutRHS": 2,
+    "Expr.UnsafeAsEffFragment": 1,
+    "Pattern.Variable": 47,
+    "Predicate.Body": 13,
+    "Predicate.LatticeTerm": 3,
+    "Type.Argument": 19,
+    "Type.Effect": 15,
+    "Type.Type": 268
+  },
   "covered": {
     "AnnotationList": 147,
     "Argument": 81,

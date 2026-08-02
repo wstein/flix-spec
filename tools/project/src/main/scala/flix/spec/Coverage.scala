@@ -17,13 +17,25 @@ import scala.jdk.CollectionConverters._
   */
 object Coverage {
 
-  private def walk(node: Json, counts: scala.collection.mutable.Map[String, Int]): Unit = {
+  private def walk(
+      node: Json,
+      counts: scala.collection.mutable.Map[String, Int],
+      wrappers: scala.collection.mutable.Map[String, Int]
+  ): Unit = {
     node.get("kind") match {
       case None => // token leaf
       case Some(k) =>
         val kind = k.asString
         counts(kind) = counts.getOrElse(kind, 0) + 1
-        node.get("children").map(_.asArray).getOrElse(Nil).foreach(walk(_, counts))
+        val children = node.get("children").map(_.asArray).getOrElse(Nil)
+        // A node whose only child is another node carries no structure of its own. Consumers that
+        // were not the reference's parent routinely omit these, so the projection map's `elide`
+        // list exists to skip them (docs/CONFORMANCE.md). Counting them here keeps that
+        // justification a generated figure rather than a hand-written one that goes stale the
+        // next time a fixture is added.
+        if (children.length == 1 && children.head.get("kind").isDefined)
+          wrappers(kind) = wrappers.getOrElse(kind, 0) + 1
+        children.foreach(walk(_, counts, wrappers))
     }
   }
 
@@ -41,9 +53,10 @@ object Coverage {
     }
 
     val counts = scala.collection.mutable.Map.empty[String, Int]
+    val wrappers = scala.collection.mutable.Map.empty[String, Int]
     fixtures.foreach { f =>
       val doc = Json.parseFile(Paths.get(f))
-      doc("units").asArray.foreach(unit => walk(unit("tree"), counts))
+      doc("units").asArray.foreach(unit => walk(unit("tree"), counts, wrappers))
     }
 
     val allKindsSet = allKinds.toSet
@@ -66,6 +79,24 @@ object Coverage {
     sb.append(s"  \"coveredCount\": ${covered.length},\n")
     sb.append(s"  \"uncoveredCount\": ${uncovered.length},\n")
     sb.append(s"  \"fixtureCount\": ${fixtures.length},\n")
+
+    // Always-a-wrapper kinds: every occurrence in the suite has exactly one child node. These are
+    // the ones an `elide` list can safely name.
+    val alwaysWrapper = allKinds.filter(k => counts.getOrElse(k, 0) > 0 && wrappers.getOrElse(k, 0) == counts(k)).sorted
+    val totalNodes = counts.values.sum
+    val wrapperNodes = alwaysWrapper.map(counts).sum
+    sb.append(s"  \"nodeCount\": $totalNodes,\n")
+    sb.append(s"  \"singleChildWrapperNodes\": $wrapperNodes,\n")
+    sb.append("  \"alwaysSingleChildWrapper\": {")
+    if (alwaysWrapper.isEmpty) sb.append("},\n")
+    else {
+      sb.append("\n")
+      alwaysWrapper.zipWithIndex.foreach { case (k, i) =>
+        val comma = if (i < alwaysWrapper.length - 1) "," else ""
+        sb.append(s"""    "$k": ${counts(k)}$comma\n""")
+      }
+      sb.append("  },\n")
+    }
     sb.append("  \"covered\": {")
     if (covered.isEmpty) sb.append("},\n")
     else {
@@ -91,9 +122,11 @@ object Coverage {
     Files.writeString(Paths.get("ast/coverage.json"), sb.toString, StandardCharsets.UTF_8)
 
     val pct = 100.0 * covered.length / allKinds.length
+    val wrapPct = 100.0 * wrapperNodes / totalNodes
     println(
       f"Wrote ast/coverage.json: ${covered.length}/${allKinds.length} kinds covered ($pct%.1f%%) " +
-        s"by ${fixtures.length} fixtures; ${uncovered.length} uncovered"
+        s"by ${fixtures.length} fixtures; ${uncovered.length} uncovered; " +
+        f"$wrapperNodes/$totalNodes nodes ($wrapPct%.1f%%) are single-child wrappers"
     )
   }
 }
