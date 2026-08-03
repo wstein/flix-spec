@@ -4,8 +4,14 @@ import Json._
 import java.nio.file.{Files, Paths}
 import scala.jdk.CollectionConverters._
 
-/** Validates `ast/projection&#47;*.json` against `schemas/projection-map.schema.json`, replacing the former
-  * `tools/project/validate-projection-map.py`. Run from the repository root.
+/** Validates consumer projection maps against `schemas/projection-map.schema.json`. Run from the repository root with
+  * the map paths as arguments.
+  *
+  * The maps are not this repository's data and are not stored here: each encodes facts about one consumer's grammar
+  * shape -- which of its nodes are transparent wrappers, which native kind covers which canonical one -- so it belongs
+  * beside that grammar, and republishing it here on every consumer-side fix bought nothing but release choreography.
+  * `flix-spec` keeps the halves that are genuinely shared: the schema, the canonical `TreeKind` vocabulary the map's
+  * targets are checked against, and the comparison itself.
   *
   * Beyond the schema, checks two things it cannot express:
   *
@@ -26,17 +32,38 @@ object ProjectionMapValidator {
     val schema = Json.parseFile(schemaPath)
     val inventory = Json.parseFile(Paths.get("ast/treekind.json"))("kinds").asArray.map(_("name").asString).toSet
 
-    val mapsDir = Paths.get("ast/projection")
-    val maps =
-      if (Files.isDirectory(mapsDir))
-        Files.list(mapsDir).iterator().asScala.map(_.toString).filter(_.endsWith(".json")).toList.sorted
-      else Nil
+    val maps = args.toList.flatMap { arg =>
+      val p = Paths.get(arg)
+      if (Files.isDirectory(p)) Files.list(p).iterator().asScala.map(_.toString).filter(_.endsWith(".json")).toList
+      else if (Files.isRegularFile(p)) List(arg)
+      else {
+        System.err.println(s"FATAL: no such file or directory: $arg")
+        sys.exit(1)
+      }
+    }.sorted
 
     if (maps.isEmpty) {
-      println("OK: no projection maps to validate")
-      return
+      System.err.println("FATAL: no projection maps given.")
+      System.err.println("  Usage: validateProjectionMap --args='<map.json|dir> [...]'")
+      System.err.println("  Maps live in the consumer's repository; this checks them against")
+      System.err.println("  schemas/projection-map.schema.json and ast/treekind.json.")
+      sys.exit(1)
     }
 
+    val errors = validate(maps, schema, inventory)
+
+    if (!errors.isEmpty) {
+      System.err.println("FATAL: projection map validation failed")
+      errors.toList.foreach(e => System.err.println(s"  $e"))
+      sys.exit(1)
+    }
+
+    val total = maps.map(p => Json.parseFile(Paths.get(p)).get("mappings").map(_.asObject.size).getOrElse(0)).sum
+    println(s"OK: ${maps.length} projection map(s) valid, $total mappings, all targets in inventory")
+  }
+
+  /** The checks themselves, separated from `main` so they can be exercised without exiting the JVM. */
+  def validate(maps: List[String], schema: Json, inventory: Set[String]): SchemaValidator.Errors = {
     val requiredKeys = schema("required").asArray.map(_.asString)
     val allowedKeys = schema("properties").asObject.keySet
     val errors = new SchemaValidator.Errors
@@ -80,13 +107,6 @@ object ProjectionMapValidator {
       }
     }
 
-    if (!errors.isEmpty) {
-      System.err.println("FATAL: projection map validation failed")
-      errors.toList.foreach(e => System.err.println(s"  $e"))
-      sys.exit(1)
-    }
-
-    val total = maps.map(p => Json.parseFile(Paths.get(p)).get("mappings").map(_.asObject.size).getOrElse(0)).sum
-    println(s"OK: ${maps.length} projection map(s) valid, $total mappings, all targets in inventory")
+    errors
   }
 }

@@ -155,7 +155,9 @@ tasks.register<JavaExec>("generateLandingPage") {
 }
 
 tasks.register<JavaExec>("validateProjectionMap") {
-    description = "Validates ast/projection/*.json against schemas/projection-map.schema.json and ast/treekind.json."
+    description =
+        "Validates a consumer's projection map against schemas/projection-map.schema.json and ast/treekind.json: " +
+            "./gradlew :tools:project:validateProjectionMap --args='<map.json|dir> [...]'"
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set("flix.spec.ProjectionMapValidator")
     workingDir = rootProject.projectDir

@@ -33,12 +33,7 @@ class LandingPageTest extends AnyFunSuite with Matchers {
   )
   private val mavenVersions =
     MavenVersions(latest = "0.75.1-SNAPSHOT", release = Some("0.75.1"), all = List("0.75.1", "0.75.1-SNAPSHOT"))
-  private val dependents = List(
-    Dependent("tree-sitter-flix", 41, "ast/projection/tree-sitter-flix.json"),
-    Dependent("flix-jetbrains-plugin", 32, "ast/projection/flix-jetbrains-plugin.json")
-  )
-
-  private def rendered: String = render(pin, kinds, coverage, reachability, mavenVersions, dependents)
+  private def rendered: String = render(pin, kinds, coverage, reachability, mavenVersions)
 
   test("coverage and reachability are never conflated") {
     // The regression test for the actual bug found: coveredCount (186) must appear where the page
@@ -66,18 +61,14 @@ class LandingPageTest extends AnyFunSuite with Matchers {
     ).foreach(fact => withClue(s"missing '$fact' ") { html should include(fact) })
   }
 
-  test("both dependents are listed, each with its own map path and count") {
+  test("the page claims no dependents it cannot substantiate") {
+    // The Dependents table was populated by listing ast/projection/, which no longer exists --
+    // projection maps are the consumers' own data now. A section sourced from a directory that
+    // cannot exist would have rendered "none yet" in perpetuity, stating the opposite of the truth.
     val html = rendered
-    html should include("tree-sitter-flix")
-    html should include("41 mapped node kinds")
-    html should include("ast/projection/tree-sitter-flix.json")
-    html should include("flix-jetbrains-plugin")
-    html should include("32 mapped node kinds")
-  }
-
-  test("no dependents renders an explicit empty state, not an empty table") {
-    val html = render(pin, kinds, coverage, reachability, mavenVersions, Nil)
-    html should include("none yet")
+    html should not include "Dependents"
+    html should not include "none yet"
+    html should not include "ast/projection"
   }
 
   test("both maven versions are listed with distinct badges") {
@@ -92,7 +83,7 @@ class LandingPageTest extends AnyFunSuite with Matchers {
     rendered should include("""implementation("io.github.wstein:flix-spec:0.75.1")""")
 
     val noRelease = mavenVersions.copy(release = None)
-    val html = render(pin, kinds, coverage, reachability, noRelease, dependents)
+    val html = render(pin, kinds, coverage, reachability, noRelease)
     html should include("""implementation("io.github.wstein:flix-spec:0.75.1-SNAPSHOT")""")
   }
 
@@ -123,7 +114,7 @@ class LandingPageTest extends AnyFunSuite with Matchers {
 
   test("dynamic values are HTML-escaped") {
     val dirty = pin.copy(attestation = """<script>alert("x")</script> & "quoted"""")
-    val html = render(dirty, kinds, coverage, reachability, mavenVersions, dependents)
+    val html = render(dirty, kinds, coverage, reachability, mavenVersions)
     html should not include "<script>"
     html should include("&lt;script&gt;")
   }
