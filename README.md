@@ -88,12 +88,15 @@ schemas/
   tokenkind.schema.json     # JSON Schema for ast/tokenkind.json
   projection.schema.json    # JSON Schema for canonical projected trees
   projection-map.schema.json # JSON Schema for consumer projection maps
+  unattachable.schema.json  # JSON Schema for ast/unattachable.json
 ast/
   projection/            # Consumer vocabulary maps (tree-sitter-flix, ...)
   treekind.json          # GENERATED — 192 qualified syntax tree kinds, digest, provenance header
   tokenkind.json         # GENERATED — 160 lexical token kinds, digest, provenance header
-  coverage.json          # GENERATED — which kinds the fixture suite exercises
+  coverage.json          # GENERATED — which kinds and tokens the fixture suite exercises
   reachability.json      # GENERATED — which kinds the reference emits across the whole corpus
+  status.json            # GENERATED — the two joined: one evidence-backed status per kind
+  unattachable.json      # HAND-MAINTAINED — cited evidence that a kind can never appear in a tree
 corpus/
   corpus.json            # Pinned corpus inventory specification & inclusion rules
   fetch                  # Clone, check out, and verify the corpus tree hash
@@ -109,6 +112,7 @@ tools/
       ProjectionSchemaValidator.scala # Schema + kind-vocabulary validation of fixtures/expected/
       ProjectionMapValidator.scala   # Validates ast/projection/*.json
       Coverage.scala                 # Generates ast/coverage.json
+      KindStatus.scala               # Generates ast/status.json (coverage + reachability + evidence)
       Conformance.scala              # Compares a consumer's projected trees against fixtures/expected/
     verify.sh            # End-to-end verification suite
 packaging/               # Gradle module: packages pin.json/ast/schemas/fixtures/corpus.json
@@ -177,6 +181,7 @@ additionally needs `credentials { username = ...; password = /* a token with rea
 ./gradlew :tools:project:generateFixtures                  # Regenerate fixtures/expected/*.json
 ./gradlew :tools:project:reachability                      # Regenerate ast/reachability.json (needs ./corpus/fetch)
 ./gradlew :tools:project:generateCoverage                  # Regenerate ast/coverage.json
+./gradlew :tools:project:generateStatus                    # Regenerate ast/status.json (JSON join; no oracle needed)
 ./gradlew :tools:project:conformance --args='--actual <dir>' # Check a consumer against the fixtures
 ./gradlew test                                             # ScalaTest suite
 ./tools/project/verify.sh                                  # End-to-end verification suite

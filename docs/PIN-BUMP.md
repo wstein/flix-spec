@@ -44,10 +44,11 @@ flowchart TD
     C["3 · <code>proposeTreeKind</code><br/>report count + digest, assert nothing"]
     D["4 · Paste count + digest into <code>pin.json</code>"]
     E["5 · <code>generateTreeKind</code><br/>regenerate under assertion"]
-    F["6 · <code>corpus/fetch</code> · <code>verify.sh</code> · <code>spotlessApply</code>"]
-    G["7 · Open PR — the diff is the review"]
+    F["6 · Re-read <code>ast/unattachable.json</code><br/>citations, then restamp"]
+    G["7 · <code>corpus/fetch</code> · <code>verify.sh</code> · <code>spotlessApply</code>"]
+    H["8 · Open PR — the diff is the review"]
 
-    A --> B --> C --> D --> E --> F --> G
+    A --> B --> C --> D --> E --> F --> G --> H
 ```
 
 ## Checklist
@@ -86,21 +87,48 @@ flowchart TD
    Now that `pin.json` carries the new values, this must succeed. If it does not, the jar and the
    pin disagree and the bump is wrong.
 
-6. **Refresh the corpus and run the full suite:**
+6. **Re-verify the structural-unattachability evidence.** `ast/unattachable.json` is the one
+   hand-maintained input to `ast/status.json`, and every entry cites upstream source *by line*.
+   Line numbers do not survive a pin bump on trust, so the file carries the `upstreamCommit` it was
+   read against and `generateStatus` refuses to run while that disagrees with `pin.json`:
+
+   ```text
+   FATAL: ast/unattachable.json is at upstreamCommit <old>, but pin.json is at <new>.
+   ```
+
+   Re-read each citation at the new commit and confirm the argument still holds — a kind can become
+   constructible, or a dead store can be fixed upstream, and either would silently turn a
+   `structurally-unattachable` verdict into a lie. Then restamp `upstreamCommit`.
+
+   Two outcomes are worth expecting rather than treating as surprises:
+   - **An entry no longer holds.** Delete it. If the kind is genuinely reachable now, the next
+     `verify.sh` will classify it `corpus-only` or `unknown`, which is the honest result and a
+     fixture to write, not a regression to suppress.
+   - **A new kind appears with no evidence either way.** Leave it `unknown`. `generateStatus`
+     reports unknowns but does not fail on them, precisely so that nobody is pressured into
+     inventing an unargued entry to get a green build.
+
+7. **Refresh the corpus and run the full suite:**
    ```sh
    ./corpus/fetch
    ./gradlew spotlessApply
    ./gradlew test
    ./tools/project/verify.sh
+   ./gradlew :tools:project:reachability   # needs the corpus; also refreshes ast/status.json
+   ./gradlew :tools:project:generateStatus
+   ./gradlew :tools:project:generateDocs   # rewrites the generated counts in README/CONFORMANCE
    ```
    Update `corpus/corpus.json` counts if upstream added or removed `.flix` files.
 
-7. **Write the PR body.** The diff is the review, so state plainly:
+8. **Write the PR body.** The diff is the review, so state plainly:
    - upstream release tag and commit range;
    - **TreeKinds added, removed, or re-parented**, and **TokenKinds added or removed**. A removed
-     token breaks lexical consumers exactly as a removed kind breaks structural ones. A removed kind or a changed parent is breaking
-     Either is breaking for consumers and must be called out explicitly, never left for a reader
-     to spot in the diff;
+     token breaks lexical consumers exactly as a removed kind breaks structural ones, and a changed
+     parent breaks the qualified name. Each is breaking for consumers and must be called out
+     explicitly, never left for a reader to spot in the diff;
+   - **any movement in `ast/status.json`** — a kind leaving `structurally-unattachable`, or arriving
+     as `unknown`, is a statement about the reference compiler and deserves a sentence rather than a
+     line in a generated file;
    - fixture output changes and any shift in negative-fixture diagnostic class or line;
    - whether `oracleArtifact.attestation` still reads `digest-only`, or whether upstream has since
      started publishing build attestations.

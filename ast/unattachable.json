@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "upstreamCommit": "318bb51a953c58a8785251a80fad8aea005f729f",
+  "note": "HAND-MAINTAINED. The one curated input to ast/status.json; everything else there is measured. An entry claims a kind cannot appear in any projected tree from any input, and must carry source citations that show why. Line numbers refer to upstreamCommit, so generateStatus asserts this field against pin.json: a pin bump fails until every citation below has been re-read against the new source. 'Absent from main/src' is the weakest admissible reason and is machine-checkable by grepping for TreeKind.<name>; the rest are ordering or dead-store arguments that need a human to re-confirm.",
+  "treeKinds": [
+    {
+      "name": "Expr.InstanceOf",
+      "reason": "No TreeKind.Expr.InstanceOf reference exists anywhere in main/src. `instanceof` is parsed as a binary operator (BinaryOp.InstanceOf, Parser2.scala:1839) and closes as Expr.Binary, so this case object is defined but never constructed.",
+      "citations": [
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1676",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1839"
+      ]
+    },
+    {
+      "name": "Pattern.ExtTag",
+      "reason": "No TreeKind.Pattern.ExtTag reference exists anywhere in main/src. Parser2 closes TreeKind.Expr.ExtTag -- an Expr, not a Pattern -- and nothing closes the Pattern variant.",
+      "citations": [
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:2180"
+      ]
+    },
+    {
+      "name": "Predicate.ParamUntyped",
+      "reason": "Dead by assignment. `param()` initialises `var kind` to Predicate.ParamUntyped, then unconditionally overwrites it with Predicate.Param on the next line with no branch in between; `close(mark, kind)` therefore always receives Predicate.Param. Note Weeder2 still consumes ParamUntyped (Weeder2.scala:2065, 2823), so this is a latent upstream dead store rather than a deliberate retirement -- see docs/CONFORMANCE.md.",
+      "citations": [
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:4037",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:4040",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:4054",
+        "main/src/ca/uwaterloo/flix/language/phase/Weeder2.scala:2065",
+        "main/src/ca/uwaterloo/flix/language/phase/Weeder2.scala:2823"
+      ]
+    },
+    {
+      "name": "Type.Function",
+      "reason": "No TreeKind.Type.Function reference exists anywhere in main/src. Function types are built from the arrow productions and close as other Type kinds; this case object is defined but never constructed.",
+      "citations": []
+    },
+    {
+      "name": "TypeParameter",
+      "reason": "No TreeKind.TypeParameter reference exists anywhere in main/src. Parser2 only ever closes TreeKind.TypeParameterList; the singular kind is defined but never constructed.",
+      "citations": [
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3557"
+      ]
+    },
+    {
+      "name": "UnclosedMark",
+      "reason": "A placeholder, never a result. `open()` appends Event.Open(TreeKind.UnclosedMark) and `close()` overwrites that same event slot with the real kind. Upstream states the invariant directly: 'UnclosedMark always gets overwritten with another TreeKind as parsing happens. Failure to do so is a compiler error and gets caught when building the syntax tree.'",
+      "citations": [
+        "main/src/ca/uwaterloo/flix/language/ast/SyntaxTree.scala:77",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:281",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:292"
+      ]
+    }
+  ],
+  "tokenKinds": [
+    {
+      "name": "Eof",
+      "reason": "A sentinel, not a gap. `advance()` is the only path that attaches a token to a tree, and it returns before appending Event.Advance when at end of input. The lexer always emits Eof and the parser only ever tests at(TokenKind.Eof) to decide when to stop, so Eof cannot appear in any tree from any input.",
+      "citations": [
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:317",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:322"
+      ]
+    }
+  ]
+}

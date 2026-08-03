@@ -168,6 +168,15 @@ tasks.register<JavaExec>("generateCoverage") {
     workingDir = rootProject.projectDir
 }
 
+tasks.register<JavaExec>("generateStatus") {
+    description =
+        "Generates ast/status.json: joins fixture coverage, corpus reachability and the curated " +
+            "ast/unattachable.json into one status per TreeKind/TokenKind. Pure JSON join -- needs no oracle jar."
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("flix.spec.KindStatus")
+    workingDir = rootProject.projectDir
+}
+
 tasks.register<JavaExec>("conformance") {
     description =
         "Compares a consumer's projected trees against fixtures/expected/: " +
