@@ -177,6 +177,15 @@ tasks.register<JavaExec>("generateStatus") {
     workingDir = rootProject.projectDir
 }
 
+tasks.register<JavaExec>("generateDocs") {
+    description =
+        "Rewrites the '<!-- generated: ... -->' blocks in README.md and docs/CONFORMANCE.md from ast/*.json, " +
+            "so prose counts cannot drift from the artifacts they quote."
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("flix.spec.DocMetrics")
+    workingDir = rootProject.projectDir
+}
+
 tasks.register<JavaExec>("conformance") {
     description =
         "Compares a consumer's projected trees against fixtures/expected/: " +
