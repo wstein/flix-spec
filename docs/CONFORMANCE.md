@@ -10,8 +10,8 @@ comparison four times is the duplication `flix-spec` exists to end.
 
 | Side | Who | What |
 | --- | --- | --- |
-| Produce | the consumer | Parse each fixture, emit a canonical projected tree per `schemas/projection.schema.json` |
-| Compare | `flix-spec` | [`Conformance`](../tools/project/src/main/scala/flix/spec/Conformance.scala) diffs those trees against `fixtures/expected/` |
+| Produce | the consumer | Parse each fixture, emit a canonical projected tree per `schemas/projection.schema.json`, using a vocabulary map (`ignored`/`elide`/`mappings`) that is itself the consumer's own data, committed in the consumer's repository -- it encodes facts about that grammar's shape, not about the reference |
+| Compare | `flix-spec` | [`Conformance`](../tools/project/src/main/scala/flix/spec/Conformance.scala) diffs those trees against `fixtures/expected/`, validating `mappings` values against `ast/treekind.json` as it runs |
 
 ```mermaid
 flowchart LR
@@ -19,7 +19,7 @@ flowchart LR
     EXP["fixtures/expected/*.json<br/>generated from the pinned oracle"]
     CONS["consumer parser"]
     ACT["consumer projected trees"]
-    MAP["ast/projection/&lt;consumer&gt;.json"]
+    MAP["consumer's own projection map"]
     REP["conformance report<br/>divergence count"]
 
     FIX --> EXP
@@ -192,10 +192,12 @@ reference", and collapsing the two would make an incomplete map look like a brok
 # Identity: the expectations must agree with themselves.
 ./gradlew :tools:project:conformance --args="--actual fixtures/expected"
 
-# A consumer, with its vocabulary map and a ratchet.
+# A consumer, with its vocabulary map and a ratchet. The map is the consumer's own data, not
+# flix-spec's -- see "The split" above -- so it is a path into the consumer's checkout, not this
+# repository.
 ./gradlew :tools:project:conformance --args="\
     --actual path/to/consumer/output \
-    --map ast/projection/tree-sitter-flix.json \
+    --map path/to/consumer/conformance/projection-map.json \
     --report build/conformance.json \
     --baseline 109"
 ```
