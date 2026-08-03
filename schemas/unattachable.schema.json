@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/wstein/flix-spec/main/schemas/unattachable.schema.json",
+  "title": "Flix Structurally-Unattachable Kind Evidence Schema",
+  "description": "Schema for ast/unattachable.json, the one hand-maintained input to ast/status.json. An entry asserts that a TreeKind or TokenKind cannot appear in any projected tree from any input -- a fact about the reference parser, not about this suite's fixtures -- and must carry the source citations that establish it. Because 'not observed in the corpus' and 'cannot be observed at all' are different claims, a kind may only be reported as structurally-unattachable if it appears here.",
+  "type": "object",
+  "required": ["schemaVersion", "upstreamCommit", "treeKinds", "tokenKinds"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "minimum": 1 },
+    "upstreamCommit": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$",
+      "description": "flix/flix commit every citation below was read against. Asserted against pin.json, so a pin bump fails until the evidence is re-verified rather than silently carrying stale line numbers."
+    },
+    "note": {
+      "type": "string",
+      "description": "Free-text maintenance note explaining the file's contract to a human editor."
+    },
+    "treeKinds": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/Entry" },
+      "description": "Entries whose name must exist in ast/treekind.json."
+    },
+    "tokenKinds": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/Entry" },
+      "description": "Entries whose name must exist in ast/tokenkind.json."
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "Entry": {
+      "type": "object",
+      "required": ["name", "reason", "citations"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Kind name, matching the corresponding inventory exactly."
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 40,
+          "description": "Why the kind cannot be attached: an ordering argument, a dead-store argument, or absence from main/src. Long enough to force an argument rather than an assertion."
+        },
+        "citations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_./-]+\\.scala:[0-9]+$",
+            "description": "Upstream-relative path and line, read at upstreamCommit."
+          },
+          "description": "May be empty only when the reason is that no reference exists anywhere in main/src -- there is no line to cite for an absence."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

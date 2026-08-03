@@ -119,6 +119,75 @@ class ProjectionExtractorTest extends AnyFunSuite with Matchers {
     }
   }
 
+  test("every kind carries an evidence-backed status") {
+    // ast/status.json states the property above positively, and adds the one neither coverage nor
+    // reachability can express alone: a kind that is neither exercised, nor corpus-reachable, nor
+    // argued unattachable is `unknown` -- the status that must never silently accumulate.
+    val statusPath = repoRoot.resolve("ast/status.json")
+    if (Files.exists(statusPath)) {
+      val status = Json.parseFile(statusPath)
+      val treeStatus = status("treeKindStatus").asObject
+      val tokenStatus = status("tokenKindStatus").asObject
+
+      withClue("TreeKinds the corpus reaches but no fixture pins: ") {
+        treeStatus.filter(_._2.asString == "corpus-only").keys shouldBe empty
+      }
+      withClue("TokenKinds the corpus reaches but no fixture pins: ") {
+        tokenStatus.filter(_._2.asString == "corpus-only").keys shouldBe empty
+      }
+
+      // Every inventory entry must be classified, or the join silently dropped one.
+      treeStatus.size shouldBe status("treeKind")("total").asInt
+      tokenStatus.size shouldBe status("tokenKind")("total").asInt
+
+      // The per-kind map and the tallies are written from the same data, so a disagreement means
+      // the writer, not the classification, is wrong.
+      List("reachable-covered", "fixture-only", "corpus-only", "structurally-unattachable", "unknown").foreach { s =>
+        withClue(s"treeKind tally for '$s': ")(
+          status("treeKind")(s).asInt shouldBe treeStatus.count(_._2.asString == s)
+        )
+        withClue(s"tokenKind tally for '$s': ")(
+          status("tokenKind")(s).asInt shouldBe tokenStatus.count(_._2.asString == s)
+        )
+      }
+    }
+  }
+
+  test("structural-unattachability evidence is argued, not asserted") {
+    // The evidence file is the only hand-maintained input to the status join, so it is the only
+    // place a wrong claim can enter. Measurement must be able to refute it.
+    val evidence = Json.parseFile(repoRoot.resolve("ast/unattachable.json"))
+    val coverage = Json.parseFile(repoRoot.resolve("ast/coverage.json"))
+    val pin = Json.parseFile(repoRoot.resolve("pin.json"))
+
+    withClue("citations were read at a different commit than pin.json names: ") {
+      evidence("upstreamCommit").asString shouldBe pin("upstream")("commit").asString
+    }
+
+    val treeEntries = evidence("treeKinds").asArray
+    val tokenEntries = evidence("tokenKinds").asArray
+
+    List("treeKinds" -> treeEntries, "tokenKinds" -> tokenEntries).foreach { case (field, entries) =>
+      val names = entries.map(_("name").asString)
+      withClue(s"$field must be sorted by name: ")(names shouldBe names.sorted)
+      withClue(s"$field must not repeat a name: ")(names.distinct.length shouldBe names.length)
+      withClue(s"$field entries must argue, not assert: ") {
+        entries.filter(_("reason").asString.length < 40) shouldBe empty
+      }
+    }
+
+    // A kind a fixture actually contains cannot also be unattachable. KindStatus fails the build on
+    // this; asserting it here too keeps the contradiction visible in the test report.
+    val covered = coverage("covered").asObject.keySet
+    withClue("claimed unattachable, yet a fixture contains it: ") {
+      treeEntries.map(_("name").asString).filter(covered) shouldBe empty
+    }
+    val tokensCovered = coverage("tokenCovered").asObject.keySet
+    withClue("claimed unattachable, yet a fixture contains it: ") {
+      tokenEntries.map(_("name").asString).filter(tokensCovered) shouldBe empty
+    }
+  }
+
   test("coverage measures the lexical vocabulary as well as the tree vocabulary") {
     // ast/tokenkind.json is the whole contract for consumers with no parse tree, so "which tokens
     // does the suite exercise" has to be measured rather than asserted in prose.

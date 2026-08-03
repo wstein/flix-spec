@@ -48,6 +48,12 @@ echo "== validating regenerated fixtures/expected =="
 echo "== regenerating ast/coverage.json =="
 ./gradlew -q :tools:project:generateCoverage
 
+echo "== regenerating ast/status.json =="
+# Joins coverage with reachability and the curated ast/unattachable.json. Fails when an entry there
+# is contradicted by measurement -- a kind claimed unattachable that a fixture or the corpus in fact
+# produces -- or when any input disagrees with pin.json about the upstream commit.
+./gradlew -q :tools:project:generateStatus
+
 echo "== losslessness: trees must reconstruct their source =="
 # Oracle-free: compares each tree against its *input*, so unlike every other gate here it needs no
 # independent specification and can say something about the reference itself. Catches dropped,

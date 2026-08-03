@@ -56,12 +56,19 @@ jobs:
         # our parsers: which TreeKinds the reference parser actually emits.
         run: ./gradlew :tools:project:reachability
 
-      - name: Verify Reachability Artifact Is Current
+      - name: Regenerate Kind Status
+        # ast/status.json is derived from reachability, so it goes stale the moment the line
+        # above moves. Regenerating it here rather than leaving it to the next verify run is
+        # what keeps the two artifacts committed as a consistent pair -- otherwise the failure
+        # surfaces on an unrelated pull request as an unexplained status.json diff.
+        run: ./gradlew :tools:project:generateStatus
+
+      - name: Verify Reachability Artifacts Are Current
         run: |
           # --exit-code alone ignores untracked files, so a newly generated
           # artifact that was never committed would pass silently.
-          git add --intent-to-add --all ast/reachability.json
-          git diff --exit-code ast/reachability.json
+          git add --intent-to-add --all ast/reachability.json ast/status.json
+          git diff --exit-code ast/reachability.json ast/status.json
 
       - name: Detect Oracle Drift
         # Compares the blobs that actually define the tree and token vocabularies and the
