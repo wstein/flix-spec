@@ -71,7 +71,7 @@ jobs:
           BUNDLE="flix-spec-${VERSION#v}"
 
           mkdir -p "dist/${BUNDLE}/corpus"
-          cp -r pin.json ast schemas fixtures \
+          cp -r pin.json ast schemas fixtures defects \
                 LICENSE.md NOTICE.md README.md "dist/${BUNDLE}/"
           cp corpus/corpus.json "dist/${BUNDLE}/corpus/"
 

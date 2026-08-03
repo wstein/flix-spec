@@ -1,0 +1,113 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/wstein/flix-spec/main/schemas/defect-ledger.schema.json",
+  "title": "Flix Reference-Compiler Defect Ledger Schema",
+  "description": "Schema for defects/ledger.json: defects observed in the reference compiler that this suite inherits and cannot falsify. Bounded on purpose -- every entry carries an owner, a disposition, a runnable reproducer with a declarative assertion, and a review date, so the ledger cannot become a parking lot for untriaged observations.",
+  "type": "object",
+  "required": ["schemaVersion", "entries"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "minimum": 1 },
+    "note": { "type": "string", "description": "Maintenance note explaining the file's contract to a human editor." },
+    "entries": { "type": "array", "items": { "$ref": "#/definitions/Entry" } }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "Entry": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "component",
+        "disposition",
+        "summary",
+        "impact",
+        "firstObservedAtPin",
+        "reproducer",
+        "assert",
+        "citations",
+        "upstreamStatus",
+        "upstreamIssue",
+        "owner",
+        "review"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^FLIX-[0-9]{4}$",
+          "description": "Stable identifier. Never reused, never renumbered -- consumers cite these."
+        },
+        "title": { "type": "string", "minLength": 10 },
+        "component": {
+          "type": "string",
+          "enum": ["Reader", "Lexer", "Parser2", "Weeder2", "SyntaxTree"],
+          "description": "The reference component the defect lives in."
+        },
+        "disposition": {
+          "type": "string",
+          "enum": ["accepted-upstream-defect", "fixed-upstream-pending-pin", "wontfix-upstream", "under-investigation"],
+          "description": "What is being done about it. There is no 'unclassified': an entry without a decision is not ready to be in the ledger."
+        },
+        "summary": { "type": "string", "minLength": 80, "description": "What the defect is, mechanically." },
+        "impact": {
+          "type": "string",
+          "minLength": 80,
+          "description": "What it means for a consumer -- specifically, what conformance now requires that it arguably should not."
+        },
+        "firstObservedAtPin": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$",
+          "description": "Informational: the upstream commit the defect was first observed at. Not a gate -- the assertion below is re-run at whatever pin is current, which is a stronger check than comparing commits."
+        },
+        "reproducer": {
+          "type": "string",
+          "pattern": "^defects/reproducers/[A-Za-z0-9._-]+\\.flix$",
+          "description": "Minimized source that exhibits the defect."
+        },
+        "assert": { "$ref": "#/definitions/Assertion" },
+        "citations": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "pattern": "^[A-Za-z0-9_./-]+\\.scala:[0-9]+$" }
+        },
+        "upstreamStatus": {
+          "type": "string",
+          "enum": ["filed", "not-filed"],
+          "description": "Whether this has been reported upstream. Explicit so that 'nobody told them' is a recorded state rather than an omission."
+        },
+        "upstreamIssue": {
+          "type": ["string", "null"],
+          "description": "URL of the upstream issue. Must be a URL when upstreamStatus is 'filed', and null when it is not."
+        },
+        "owner": { "type": "string", "minLength": 1, "description": "Who re-triages this at the review date." },
+        "review": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          "description": "Date by which the entry must be re-triaged. Past this date the build fails."
+        }
+      },
+      "additionalProperties": false
+    },
+    "Assertion": {
+      "type": "object",
+      "description": "Declarative statement of how the defect shows in a projected tree, re-checked against the pinned oracle on every run. This is what makes an entry falsifiable: when upstream fixes the defect the assertion stops holding and the build says so.",
+      "required": ["parsesCleanly"],
+      "properties": {
+        "parsesCleanly": {
+          "type": "boolean",
+          "description": "Whether the reproducer is expected to parse without diagnostics."
+        },
+        "absentKinds": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Kinds that must NOT appear -- typically the kind the reference intends but cannot emit."
+        },
+        "presentKinds": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Kinds that must appear, pinning what is emitted instead."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

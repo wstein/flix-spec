@@ -46,6 +46,9 @@ val assembleArtifacts = tasks.register<Copy>("assembleArtifacts") {
     into("schemas") { from(rootProject.file("schemas")) }
     into("fixtures") { from(rootProject.file("fixtures")) }
     into("corpus") { from(rootProject.file("corpus/corpus.json")) }
+    // The ledger travels with the fixtures on purpose: a consumer comparing against them needs to
+    // know which divergences are known reference defects rather than faults in their own parser.
+    into("defects") { from(rootProject.file("defects")) }
 }
 
 // A marker whose *name* carries the pin: visible in `jar tf`, greppable, and

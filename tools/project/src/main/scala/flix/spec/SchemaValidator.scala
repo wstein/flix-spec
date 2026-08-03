@@ -6,11 +6,12 @@ import Json._
   * [[ProjectionSchemaValidator]] so the two do not hand-roll the same walk twice -- exactly the duplication this
   * repository exists to end elsewhere.
   *
-  * Covers: `required`, `additionalProperties: false`, `type` (integer/string/array), `minimum`, `minLength`, `pattern`,
-  * `enum`, and `$ref`'d array items. Deliberately does not cover `oneOf`/`allOf`: `schemas/projection.schema.json`'s
-  * `Node.children` uses `oneOf` between `Node` and `TokenNode`, and a projected tree's actual shape (does this child
-  * have a `kind`?) decides which one applies far more directly than a generic schema walk would -- that discrimination
-  * belongs to [[ProjectionSchemaValidator]]'s own tree walk, not here.
+  * Covers: `required`, `additionalProperties: false`, `type` (as a single name or a union list, over
+  * integer/number/string/array/object/boolean/null), `minimum`, `minLength`, `pattern`, `enum`, and `$ref`'d array
+  * items. Deliberately does not cover `oneOf`/`allOf`: `schemas/projection.schema.json`'s `Node.children` uses `oneOf`
+  * between `Node` and `TokenNode`, and a projected tree's actual shape (does this child have a `kind`?) decides which
+  * one applies far more directly than a generic schema walk would -- that discrimination belongs to
+  * [[ProjectionSchemaValidator]]'s own tree walk, not here.
   */
 object SchemaValidator {
 
@@ -19,6 +20,26 @@ object SchemaValidator {
     def add(message: String): Unit = buf += message
     def toList: List[String] = buf.toList
     def isEmpty: Boolean = buf.isEmpty
+  }
+
+  /** The `type` keyword, normalised: draft-07 permits a single name or a list of them. */
+  private def typeNames(spec: Json): List[String] = spec match {
+    case JArray(items) => items.map(_.asString)
+    case JString(name) => List(name)
+    case _             => Nil
+  }
+
+  /** Whether `value` satisfies one JSON Schema type name. Unknown names are permissive, matching this validator's
+    * existing posture: it checks the keywords this repository's schemas actually use.
+    */
+  private def matchesType(name: String, value: Json): Boolean = name match {
+    case "integer" | "number" => value.isInstanceOf[JNumber]
+    case "string"             => value.isInstanceOf[JString]
+    case "array"              => value.isInstanceOf[JArray]
+    case "object"             => value.isInstanceOf[JObject]
+    case "boolean"            => value.isInstanceOf[JBool]
+    case "null"               => value.isNull
+    case _                    => true
   }
 
   /** Resolves `#/definitions/Foo` against `root` (the whole schema document). */
@@ -54,13 +75,13 @@ object SchemaValidator {
             check(value, resolveRef(ref.asString, root), root, p, errors)
 
           case None =>
-            spec.get("type").map(_.asString) match {
-              case Some("integer") if !value.isInstanceOf[JNumber] =>
-                errors.add(s"$p: expected integer, got $value")
-              case Some("string") if !value.isInstanceOf[JString] =>
-                errors.add(s"$p: expected string, got $value")
-              case Some("array") if !value.isInstanceOf[JArray] =>
-                errors.add(s"$p: expected array, got $value")
+            // draft-07 allows `type` to be either a name or a list of names, and a nullable field is
+            // the ordinary reason to reach for the list form. Reading it as a bare string threw a
+            // JsonException from inside the validator rather than reporting a schema error, so a
+            // union type was previously unusable rather than merely unsupported.
+            spec.get("type").map(typeNames) match {
+              case Some(names) if names.nonEmpty && !names.exists(matchesType(_, value)) =>
+                errors.add(s"$p: expected ${names.mkString(" or ")}, got $value")
               case _ =>
             }
 
