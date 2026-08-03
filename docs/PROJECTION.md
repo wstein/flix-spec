@@ -90,6 +90,11 @@ Example projection map entry (`ast/projection/tree-sitter-flix.json`):
 
 ## 5. Schema Versioning
 
-All generated artifacts carry an explicit `schemaVersion` field. 
-- `schemaVersion` increments independently of Flix compiler release pin updates whenever the projection schema or structural contracts change.
-- Current schema version: `1`.
+All generated artifacts carry an explicit `schemaVersion` field.
+
+- `schemaVersion` increments independently of Flix compiler release pin updates whenever that
+  artifact's schema or structural contracts change.
+- It is **per artifact**, not global: a projected tree at version `1` and an `ast/coverage.json` at
+  version `2` are not in disagreement, they are two contracts moving at their own pace. A consumer
+  asserts the version of each artifact it actually reads.
+- Canonical projected trees (`schemas/projection.schema.json`) are at version `1`.
