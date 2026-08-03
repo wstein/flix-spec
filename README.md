@@ -40,11 +40,10 @@ Key components established:
 - **Projection contract ([`docs/PROJECTION.md`](docs/PROJECTION.md))**: canonical projected tree format, load-bearing versus advisory elements, normalisation rules, and consumer projection maps.
 - **JSON schemas ([`schemas/`](schemas/))**: draft-07 definitions for `ast/treekind.json` and canonical projected trees, enforced in CI by [`TreeKindSchemaValidator`](tools/project/src/main/scala/flix/spec/TreeKindSchemaValidator.scala).
 - **Committed AST inventory ([`ast/treekind.json`](ast/treekind.json))**: 192 `TreeKind` nodes with qualified names, parent traits and forms, name-set digest `ef4c5a85…`, and a provenance header naming the generator, tool version, upstream commit and the exact oracle jar it was derived from.
-- **Token inventory ([`ast/tokenkind.json`](ast/tokenkind.json))**: 160 `TokenKind`s (159 case objects plus `Err`), digest-pinned in `pin.json`. This is the contract for **lexical** consumers such as `flix-textmate`, which have no parse tree and cannot consume `fixtures/expected/`. Every `token` in a projected tree is validated against it — previously the projection schema declared `token` as an unconstrained string, so 134 distinct names were committed and checked against nothing. **159 of 160 are now exercised by fixtures** — the lexical counterpart of tree-kind coverage, closed the same way: measured, then fixed. `Eof` is the one exception, and it is structurally rather than incidentally uncovered: the lexer always appends it as a virtual sentinel, but the parser only ever tests `at(TokenKind.Eof)` to decide when to stop — it is never pushed onto the tree as a node's child, so no fixture, however constructed, can make it appear in a projected tree.
+- **Token inventory ([`ast/tokenkind.json`](ast/tokenkind.json))**: 160 `TokenKind`s (159 case objects plus `Err`), digest-pinned in `pin.json`. This is the contract for **lexical** consumers such as `flix-textmate`, which have no parse tree and cannot consume `fixtures/expected/`. Every `token` in a projected tree is validated against it — previously the projection schema declared `token` as an unconstrained string, so 134 distinct names were committed and checked against nothing. Fixture coverage of the lexical vocabulary is now measured exactly as tree-kind coverage is, and reported in [Kind status](#kind-status); `Eof` is the single exception, and it is structurally rather than incidentally uncovered: the lexer always appends it as a virtual sentinel, but the parser only ever tests `at(TokenKind.Eof)` to decide when to stop — it is never pushed onto the tree as a node's child, so no fixture, however constructed, can make it appear in a projected tree.
 - **Corpus definition ([`corpus/`](corpus/))**: 873 pinned `.flix` files (688 under `main/`, 185 under `examples/`), inclusion rules, and a tree-hash-verified fetch script.
-- **Projected fixtures ([`fixtures/`](fixtures/))**: 134 fixtures — 113 positive, 21 negative — with expected trees generated from the pinned oracle and held under a diff gate. Kind names are sub-trait qualified, sources are repository-relative, and diagnostics record `kind`/`line` as gated with `col`/`message` advisory. **23 of the 24 diagnostic kinds `Reader`/`Lexer`/`Parser2` can actually produce are now exercised** — 15 of 15 `LexerError` variants and 8 of 9 `Parser2`-raised `ParseError` variants. The ninth, `MisplacedComments`, is not just unreproduced but **unreachable by construction**: `expect()` calls `open()`, which unconditionally consumes any leading comment before `expect()` ever inspects it, so the match arm mapping a comment to `MisplacedComments` can never fire — see `docs/CONFORMANCE.md` for the full trace. Three further `ParseError` variants (`MissingRegion`, `NeedAtleastOne`, `MissingBinaryOperator`) are raised only by `Weeder2`, a phase this repository's pipeline never runs, and are excluded from that count as structurally out of scope rather than silently missing.
-- **Coverage ([`ast/coverage.json`](ast/coverage.json))**: 184 of 192 kinds exercised by fixtures — measured, not claimed.
-- **Reachability ([`ast/reachability.json`](ast/reachability.json))**: 184 of 192 kinds actually emitted by the reference across all 873 corpus files. Coverage equals reachability, so **every kind the reference is known to produce is exercised by a fixture**. The 8 remaining kinds are never emitted anywhere in the corpus at this pin.
+- **Projected fixtures ([`fixtures/`](fixtures/))**: expected trees generated from the pinned oracle and held under a diff gate. Kind names are sub-trait qualified, sources are repository-relative, and diagnostics record `kind`/`line` as gated with `col`/`message` advisory. **23 of the 24 diagnostic kinds `Reader`/`Lexer`/`Parser2` can actually produce are now exercised** — 15 of 15 `LexerError` variants and 8 of 9 `Parser2`-raised `ParseError` variants. The ninth, `MisplacedComments`, is not just unreproduced but **unreachable by construction**: `expect()` calls `open()`, which unconditionally consumes any leading comment before `expect()` ever inspects it, so the match arm mapping a comment to `MisplacedComments` can never fire — see `docs/CONFORMANCE.md` for the full trace. Three further `ParseError` variants (`MissingRegion`, `NeedAtleastOne`, `MissingBinaryOperator`) are raised only by `Weeder2`, a phase this repository's pipeline never runs, and are excluded from that count as structurally out of scope rather than silently missing.
+- **Coverage, reachability and status ([`ast/coverage.json`](ast/coverage.json), [`ast/reachability.json`](ast/reachability.json), [`ast/status.json`](ast/status.json))**: what the fixtures exercise, what the reference emits across the whole corpus, and the joined per-kind verdict — see [Kind status](#kind-status) below.
 - **Conformance checking ([`docs/CONFORMANCE.md`](docs/CONFORMANCE.md))**: consumers emit canonical projected trees; [`Conformance`](tools/project/src/main/scala/flix/spec/Conformance.scala) does the comparison once, here, rather than four times across four repositories. Projection maps live in [`ast/projection/`](ast/projection/) and declare vocabulary plus wrapper transparency.
 - **CI and verification**: actions pinned by commit SHA, runner pinned to `ubuntu-24.04`, and Dependabot for actions and Gradle.
 
@@ -55,6 +54,44 @@ Key components established:
   | [`corpus.yml`](.github/workflows/corpus.yml) | weekly, manual | Clone upstream, verify tree hash and counts, regenerate reachability; report if the pin is behind |
   | [`release.yml`](.github/workflows/release.yml) | `v*` tag | Verify, then publish the artifact bundle with `SHA256SUMS` |
   | [`pages.yml`](.github/workflows/pages.yml) | push to `main`, `v*` tag | Verify, then publish the Maven package (see "Consuming as a Maven package" below) |
+
+### Kind status
+
+Fixture coverage and corpus reachability are each half an answer. A fixture suite cannot tell "no
+fixture reaches this" from "nothing can reach this"; a corpus is a sample, so it cannot either.
+Joining the two — plus a citation-bearing evidence file for the kinds that are unattachable *by
+construction* — is what turns a bare ratio into a status.
+
+<!-- generated: status -->
+| Status | `TreeKind` | `TokenKind` |
+| --- | ---: | ---: |
+| Inventory | 192 | 160 |
+| `reachable-covered` — the corpus emits it, a fixture pins it | 184 | 153 |
+| `fixture-only` — only a curated fixture reaches it | 2 | 6 |
+| `corpus-only` — real Flix reaches it, no fixture does | 0 | 0 |
+| `structurally-unattachable` — cannot appear in any tree, argued in `ast/unattachable.json` | 6 | 1 |
+| `unknown` — neither exercised nor explained | 0 | 0 |
+
+Measured over 136 fixtures and 873 corpus files at pin `v0.75.1` (`318bb51a`).
+`corpus-only` is the only row that is a to-do list. Machine-readable form:
+[`ast/status.json`](ast/status.json).
+<!-- /generated: status -->
+
+Four of the six `structurally-unattachable` `TreeKind`s (`Expr.InstanceOf`, `Pattern.ExtTag`,
+`Type.Function`, `TypeParameter`) have no `TreeKind.<name>` reference anywhere in the reference's
+`main/src`: defined, never constructed. `UnclosedMark` is a placeholder that `close()` always
+overwrites — upstream states the invariant itself. `Predicate.ParamUntyped` is the interesting one,
+a **latent upstream dead store**: `Parser2.param()` initialises `var kind` to it and then
+unconditionally overwrites it on the next line, while `Weeder2` still carries code to consume it.
+
+That last entry is why these statuses are worth separating. It is neither a gap in this suite nor
+dead syntax in the language — it is a defect in the reference that no amount of fixture-writing can
+close, and an aggregate "8 uncovered kinds" figure hid it completely.
+
+Each claim carries source citations in [`ast/unattachable.json`](ast/unattachable.json), stamped
+with the upstream commit they were read against, so a pin bump fails until they are re-verified
+(see [`docs/PIN-BUMP.md`](docs/PIN-BUMP.md)). `generateStatus` refuses any entry that a fixture or
+the corpus contradicts.
 
 ### How the pieces fit
 

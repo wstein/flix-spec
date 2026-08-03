@@ -54,6 +54,12 @@ echo "== regenerating ast/status.json =="
 # produces -- or when any input disagrees with pin.json about the upstream commit.
 ./gradlew -q :tools:project:generateStatus
 
+echo "== regenerating the generated doc blocks =="
+# Prose counts were the one class of generated fact CI never diffed, and they drifted: 134 fixtures
+# against 136, 184 covered kinds against 186, and a "coverage equals reachability" claim that had
+# quietly stopped holding. verify.yml diffs README.md and docs/CONFORMANCE.md alongside ast/.
+./gradlew -q :tools:project:generateDocs
+
 echo "== losslessness: trees must reconstruct their source =="
 # Oracle-free: compares each tree against its *input*, so unlike every other gate here it needs no
 # independent specification and can say something about the reference itself. Catches dropped,
