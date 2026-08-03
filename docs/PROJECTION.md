@@ -73,9 +73,14 @@ External parsers use different naming conventions — `tree-sitter-flix`, for ex
 `snake_case` node types. Its near-match to the 192 `TreeKind`s is a coincidence, not a
 correspondence, so expect a genuine mapping effort rather than a rename table.
 
-Each consumer maintains a projection map in `ast/projection/<consumer>.json` mapping its native AST node vocabulary into the canonical `TreeKind` names defined in `ast/treekind.json`.
+Each consumer maintains a projection map **in its own repository** — conventionally
+`conformance/projection-map.json` — mapping its native AST node vocabulary into the canonical
+`TreeKind` names defined in `ast/treekind.json`. The map encodes facts about that consumer's grammar
+shape, not about the reference, so it belongs beside that grammar. `flix-spec` owns only the schema
+(`schemas/projection-map.schema.json`), the canonical vocabulary, and the comparison; validate a map
+with `./gradlew :tools:project:validateProjectionMap --args='<path>'`.
 
-Example projection map entry (`ast/projection/tree-sitter-flix.json`):
+Example projection map entry (`tree-sitter-flix`'s `conformance/projection-map.json`):
 ```json
 {
   "schemaVersion": 1,

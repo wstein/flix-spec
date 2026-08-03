@@ -260,7 +260,7 @@ into "add more mappings":
   about what a truncated input becomes, which is exactly the kind of fact this comparison exists to
   surface.
 
-None of the above have been fixed. Expanding `ast/projection/tree-sitter-flix.json` to resolve the
+None of the above have been fixed. Expanding `tree-sitter-flix`'s own `conformance/projection-map.json` to resolve the
 mapping-driven divergences, and deciding whether the recovery-driven ones belong in
 `tree-sitter-flix`'s own `DEFECTS.md`-equivalent, is a follow-up, not done here.
 

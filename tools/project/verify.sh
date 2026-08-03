@@ -66,9 +66,6 @@ echo "== losslessness: trees must reconstruct their source =="
 # duplicated or corrupted token text, none of which a structural comparison can see.
 ./gradlew -q :tools:project:lossless
 
-echo "== validating projection maps =="
-./gradlew -q :tools:project:validateProjectionMap
-
 echo "== conformance: expectations must agree with themselves =="
 ./gradlew -q :tools:project:conformance --args="--actual fixtures/expected"
 

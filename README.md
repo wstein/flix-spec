@@ -44,7 +44,7 @@ Key components established:
 - **Corpus definition ([`corpus/`](corpus/))**: 873 pinned `.flix` files (688 under `main/`, 185 under `examples/`), inclusion rules, and a tree-hash-verified fetch script.
 - **Projected fixtures ([`fixtures/`](fixtures/))**: expected trees generated from the pinned oracle and held under a diff gate. Kind names are sub-trait qualified, sources are repository-relative, and diagnostics record `kind`/`line` as gated with `col`/`message` advisory. **23 of the 24 diagnostic kinds `Reader`/`Lexer`/`Parser2` can actually produce are now exercised** — 15 of 15 `LexerError` variants and 8 of 9 `Parser2`-raised `ParseError` variants. The ninth, `MisplacedComments`, is not just unreproduced but **unreachable by construction**: `expect()` calls `open()`, which unconditionally consumes any leading comment before `expect()` ever inspects it, so the match arm mapping a comment to `MisplacedComments` can never fire — see `docs/CONFORMANCE.md` for the full trace. Three further `ParseError` variants (`MissingRegion`, `NeedAtleastOne`, `MissingBinaryOperator`) are raised only by `Weeder2`, a phase this repository's pipeline never runs, and are excluded from that count as structurally out of scope rather than silently missing.
 - **Coverage, reachability and status ([`ast/coverage.json`](ast/coverage.json), [`ast/reachability.json`](ast/reachability.json), [`ast/status.json`](ast/status.json))**: what the fixtures exercise, what the reference emits across the whole corpus, and the joined per-kind verdict — see [Kind status](#kind-status) below.
-- **Conformance checking ([`docs/CONFORMANCE.md`](docs/CONFORMANCE.md))**: consumers emit canonical projected trees; [`Conformance`](tools/project/src/main/scala/flix/spec/Conformance.scala) does the comparison once, here, rather than four times across four repositories. Projection maps live in [`ast/projection/`](ast/projection/) and declare vocabulary plus wrapper transparency.
+- **Conformance checking ([`docs/CONFORMANCE.md`](docs/CONFORMANCE.md))**: consumers emit canonical projected trees; [`Conformance`](tools/project/src/main/scala/flix/spec/Conformance.scala) does the comparison once, here, rather than four times across four repositories. Each consumer's projection map — declaring its vocabulary plus wrapper transparency — encodes facts about that consumer's grammar rather than about the reference, so it lives in that consumer's repository; `flix-spec` owns the schema ([`schemas/projection-map.schema.json`](schemas/projection-map.schema.json)), the canonical vocabulary its targets are checked against, and the comparison.
 - **CI and verification**: actions pinned by commit SHA, runner pinned to `ubuntu-24.04`, and Dependabot for actions and Gradle.
 
   | Workflow | Trigger | Does |
@@ -147,7 +147,7 @@ tools/
     src/main/scala/flix/spec/
       TreeKindSchemaValidator.scala  # Validates ast/treekind.json against its schema
       ProjectionSchemaValidator.scala # Schema + kind-vocabulary validation of fixtures/expected/
-      ProjectionMapValidator.scala   # Validates ast/projection/*.json
+      ProjectionMapValidator.scala   # Validates a consumer's projection map against the schema
       Coverage.scala                 # Generates ast/coverage.json
       KindStatus.scala               # Generates ast/status.json (coverage + reachability + evidence)
       Conformance.scala              # Compares a consumer's projected trees against fixtures/expected/
@@ -159,12 +159,13 @@ packaging/               # Gradle module: packages pin.json/ast/schemas/fixtures
 ## Landing page
 
 [`https://wstein.github.io/flix-spec/`](https://wstein.github.io/flix-spec/) — versions, the
-pinned oracle, coverage/reachability numbers, and known consumers, all generated from `pin.json`,
-`ast/*.json` and `maven-metadata.xml` on every publish
+pinned oracle, and coverage/reachability numbers, all generated from `pin.json`, `ast/*.json` and
+`maven-metadata.xml` on every publish
 ([`LandingPage.scala`](tools/project/src/main/scala/flix/spec/LandingPage.scala), `:tools:project:generateLandingPage`). One
 plain page, not a Maven-Central-style artifact browser: "Dependencies" would be empty (this ships
-data, not code with a resolvable graph) and "Dependents" would borrow more authority than two
-self-declared projection maps can back.
+data, not code with a resolvable graph) and "Dependents" would borrow more authority than this
+repository can back — there is no registry of who depends on `flix-spec`, and since projection maps
+moved to the consumers that own them, nothing here could enumerate them without guessing.
 
 ## Consuming as a Maven package
 

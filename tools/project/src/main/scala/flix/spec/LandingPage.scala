@@ -21,13 +21,17 @@ import scala.jdk.CollectionConverters._
   * Deliberately not a Sonatype Nexus / Maven Central style artifact browser with Overview / Versions / Dependents /
   * Dependencies tabs. Two of those four would be fabricated for a repository this small: "Dependencies" is empty (this
   * ships data, not code with a resolvable graph), and "Dependents" would borrow Central's authority for a claim this
-  * repository can't back with the same rigor -- ours is two self-declared projection maps, not usage data discovered by
-  * scanning the world's POMs. One page, plainly sectioned, says only what is true.
+  * repository cannot back with the same rigor -- there is no registry of who depends on `flix-spec`, and no usage data
+  * discovered by scanning the world's POMs. One page, plainly sectioned, says only what is true.
+  *
+  * The page did carry a Dependents table, populated by listing `ast/projection/`. That directory is gone: a projection
+  * map encodes facts about one consumer's grammar, so each now lives in the consumer's own repository. Rendering the
+  * section from a directory that cannot exist would have reported "none yet" forever -- a page confidently stating the
+  * opposite of the truth, which is a worse failure than omitting the section.
   */
 object LandingPage {
 
   final case class MavenVersions(latest: String, release: Option[String], all: List[String])
-  final case class Dependent(consumer: String, mappedKinds: Int, mapPath: String)
 
   final case class PinSummary(
       tag: String,
@@ -81,25 +85,6 @@ object LandingPage {
       filesLosslessOfCleanlyParsed = j("filesLosslessOfCleanlyParsed").asInt
     )
   }
-
-  def parseDependents(projectionDir: Path): List[Dependent] =
-    if (!Files.isDirectory(projectionDir)) Nil
-    else
-      Files
-        .list(projectionDir)
-        .iterator()
-        .asScala
-        .filter(_.getFileName.toString.endsWith(".json"))
-        .toList
-        .sortBy(_.toString)
-        .map { p =>
-          val j = Json.parseFile(p)
-          Dependent(
-            consumer = j("consumer").asString,
-            mappedKinds = j("mappings").asObject.size,
-            mapPath = "ast/projection/" + p.getFileName.toString
-          )
-        }
 
   /** Real XML parsing via the JDK's own `javax.xml`, not regex over a structured format -- the same principle
     * `TreeKindExtractor` applies to Scala source, extended here. `maven-metadata.xml` is small and self-generated, but
@@ -188,7 +173,6 @@ object LandingPage {
       |  .badge-release { background: var(--badge-release-bg); color: var(--badge-release-fg); }
       |  .badge-snapshot { background: var(--badge-snapshot-bg); color: var(--badge-snapshot-fg); }
       |  .badge-build { background: var(--badge-build-bg); color: var(--badge-build-fg); }
-      |  .self-declared { font-size: 0.85rem; color: var(--muted); margin-top: 0.4rem; }
       |  footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.85rem; }
       |  pre { overflow-x: auto; background: var(--code-bg); padding: 0.9rem 1rem; border-radius: 8px; font-size: 0.85rem; }
       |  .overflow { overflow-x: auto; }
@@ -280,39 +264,6 @@ object LandingPage {
        |</p>""".stripMargin
   }
 
-  private def renderDependents(dependents: List[Dependent]): String = {
-    val rows =
-      if (dependents.isEmpty) """        <tr><td colspan="3">none yet</td></tr>"""
-      else
-        dependents
-          .map { d =>
-            s"""        <tr>
-               |          <td>${escapeHtml(d.consumer)}</td>
-               |          <td>${d.mappedKinds} mapped node kinds</td>
-               |          <td><a href="https://github.com/wstein/flix-spec/blob/main/${escapeHtml(
-                d.mapPath
-              )}">projection map</a></td>
-               |        </tr>""".stripMargin
-          }
-          .mkString("\n")
-    s"""<h2>Dependents</h2>
-       |<p class="note">
-       |  Parsers with a committed projection map in
-       |  <a href="https://github.com/wstein/flix-spec/tree/main/ast/projection">ast/projection/</a>,
-       |  mapping their own node vocabulary onto the kinds above.
-       |</p>
-       |<div class="overflow">
-       |<table>
-       |  <tr><th>Consumer</th><th>Coverage</th><th></th></tr>
-       |$rows
-       |</table>
-       |</div>
-       |<p class="self-declared">
-       |  Self-declared by this repository, not discovered from external usage &mdash; there is no registry
-       |  of who depends on flix-spec, only the projection maps committed here.
-       |</p>""".stripMargin
-  }
-
   private def renderUsage(mv: MavenVersions): String = {
     val use = mv.release.getOrElse(mv.latest)
     s"""<h2>Use it</h2>
@@ -343,8 +294,7 @@ object LandingPage {
       kinds: KindStats,
       coverage: CoverageStats,
       reachability: ReachabilityStats,
-      mavenVersions: MavenVersions,
-      dependents: List[Dependent]
+      mavenVersions: MavenVersions
   ): String =
     s"""<!doctype html>
        |<html lang="en">
@@ -365,8 +315,6 @@ object LandingPage {
        |${renderOracleTable(pin)}
        |
        |${renderVersions(mavenVersions)}
-       |
-       |${renderDependents(dependents)}
        |
        |${renderUsage(mavenVersions)}
        |
@@ -393,8 +341,7 @@ object LandingPage {
       kinds = parseKindStats(Paths.get("ast/treekind.json"), Paths.get("ast/tokenkind.json")),
       coverage = parseCoverage(Paths.get("ast/coverage.json")),
       reachability = parseReachability(Paths.get("ast/reachability.json")),
-      mavenVersions = parseMavenMetadata(metadataPath),
-      dependents = parseDependents(Paths.get("ast/projection"))
+      mavenVersions = parseMavenMetadata(metadataPath)
     )
 
     Option(outPath.getParent).foreach(Files.createDirectories(_))
