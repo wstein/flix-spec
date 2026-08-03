@@ -17,13 +17,47 @@ import scala.jdk.CollectionConverters._
   */
 object Coverage {
 
+  /** Appends a `"name": {"k": n, ...}` member, matching [[ReachabilityRun]]'s writers byte for byte. */
+  private def obj(sb: StringBuilder, name: String, entries: List[(String, Int)], last: Boolean = false): Unit = {
+    val tail = if (last) "\n" else ",\n"
+    sb.append(s"""  "$name": {""")
+    if (entries.isEmpty) sb.append(s"}$tail")
+    else {
+      sb.append("\n")
+      entries.zipWithIndex.foreach { case ((k, n), i) =>
+        val comma = if (i < entries.length - 1) "," else ""
+        sb.append(s"""    "$k": $n$comma\n""")
+      }
+      sb.append(s"  }$tail")
+    }
+  }
+
+  /** Appends a `"name": ["a", ...]` member. */
+  private def arr(sb: StringBuilder, name: String, items: List[String], last: Boolean = false): Unit = {
+    val tail = if (last) "\n" else ",\n"
+    sb.append(s"""  "$name": [""")
+    if (items.isEmpty) sb.append(s"]$tail")
+    else {
+      sb.append("\n")
+      items.zipWithIndex.foreach { case (k, i) =>
+        val comma = if (i < items.length - 1) "," else ""
+        sb.append(s"""    "$k"$comma\n""")
+      }
+      sb.append(s"  ]$tail")
+    }
+  }
+
   private def walk(
       node: Json,
       counts: scala.collection.mutable.Map[String, Int],
-      wrappers: scala.collection.mutable.Map[String, Int]
+      wrappers: scala.collection.mutable.Map[String, Int],
+      tokens: scala.collection.mutable.Map[String, Int]
   ): Unit = {
     node.get("kind") match {
-      case None => // token leaf
+      // A token leaf. Counting these makes lexical coverage a generated figure on the same footing
+      // as tree coverage: `ast/tokenkind.json` is the whole contract for consumers that have no
+      // parse tree, so "which tokens does the suite actually exercise" cannot be a prose claim.
+      case None => node.get("token").foreach(t => tokens(t.asString) = tokens.getOrElse(t.asString, 0) + 1)
       case Some(k) =>
         val kind = k.asString
         counts(kind) = counts.getOrElse(kind, 0) + 1
@@ -35,7 +69,7 @@ object Coverage {
         // next time a fixture is added.
         if (children.length == 1 && children.head.get("kind").isDefined)
           wrappers(kind) = wrappers.getOrElse(kind, 0) + 1
-        children.foreach(walk(_, counts, wrappers))
+        children.foreach(walk(_, counts, wrappers, tokens))
     }
   }
 
@@ -52,11 +86,15 @@ object Coverage {
       sys.exit(1)
     }
 
+    val tokenInventory = Json.parseFile(Paths.get("ast/tokenkind.json"))
+    val allTokens = tokenInventory("kinds").asArray.map(_("name").asString)
+
     val counts = scala.collection.mutable.Map.empty[String, Int]
     val wrappers = scala.collection.mutable.Map.empty[String, Int]
+    val tokens = scala.collection.mutable.Map.empty[String, Int]
     fixtures.foreach { f =>
       val doc = Json.parseFile(Paths.get(f))
-      doc("units").asArray.foreach(unit => walk(unit("tree"), counts, wrappers))
+      doc("units").asArray.foreach(unit => walk(unit("tree"), counts, wrappers, tokens))
     }
 
     val allKindsSet = allKinds.toSet
@@ -66,12 +104,22 @@ object Coverage {
       sys.exit(1)
     }
 
+    val unknownTokens = tokens.keySet.diff(allTokens.toSet).toList.sorted
+    if (unknownTokens.nonEmpty) {
+      System.err.println(s"FATAL: tokens not in inventory: $unknownTokens")
+      sys.exit(1)
+    }
+
     val covered = allKinds.filter(k => counts.getOrElse(k, 0) > 0).sorted
     val uncovered = allKinds.filter(k => counts.getOrElse(k, 0) == 0).sorted
+    val tokCovered = allTokens.filter(t => tokens.getOrElse(t, 0) > 0).sorted
+    val tokUncovered = allTokens.filter(t => tokens.getOrElse(t, 0) == 0).sorted
 
     val sb = new StringBuilder
     sb.append("{\n")
-    sb.append("  \"schemaVersion\": 1,\n")
+    // 2: added the tokenKind* fields. Additive, but consumers are told to gate on schemaVersion
+    // (docs/VERSIONING.md), so it is a bump rather than a silent widening.
+    sb.append("  \"schemaVersion\": 2,\n")
     sb.append("  \"generatedBy\": \"flix.spec.Coverage\",\n")
     sb.append(s"""  "upstreamCommit": "${inventory("upstreamCommit").asString}",\n""")
     sb.append(s"""  "oracleSha256": "${inventory("oracleSha256").asString}",\n""")
@@ -79,6 +127,9 @@ object Coverage {
     sb.append(s"  \"coveredCount\": ${covered.length},\n")
     sb.append(s"  \"uncoveredCount\": ${uncovered.length},\n")
     sb.append(s"  \"fixtureCount\": ${fixtures.length},\n")
+    sb.append(s"  \"tokenKindCount\": ${allTokens.length},\n")
+    sb.append(s"  \"tokenCoveredCount\": ${tokCovered.length},\n")
+    sb.append(s"  \"tokenUncoveredCount\": ${tokUncovered.length},\n")
 
     // Always-a-wrapper kinds: every occurrence in the suite has exactly one child node. These are
     // the ones an `elide` list can safely name.
@@ -87,36 +138,11 @@ object Coverage {
     val wrapperNodes = alwaysWrapper.map(counts).sum
     sb.append(s"  \"nodeCount\": $totalNodes,\n")
     sb.append(s"  \"singleChildWrapperNodes\": $wrapperNodes,\n")
-    sb.append("  \"alwaysSingleChildWrapper\": {")
-    if (alwaysWrapper.isEmpty) sb.append("},\n")
-    else {
-      sb.append("\n")
-      alwaysWrapper.zipWithIndex.foreach { case (k, i) =>
-        val comma = if (i < alwaysWrapper.length - 1) "," else ""
-        sb.append(s"""    "$k": ${counts(k)}$comma\n""")
-      }
-      sb.append("  },\n")
-    }
-    sb.append("  \"covered\": {")
-    if (covered.isEmpty) sb.append("},\n")
-    else {
-      sb.append("\n")
-      covered.zipWithIndex.foreach { case (k, i) =>
-        val comma = if (i < covered.length - 1) "," else ""
-        sb.append(s"""    "$k": ${counts(k)}$comma\n""")
-      }
-      sb.append("  },\n")
-    }
-    sb.append("  \"uncovered\": [")
-    if (uncovered.isEmpty) sb.append("]\n")
-    else {
-      sb.append("\n")
-      uncovered.zipWithIndex.foreach { case (k, i) =>
-        val comma = if (i < uncovered.length - 1) "," else ""
-        sb.append(s"""    "$k"$comma\n""")
-      }
-      sb.append("  ]\n")
-    }
+    obj(sb, "alwaysSingleChildWrapper", alwaysWrapper.map(k => k -> counts(k)))
+    obj(sb, "covered", covered.map(k => k -> counts(k)))
+    arr(sb, "uncovered", uncovered)
+    obj(sb, "tokenCovered", tokCovered.map(t => t -> tokens(t)))
+    arr(sb, "tokenUncovered", tokUncovered, last = true)
     sb.append("}\n")
 
     Files.writeString(Paths.get("ast/coverage.json"), sb.toString, StandardCharsets.UTF_8)
@@ -126,7 +152,8 @@ object Coverage {
     println(
       f"Wrote ast/coverage.json: ${covered.length}/${allKinds.length} kinds covered ($pct%.1f%%) " +
         s"by ${fixtures.length} fixtures; ${uncovered.length} uncovered; " +
-        f"$wrapperNodes/$totalNodes nodes ($wrapPct%.1f%%) are single-child wrappers"
+        f"$wrapperNodes/$totalNodes nodes ($wrapPct%.1f%%) are single-child wrappers; " +
+        s"${tokCovered.length}/${allTokens.length} tokens covered"
     )
   }
 }

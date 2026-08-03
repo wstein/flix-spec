@@ -102,29 +102,42 @@ class ProjectionExtractorTest extends AnyFunSuite with Matchers {
     // The two artifacts are generated independently -- coverage from fixtures, reachability from
     // the 873-file corpus -- so agreement is a real check, not a tautology. A kind that the
     // reference emits somewhere in the corpus but no fixture exercises is a genuine gap.
-    val coverage = Files.readString(repoRoot.resolve("ast/coverage.json"))
+    //
+    // This used to regex-scrape from the "uncovered" key to end-of-file, which silently assumed
+    // "uncovered" was the last member of coverage.json. Adding the tokenKind members after it swept
+    // every token name into the set. Parse the JSON instead -- this module ships a reader.
+    val coverage = Json.parseFile(repoRoot.resolve("ast/coverage.json"))
     val reachability = repoRoot.resolve("ast/reachability.json")
 
     if (Files.exists(reachability)) {
-      val listed = """"([A-Za-z.]+)"""".r
-      val uncovered = listed
-        .findAllMatchIn(coverage.substring(coverage.indexOf("\"uncovered\"")))
-        .map(_.group(1))
-        .toSet - "uncovered"
-      val unreachable = listed
-        .findAllMatchIn(
-          Files
-            .readString(reachability)
-            .substring(
-              Files.readString(reachability).indexOf("\"unreachable\"")
-            )
-        )
-        .map(_.group(1))
-        .toSet - "unreachable"
+      val uncovered = coverage("uncovered").asArray.map(_.asString).toSet
+      val unreachable = Json.parseFile(reachability)("unreachable").asArray.map(_.asString).toSet
 
-      withClue(s"kinds reachable in the corpus but not covered by any fixture: ") {
+      withClue("kinds reachable in the corpus but not covered by any fixture: ") {
         (uncovered -- unreachable) shouldBe empty
       }
+    }
+  }
+
+  test("coverage measures the lexical vocabulary as well as the tree vocabulary") {
+    // ast/tokenkind.json is the whole contract for consumers with no parse tree, so "which tokens
+    // does the suite exercise" has to be measured rather than asserted in prose.
+    val coverage = Json.parseFile(repoRoot.resolve("ast/coverage.json"))
+    val inventory = Json.parseFile(repoRoot.resolve("ast/tokenkind.json"))("kinds").asArray.map(_("name").asString)
+
+    val covered = coverage("tokenCovered").asObject
+    val uncovered = coverage("tokenUncovered").asArray.map(_.asString)
+
+    coverage("tokenKindCount").asInt shouldBe inventory.length
+    coverage("tokenCoveredCount").asInt shouldBe covered.size
+    coverage("tokenUncoveredCount").asInt shouldBe uncovered.length
+    (covered.size + uncovered.length) shouldBe inventory.length
+
+    withClue("tokens counted but absent from ast/tokenkind.json: ") {
+      (covered.keySet ++ uncovered.toSet) -- inventory.toSet shouldBe empty
+    }
+    withClue("a covered token must have a non-zero occurrence count: ") {
+      covered.filter(_._2.asInt <= 0).keys shouldBe empty
     }
   }
 
