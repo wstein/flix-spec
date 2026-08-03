@@ -60,5 +60,5 @@ jobs:
           # "<!-- generated: ... -->" blocks are artifacts too. Leaving prose
           # outside this gate is exactly how the fixture count reached 136 on
           # disk while the README still advertised 134.
-          git add --intent-to-add --all ast/ fixtures/expected/ README.md docs/CONFORMANCE.md
-          git diff --exit-code ast/ fixtures/expected/ README.md docs/CONFORMANCE.md
+          git add --intent-to-add --all ast/ fixtures/expected/ README.md docs/CONFORMANCE.md docs/DEFECTS.md
+          git diff --exit-code ast/ fixtures/expected/ README.md docs/CONFORMANCE.md docs/DEFECTS.md

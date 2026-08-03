@@ -188,6 +188,15 @@ tasks.register<JavaExec>("generateDocs") {
     workingDir = rootProject.projectDir
 }
 
+tasks.register<JavaExec>("validateDefects") {
+    description =
+        "Validates defects/ledger.json: schema, expiry, upstream-link consistency, and -- for each entry -- " +
+            "re-parses its reproducer against the pinned oracle to confirm the defect still manifests."
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("flix.spec.DefectLedger")
+    workingDir = rootProject.projectDir
+}
+
 tasks.register<JavaExec>("conformance") {
     description =
         "Compares a consumer's projected trees against fixtures/expected/: " +
@@ -197,7 +206,7 @@ tasks.register<JavaExec>("conformance") {
     workingDir = rootProject.projectDir
 }
 
-tasks.matching { it.name in setOf("run", "extract", "proposeTreeKind", "generateTreeKind", "proposeTokenKind", "generateTokenKind", "generateFixtures", "reachability") }.configureEach {
+tasks.matching { it.name in setOf("run", "extract", "proposeTreeKind", "generateTreeKind", "proposeTokenKind", "generateTokenKind", "generateFixtures", "reachability", "validateDefects") }.configureEach {
     (this as JavaExec).doFirst {
         check(oracleJar.asFile.exists()) {
             "Missing ${oracleJar.asFile}. Run tools/oracle/fetch.sh first."

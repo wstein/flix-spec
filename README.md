@@ -27,6 +27,11 @@ language and does not claim any.
 compiler. If Flix has a bug, `flix-spec` inherits it and reports every agreeing parser as correct.
 That is a deliberate trade — it buys an oracle that cannot drift.
 
+Where that inheritance has been observed concretely, it is written down rather than normalised
+away: [`docs/DEFECTS.md`](docs/DEFECTS.md) is a bounded ledger of reference-compiler defects, each
+with a runnable reproducer that CI re-checks, so a defect upstream later fixes cannot quietly become
+part of the specification.
+
 Design rationale lives in [`docs/PROJECTION.md`](docs/PROJECTION.md) (what conformance means),
 [`docs/phase0-spike.md`](docs/phase0-spike.md) (why the oracle is a pinned release jar rather than
 a rebuild), and [`docs/PIN-BUMP.md`](docs/PIN-BUMP.md) (how the pin moves).
@@ -118,6 +123,7 @@ NOTICE.md                # Third-party provenance and attribution
 docs/
   PROJECTION.md          # Projection specification & conformance contract
   PIN-BUMP.md            # Step-by-step checklist for pinning new releases
+  DEFECTS.md             # Ledger of reference-compiler defects this suite inherits
   phase0-spike.md        # Feasibility spike findings and decision record
   VERSIONING.md          # Maven package versioning scheme and rationale
 schemas/
@@ -126,6 +132,7 @@ schemas/
   projection.schema.json    # JSON Schema for canonical projected trees
   projection-map.schema.json # JSON Schema for consumer projection maps
   unattachable.schema.json  # JSON Schema for ast/unattachable.json
+  defect-ledger.schema.json # JSON Schema for defects/ledger.json
 ast/
   projection/            # Consumer vocabulary maps (tree-sitter-flix, ...)
   treekind.json          # GENERATED — 192 qualified syntax tree kinds, digest, provenance header
@@ -137,6 +144,9 @@ ast/
 corpus/
   corpus.json            # Pinned corpus inventory specification & inclusion rules
   fetch                  # Clone, check out, and verify the corpus tree hash
+defects/
+  ledger.json            # HAND-MAINTAINED — reference-compiler defects, each with an assertion
+  reproducers/           # Minimized sources that exhibit them
 fixtures/
   positive/              # Sources the reference parses cleanly
   negative/              # Sources the reference rejects or recovers from
@@ -150,6 +160,8 @@ tools/
       ProjectionMapValidator.scala   # Validates a consumer's projection map against the schema
       Coverage.scala                 # Generates ast/coverage.json
       KindStatus.scala               # Generates ast/status.json (coverage + reachability + evidence)
+      DefectLedger.scala             # Validates defects/ledger.json; re-runs each reproducer
+      DocMetrics.scala               # Rewrites the generated blocks in README.md and docs/
       Conformance.scala              # Compares a consumer's projected trees against fixtures/expected/
     verify.sh            # End-to-end verification suite
 packaging/               # Gradle module: packages pin.json/ast/schemas/fixtures/corpus.json
@@ -220,6 +232,8 @@ additionally needs `credentials { username = ...; password = /* a token with rea
 ./gradlew :tools:project:reachability                      # Regenerate ast/reachability.json (needs ./corpus/fetch)
 ./gradlew :tools:project:generateCoverage                  # Regenerate ast/coverage.json
 ./gradlew :tools:project:generateStatus                    # Regenerate ast/status.json (JSON join; no oracle needed)
+./gradlew :tools:project:validateDefects                   # Re-check defects/ledger.json against the pinned oracle
+./gradlew :tools:project:generateDocs                      # Rewrite the generated blocks in README/CONFORMANCE/DEFECTS
 ./gradlew :tools:project:conformance --args='--actual <dir>' # Check a consumer against the fixtures
 ./gradlew test                                             # ScalaTest suite
 ./tools/project/verify.sh                                  # End-to-end verification suite

@@ -111,10 +111,32 @@ object DocMetrics {
          |cleanly-parsed corpus files** — $clean of the $corpusFiles corpus files parse without error, and the
          |remainder are excluded rather than failing (see below).""".stripMargin
 
+    val ledger = Json.parseFile(Paths.get("defects/ledger.json"))("entries").asArray
+    val defectsBlock =
+      if (ledger.isEmpty) "_No open entries at this pin._"
+      else {
+        val header = List(
+          "| Id | Defect | Component | Disposition | Upstream | Review by |",
+          "| --- | --- | --- | --- | --- | --- |"
+        )
+        val rows = ledger.map { e =>
+          val upstream =
+            e.get("upstreamIssue").filterNot(_.isNull).map(u => s"[reported](${u.asString})").getOrElse("not filed")
+          s"| `${e("id").asString}` | ${e("title").asString} | `${e("component").asString}` | " +
+            s"${e("disposition").asString} | $upstream | ${e("review").asString} |"
+        }
+        val plural = if (ledger.length == 1) "entry" else "entries"
+        (header ++ rows).mkString("\n") +
+          s"\n\n${ledger.length} $plural, each re-checked against the pinned oracle on every run. " +
+          "See [`defects/ledger.json`](../defects/ledger.json) for each reproducer, its citations and " +
+          "the full impact note."
+      }
+
     val edits = List(
       (Paths.get("README.md"), "status", statusBlock),
       (Paths.get("docs/CONFORMANCE.md"), "wrappers", wrapperBlock),
-      (Paths.get("docs/CONFORMANCE.md"), "lossless", losslessBlock)
+      (Paths.get("docs/CONFORMANCE.md"), "lossless", losslessBlock),
+      (Paths.get("docs/DEFECTS.md"), "defects", defectsBlock)
     ).map { case (p, n, b) => (p, n, splice(p, n, b)) }
 
     edits.foreach { case (p, n, changed) => println(s"${if (changed) "updated" else "unchanged"}  $p [$n]") }

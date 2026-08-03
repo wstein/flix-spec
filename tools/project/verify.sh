@@ -54,6 +54,12 @@ echo "== regenerating ast/status.json =="
 # produces -- or when any input disagrees with pin.json about the upstream commit.
 ./gradlew -q :tools:project:generateStatus
 
+echo "== validating the reference-compiler defect ledger =="
+# Re-parses each entry's reproducer against the pinned oracle. An entry that stops reproducing means
+# upstream fixed the defect, and fails here so the entry gets closed deliberately rather than rotting
+# into folklore. Entries also expire; docs/DEFECTS.md records what that time-based gate costs.
+./gradlew -q :tools:project:validateDefects
+
 echo "== regenerating the generated doc blocks =="
 # Prose counts were the one class of generated fact CI never diffed, and they drifted: 134 fixtures
 # against 136, 184 covered kinds against 186, and a "coverage equals reachability" claim that had
