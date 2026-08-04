@@ -237,7 +237,11 @@ object Conformance {
     // finds none of its keys at the top level, which is the intended outcome -- silently keeping
     // them would let a reader take a compatibility number for a correctness one, the exact
     // conflation the split exists to end.
-    sb.append("  \"schemaVersion\": 2,\n")
+    // 3: source_invariants gained checksEvaluated/checksNotApplicable. Version 2 stood for exactly
+    // as long as it took to measure one real consumer, which reported `pass` on the strength of a
+    // single applicable check. Adding the fields without the bump would have been the silent
+    // widening this file's own history argues against.
+    sb.append("  \"schemaVersion\": 3,\n")
     sb.append("  \"generatedBy\": \"flix.spec.Conformance\",\n")
     sb.append(s"""  "consumer": "${esc(consumer)}",\n""")
 
@@ -290,6 +294,12 @@ object Conformance {
 
     sb.append("    \"source_invariants\": {\n")
     sb.append(s"""      "verdict": "${esc(invariants.verdict)}",\n""")
+    // A lane verdict alone over-reads. Measuring tree-sitter-flix returned `pass` with three of
+    // four checks standing down -- only document-shape was evaluated -- and "passes
+    // source_invariants" is a very different sentence from "passed the one check that applied to
+    // it". The counts make the difference impossible to omit when quoting the verdict.
+    sb.append(s"""      "checksEvaluated": ${invariants.checks.count(_.verdict != "not-applicable")},\n""")
+    sb.append(s"""      "checksNotApplicable": ${invariants.checks.count(_.verdict == "not-applicable")},\n""")
     sb.append(
       """      "claim": "properties of the consumer's own output, checked against its input rather than against the reference",
         |      "authority": "independent",

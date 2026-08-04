@@ -181,14 +181,14 @@ Each rule was added because measurement demanded it, not by design. Against `tre
 | make transparency symmetric (splice, never force a match) | 142 |
 | elide single-child `QName` | 80 |
 
-Those four are measured on the 110 fixtures the first adapter could read; the baseline below covers
-all 121.
+Those four are measured on the 110 fixtures the first adapter could read, at a fixture count long
+since superseded; they are kept because the *ordering* is the finding — each rule earned its place
+by cutting divergences — not because the absolute numbers still hold.
 
 **This table is the part that genuinely needs a `tree-sitter-flix` run**, unlike the wrapper figure
 above, which is intrinsic to the canonical trees and recomputable from `fixtures/expected` alone. It
-is therefore stale by construction whenever fixtures are added — adding eight moved it from 74/113
-with 85 divergences to 75/121 with 109. Re-measure it in the consumer repository rather than
-trusting the row.
+is therefore stale by construction whenever fixtures are added. See "Measured baselines" below for
+the current figures, and re-measure in the consumer repository rather than trusting any row here.
 
 ## Lexical consumers
 
@@ -303,24 +303,32 @@ against so a passing verdict cannot hide the threshold that produced it.
 
 ## Measured baselines
 
-| Consumer | Fixtures agreeing | Divergences | Nodes compared | Measured against |
-| --- | --- | --- | --- | --- |
-| `tree-sitter-flix` | 76 / 134 | 135 | 833 | `8875cfb4`, tree-sitter CLI 0.26.11, 134 fixtures |
+Measured at pin `v0.75.1` (`318bb51a`), fixture revision `6b6a4256`, tree-sitter CLI 0.26.11,
+`tree-sitter-flix` at `13fdaaf`.
 
-Re-measured after the diagnostic-kind negative fixtures grew `fixtures/` from 121 to 134 (113
-positive unchanged, negative fixtures 8 to 21) — same `tree-sitter-flix` commit as the prior
-baseline, so the change in numbers reflects the fixture growth, not a grammar change. The adapter
-that converts `tree-sitter parse`'s s-expression output into `--actual`'s JSON shape is a scratch
-script, not committed here or in `tree-sitter-flix`: it only needs `kind`/`children` (spans and
-tokens are never compared, so field names, node ranges and the trailing timing line tree-sitter
-prints after the tree are all discardable), which is small enough to not yet justify a permanent
-home in either repository.
+| Consumer | Lane | Verdict | Detail |
+| --- | --- | --- | --- |
+| `tree-sitter-flix` | `oracle_conformance` | **fail** | 77 / 136 fixtures agree · 137 divergences · 844 nodes compared · 82% depth · 184 unmapped |
+| `tree-sitter-flix` | `source_invariants` | **pass** (1 of 4 checks evaluated) | `document-shape` pass · the other three `not-applicable` |
 
-`nodesUnmapped` is 181 (up from an unrecorded prior figure), largely from native node kinds the new
-fixtures exercise for the first time (`sealed_declaration`, the `rvadd`/`rvsub`/`rvand`/`rvnot`/
-`xor` type-operator productions, `lambda`, `record_expression`, and dozens more) that predate this
-baseline having any occasion to hit them. Divergences worth noting rather than silently absorbing
-into "add more mappings":
+Read the second row carefully, because it is the one most easily overstated. The lane passes on the
+strength of a *single* applicable check. `kind-vocabulary` and `token-vocabulary` stand down because
+a projection map is in play, so native names are what the map exists to translate; `token-accounting`
+stands down because the adapter emits no token text at all. That is not a criticism of the grammar —
+it is an accurate statement that this consumer is currently exercising a **structural** profile, and
+that the strongest oracle-free check in the suite has nothing to bite on. `checksEvaluated` exists in
+the report precisely so "passes `source_invariants`" cannot be quoted without it.
+
+The previous baseline was 76 / 134 with 135 divergences over 833 nodes, measured at `8875cfb4`. The
+grammar has not changed between the two commits (`git diff 8875cfb..13fdaaf -- grammar.js src/` is
+empty), so the whole delta is the two fixtures added since. Agreement, divergences and compared
+nodes all moved by roughly the fixture growth, which is what a stable grammar against a growing
+suite should look like.
+
+`nodesUnmapped` is 184, up from 181, largely from native node kinds the newer fixtures exercise for
+the first time (`sealed_declaration`, the `rvadd`/`rvsub`/`rvand`/`rvnot`/`xor` type-operator
+productions, `lambda`, `record_expression`, and dozens more). Divergences worth noting rather than
+silently absorbing into "add more mappings":
 
 - Several `Ident` vs `QName` kind mismatches: `QName` is in `elide`, but only fires when tree-sitter's
   `qualified_name` has at most one canonical child; where it has two the elision rule (by design)
@@ -350,7 +358,20 @@ and the way it was wrong is worth recording: when a parse contains an `ERROR` no
 breaks a strict parser. The three affected files were exactly the three negative fixtures — the
 only ones that produce an `ERROR`. Nothing was wrong with the grammar; the adapter had to truncate
 at the closing tag. A consumer-side adapter that silently drops the inputs it cannot read will
-always flatter its own parser, so count what was skipped and why.
+always flatter its own parser, so count what was skipped and why. The current measurement adapts
+136 of 136 fixtures with zero skips, and reports its skip count either way.
+
+### On the adapter, and why the numbers above are not yet reproducible
+
+Converting `tree-sitter parse --xml` output into `--actual`'s shape still takes a script that lives
+in neither repository. Only *named* nodes become tree nodes — anonymous tokens are bare text between
+elements, and the comparison drops token leaves anyway — so the conversion is small. It is
+deliberately not written to synthesise token leaves: this adapter has no Flix tokenization, so
+inventing `text` would make `token-accounting` evaluate a fiction rather than stand down honestly.
+
+That the numbers above cannot be re-derived from a clean checkout is a real gap, and the right home
+for the fix is `tree-sitter-flix` — it owns the grammar, the projection map, and the CLI dependency,
+none of which belong here. Until then this row is a measurement someone took, not one CI maintains.
 
 ## Precedence chains
 

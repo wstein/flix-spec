@@ -6,7 +6,7 @@
   "type": "object",
   "required": ["schemaVersion", "generatedBy", "consumer", "provenance", "lanes"],
   "properties": {
-    "schemaVersion": { "type": "integer", "minimum": 2 },
+    "schemaVersion": { "type": "integer", "minimum": 3 },
     "generatedBy": { "type": "string", "minLength": 1 },
     "consumer": { "type": "string", "minLength": 1 },
     "provenance": { "$ref": "#/definitions/Provenance" },
@@ -126,7 +126,7 @@
     },
     "InvariantLane": {
       "type": "object",
-      "required": ["verdict", "claim", "authority", "caveat", "checks"],
+      "required": ["verdict", "claim", "authority", "caveat", "checksEvaluated", "checksNotApplicable", "checks"],
       "properties": {
         "verdict": {
           "type": "string",
@@ -140,6 +140,12 @@
           "description": "Fixed. These checks consult no expected tree, so unlike the other lane they can contradict the reference."
         },
         "caveat": { "type": "string", "minLength": 1 },
+        "checksEvaluated": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "How many checks actually ran. A lane verdict alone over-reads: `pass` with one of four checks evaluated is a far weaker statement than `pass` with four, and only this field distinguishes them."
+        },
+        "checksNotApplicable": { "type": "integer", "minimum": 0 },
         "checks": { "type": "array", "items": { "$ref": "#/definitions/Check" } }
       },
       "additionalProperties": false
