@@ -304,12 +304,12 @@ against so a passing verdict cannot hide the threshold that produced it.
 ## Measured baselines
 
 Measured at pin `v0.75.1` (`318bb51a`), fixture revision `6b6a4256`, tree-sitter CLI 0.26.11,
-`tree-sitter-flix` at `40197ea`. **Reproducible**: `npm run conformance` in that repository, with
+`tree-sitter-flix` at `9a458c0`. **Reproducible**: `npm run conformance` in that repository, with
 `FLIX_SPEC` pointing here, adapts all 136 fixtures and runs this comparison.
 
 | Consumer | Lane | Verdict | Detail |
 | --- | --- | --- | --- |
-| `tree-sitter-flix` | `oracle_conformance` | **fail** | 107 / 136 fixtures agree · 58 divergences · 1400 nodes compared · **90% depth** · 159 unmapped |
+| `tree-sitter-flix` | `oracle_conformance` | **fail** | 87 / 136 fixtures agree · 104 divergences · 1864 nodes compared · **99% depth** · 20 unmapped |
 | `tree-sitter-flix` | `source_invariants` | **pass** (1 of 4 checks evaluated) | `document-shape` pass · the other three `not-applicable` |
 
 Read the second row carefully, because it is the one most easily overstated. The lane passes on the
@@ -334,7 +334,10 @@ almost everything, which is why the report carries depth alongside the count. Co
 | baseline | 122 / 136 | 31 | 84% |
 | +6 | 116 / 136 | 44 | 86% |
 | +23 | 113 / 136 | 49 | 88% |
-| +71 | 107 / 136 | 58 | **90%** |
+| +71 | 107 / 136 | 58 | 90% |
+| + derivation to a fixed point | 90 / 136 | 91 | 94% |
+| + the five dominant ambiguous names | 88 / 136 | 102 | 98% |
+| + seven positional grammar splits | 87 / 136 | 104 | **99%** |
 
 Every mapping added lowers the headline, because each one exposes a subtree that was previously
 never looked at. The divergences were always there. **A consumer reporting 136/136 at 84% depth
@@ -364,20 +367,23 @@ reference calls `Ident`; a map entry is per node name with no context, so mappin
 to `Operator` regressed the score. Tree-sitter's `alias()` applies per position, which is what
 carries the distinction into the tree.
 
-What remains is 58 divergences across 29 fixtures at 90% depth — 36 arity, 22 kind. Reaching
-136/136 from here means fixing real disagreements, not adjusting the map: every transparency and
-mapping candidate now measures neutral or worse, and the map is validated against the inventory.
+What remains is 104 divergences across the fixtures at **99% depth**, with 20 unmapped nodes. The
+projection map is finished: every name that can be mapped is mapped, and the seven that meant
+different things in different positions were split in the grammar instead, because a map keyed on
+node name cannot express position. Three ambiguous names survive (`aliased_name`, `argument`,
+`literal_pattern`) and need the same treatment.
 
-Two limits are structural rather than unfinished:
+At this depth the agreement count is almost entirely a function of real disagreement rather than of
+what is being skipped, which is the state the number needed to be in before it was worth optimising.
+Every remaining divergence is two trees genuinely differing.
 
-- **`OperatorError` cannot be expressed in tree-sitter.** The reference inserts it as a *synthetic,
-  zero-width* node for a missing binary operator (`1 2`). A grammar rule cannot match empty input,
-  though an external scanner can emit a zero-width token, so this is worth one more attempt before
-  being called impossible.
-- **Ambiguous node names.** `integer` faces `Expr.Literal` in expression position and `ErrorTree`
-  inside `literal_pattern`; one name cannot serve both, and the projection map has no positional
-  form. Fixing these belongs in the grammar — as `alias()` per position, which is how `operator`
-  and `type_variable` were resolved.
+**`OperatorError` was attempted and abandoned, with evidence.** The reference inserts it as a
+synthetic zero-width node for `1 2`, and an external scanner *can* emit a zero-width token — that
+part of the earlier "impossible" claim was wrong. But putting it in the operator slot makes
+"expression followed by expression" a valid parse, which collides with every rule that ends in an
+expression; `tree-sitter generate` rejects it against `open_variant_as` first and there are many
+more behind it. Resolving that would mean declaring juxtaposition ambiguous grammar-wide to recover
+two divergences. Not worth it, and now demonstrated rather than assumed.
 
 Reproducing this needs the `tree-sitter` CLI and a built grammar, so it is **not** part of CI here;
 the consumer repository is the right home for that job. What CI does verify is that the comparison
