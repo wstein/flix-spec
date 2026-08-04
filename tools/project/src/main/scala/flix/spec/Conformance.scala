@@ -56,7 +56,11 @@ object Conformance {
 
   final class Stats {
     val counts = scala.collection.mutable.Map.empty[String, Int].withDefaultValue(0)
-    val unmappedNames = scala.collection.mutable.Set.empty[String]
+    // Counted, not a set. docs/CONFORMANCE.md tells a map author to work down this list because
+    // "the next most valuable mapping is always the top of it" -- which was only true if the list
+    // were ordered by frequency, and a Set emitted alphabetically cannot be. The advice was sound
+    // and the report could not support it.
+    val unmapped = scala.collection.mutable.Map.empty[String, Int].withDefaultValue(0)
     def inc(key: String): Unit = counts(key) += 1
   }
 
@@ -125,7 +129,7 @@ object Conformance {
         m(actual.kind)
       case Some(_) =>
         stats.inc("unmapped")
-        stats.unmappedNames += actual.kind
+        stats.unmapped(actual.kind) += 1
         return // not a disagreement: we simply have no opinion yet
     }
 
@@ -237,11 +241,14 @@ object Conformance {
     // finds none of its keys at the top level, which is the intended outcome -- silently keeping
     // them would let a reader take a compatibility number for a correctness one, the exact
     // conflation the split exists to end.
+    // 4: unmappedNames (an alphabetical string array) became unmapped (frequency-ranked objects
+    // with counts), because the documented workflow -- work down the list, the top is the next
+    // most valuable mapping -- was not something the old shape could support.
     // 3: source_invariants gained checksEvaluated/checksNotApplicable. Version 2 stood for exactly
     // as long as it took to measure one real consumer, which reported `pass` on the strength of a
     // single applicable check. Adding the fields without the bump would have been the silent
     // widening this file's own history argues against.
-    sb.append("  \"schemaVersion\": 3,\n")
+    sb.append("  \"schemaVersion\": 4,\n")
     sb.append("  \"generatedBy\": \"flix.spec.Conformance\",\n")
     sb.append(s"""  "consumer": "${esc(consumer)}",\n""")
 
@@ -274,7 +281,18 @@ object Conformance {
     sb.append(s"      \"nodesElided\": ${stats.counts("elided")},\n")
     sb.append(s"      \"nodesFlattened\": ${stats.counts("flattened")},\n")
     sb.append(s"      \"nodesUnmapped\": ${stats.counts("unmapped")},\n")
-    sb.append(s"""      "unmappedNames": ${jsonStringArray(stats.unmappedNames.toList.sorted, "      ")},\n""")
+    // Frequency first, name second so ties are stable across runs.
+    val unmappedRanked = stats.unmapped.toList.sortBy { case (name, n) => (-n, name) }
+    sb.append("      \"unmapped\": [")
+    if (unmappedRanked.isEmpty) sb.append("],\n")
+    else {
+      sb.append("\n")
+      unmappedRanked.zipWithIndex.foreach { case ((name, n), i) =>
+        val comma = if (i < unmappedRanked.length - 1) "," else ""
+        sb.append(s"""        {"name": "${esc(name)}", "count": $n}$comma\n""")
+      }
+      sb.append("      ],\n")
+    }
     sb.append(s"      \"divergenceCount\": ${divergences.length},\n")
     sb.append(s"      \"divergencesListed\": ${capped.length},\n")
     sb.append("      \"divergences\": [")

@@ -304,47 +304,49 @@ against so a passing verdict cannot hide the threshold that produced it.
 ## Measured baselines
 
 Measured at pin `v0.75.1` (`318bb51a`), fixture revision `6b6a4256`, tree-sitter CLI 0.26.11,
-`tree-sitter-flix` at `13fdaaf`.
+`tree-sitter-flix` at `ffeaa18`. **Reproducible**: `npm run conformance` in that repository, with
+`FLIX_SPEC` pointing here, adapts all 136 fixtures and runs this comparison.
 
 | Consumer | Lane | Verdict | Detail |
 | --- | --- | --- | --- |
-| `tree-sitter-flix` | `oracle_conformance` | **fail** | 77 / 136 fixtures agree · 137 divergences · 844 nodes compared · 82% depth · 184 unmapped |
+| `tree-sitter-flix` | `oracle_conformance` | **fail** | 98 / 136 fixtures agree · 79 divergences · 854 nodes compared · 82% depth · 188 unmapped |
 | `tree-sitter-flix` | `source_invariants` | **pass** (1 of 4 checks evaluated) | `document-shape` pass · the other three `not-applicable` |
 
 Read the second row carefully, because it is the one most easily overstated. The lane passes on the
 strength of a *single* applicable check. `kind-vocabulary` and `token-vocabulary` stand down because
 a projection map is in play, so native names are what the map exists to translate; `token-accounting`
-stands down because the adapter emits no token text at all. That is not a criticism of the grammar —
-it is an accurate statement that this consumer is currently exercising a **structural** profile, and
-that the strongest oracle-free check in the suite has nothing to bite on. `checksEvaluated` exists in
-the report precisely so "passes `source_invariants`" cannot be quoted without it.
+stands down because the adapter emits no token text. That is not a criticism of the grammar — it is
+an accurate statement that this consumer exercises a **structural** profile, and that the strongest
+oracle-free check in the suite has nothing to bite on. `checksEvaluated` exists in the report
+precisely so "passes `source_invariants`" cannot be quoted without it.
 
-The previous baseline was 76 / 134 with 135 divergences over 833 nodes, measured at `8875cfb4`. The
-grammar has not changed between the two commits (`git diff 8875cfb..13fdaaf -- grammar.js src/` is
-empty), so the whole delta is the two fixtures added since. Agreement, divergences and compared
-nodes all moved by roughly the fixture growth, which is what a stable grammar against a growing
-suite should look like.
+Agreement moved 77 → 98 and divergences 137 → 79 by completing the transparency declarations in the
+consumer's map — five wrappers (`qualified_name`, `effect_annotation`, `variable_pattern`,
+`annotation`, `modifier`) whose canonical counterparts were already in `elide` but which had no
+`ignored` entry. That is the asymmetry this document warns about, and it accounted for over a third
+of all divergences. The grammar itself did not change.
 
-`nodesUnmapped` is 184, up from 181, largely from native node kinds the newer fixtures exercise for
-the first time (`sealed_declaration`, the `rvadd`/`rvsub`/`rvand`/`rvnot`/`xor` type-operator
-productions, `lambda`, `record_expression`, and dozens more). Divergences worth noting rather than
-silently absorbing into "add more mappings":
+Of the 79 remaining divergences, 25 are kind mismatches and 54 are arity mismatches. The map can do
+no more: every further mapping or transparency candidate now measures exactly neutral or worse, and
+several that look obviously right are worse. Mapping `integer` to `Expr.Literal` took divergences
+from 99 to 104, because a literal in pattern position sits under `literal_pattern` where the
+reference emits a childless `Pattern.Literal`; a mapping is per node name with no context, so
+expression and pattern position cannot both be served. `generic_operator`, `type_parameter_list`,
+`type_application` and `block` regress for similar reasons. What is left needs grammar shape or
+comparator features, not data:
 
-Of the 137 divergences, 83 are kind mismatches and 54 are arity mismatches.
-
-- **`QName` elision dominates: 60 of the 83 kind mismatches involve `QName` or `Ident`**, and
-  `Ident → QName` alone accounts for 38. `QName` is in `elide`, but elision only fires when
-  tree-sitter's `qualified_name` has at most one canonical child; where it has two the rule declines
-  to fire by design, and the two trees disagree at that node. This is one rule's boundary, not
-  dozens of unrelated faults, and it is far and away the highest-value thing to fix next.
-- 10 mismatches involve `Type.Effect` against `Type.Constant`/`Type.Unary`/`Type.Binary`/
-  `Type.EffectSet`: the map appears to send more native effect-formula node kinds to `Type.Effect`
-  than the canonical tree produces that shape for.
-- **18 of the 21 negative fixtures diverge**, including all six `lexical__unterminated-*`. That is
-  not a mapping gap at all — it is two independently-implemented recovery strategies genuinely
-  disagreeing about what a truncated input becomes, which is exactly the kind of fact this
-  comparison exists to surface. Error recovery is where these parsers agree least, and no amount of
-  mapping will close it.
+- **54 arity mismatches**, dominated by the declaration prologue. The reference wraps annotations
+  and modifiers in `AnnotationList`/`ModifierList`, which `elide` removes only at arity ≤ 1; with
+  two annotations the wrapper stays and faces a flat list of native nodes. `flatten` would splice
+  those at any arity, but it applies to the **consumer** side only — there is no canonical-side
+  equivalent. That asymmetry, not the grammar, is the blocker.
+- **9 `Operator` → `Ident`**: the reference names a user-defined operator with `Operator`; this
+  grammar reaches the same position through a name rule.
+- **7 `ErrorTree` mismatches**, six of them on negative fixtures where both parsers error and
+  recover differently — the genuine "two recovery strategies disagreeing" case, which no mapping
+  closes. The seventh is a real grammar gap: `type alias T[a] = a : Type`
+  (`fixtures/positive/type-kind-ascription.flix`) parses in the reference and produces `ERROR`
+  nodes in this grammar.
 
 None of the above have been fixed. Expanding `tree-sitter-flix`'s own `conformance/projection-map.json` to resolve the
 mapping-driven divergences, and deciding whether the recovery-driven ones belong in
@@ -393,7 +395,7 @@ An earlier validator rejected the overlap, and this consumer is what proved the 
 
 ## Writing a projection map
 
-Start empty and let the report drive it: every run lists `unmappedNames` in frequency order, so the
+Start empty and let the report drive it: every run lists `unmapped` in frequency order with counts, so the
 next most valuable mapping is always the top of that list. Map what is genuinely the same node;
 declare wrappers transparent; leave the rest unmapped rather than guessing, because a wrong mapping
 reports as agreement and is worse than a gap.

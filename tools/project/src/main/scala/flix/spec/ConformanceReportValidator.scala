@@ -53,6 +53,18 @@ object ConformanceReportValidator {
     if (listed > divergenceCount)
       errors.add(s"oracle_conformance: more divergences listed ($listed) than counted ($divergenceCount)")
 
+    // The list is the map author's work queue, so its order is load-bearing, not cosmetic.
+    val unmapped = oracle("unmapped").asArray.map(u => (u("name").asString, u("count").asInt))
+    val ranked = unmapped.sortBy { case (name, n) => (-n, name) }
+    if (unmapped != ranked)
+      errors.add("oracle_conformance: unmapped is not ranked by count then name")
+    val unmappedTotal = unmapped.map(_._2).sum
+    if (unmappedTotal != oracle("nodesUnmapped").asInt)
+      errors.add(
+        s"oracle_conformance: unmapped counts sum to $unmappedTotal " +
+          s"but nodesUnmapped is ${oracle("nodesUnmapped").asInt}"
+      )
+
     val baseline = oracle("baseline").asInt
     val oracleVerdict = oracle("verdict").asString
     val expectedOracleVerdict = if (divergenceCount > baseline) "fail" else "pass"
