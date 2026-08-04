@@ -22,7 +22,7 @@
     "form": {
       "type": "string",
       "enum": ["raw", "normalized"],
-      "description": "`raw` -- exactly what the reference parser produced, the provenance record and the authority the recovery lane compares against. `normalized` -- the canonical tree, with wrapper nodes elided and the error vocabulary spliced out per ast/transparency.json, which is what a consumer is asked to agree with."
+      "description": "`raw` -- the producing parser's own tree, verbatim, with its wrappers and its error-recovery vocabulary intact. For the reference that is fixtures/raw/, the provenance record and the authority the recovery lane compares against; for a consumer it is the ordinary case, since the conformance comparison applies that consumer's declared transparency rules itself. `normalized` -- the canonical tree, with wrapper nodes elided and the error vocabulary spliced out per ast/transparency.json, which is what fixtures/expected/ holds and what a consumer is asked to agree with."
     },
     "generatedBy": {
       "type": "string",

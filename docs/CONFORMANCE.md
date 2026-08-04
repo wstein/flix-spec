@@ -10,23 +10,28 @@ comparison four times is the duplication `flix-spec` exists to end.
 
 | Side | Who | What |
 | --- | --- | --- |
-| Produce | the consumer | Parse each fixture, emit a canonical projected tree per `schemas/projection.schema.json`, using a vocabulary map (`ignored`/`elide`/`mappings`) that is itself the consumer's own data, committed in the consumer's repository -- it encodes facts about that grammar's shape, not about the reference |
-| Compare | `flix-spec` | [`Conformance`](../tools/project/src/main/scala/flix/spec/Conformance.scala) diffs those trees against `fixtures/expected/`, validating `mappings` values against `ast/treekind.json` as it runs |
+| Produce | the consumer | Parse each fixture, emit a projected tree per `schemas/projection.schema.json` at `form: "raw"`, plus a vocabulary map (`mappings`/`ignored`/`flatten`/`recoveryMarkers`) that is itself the consumer's own data, committed in the consumer's repository -- it encodes facts about that grammar's shape, not about the reference |
+| Compare | `flix-spec` | [`Conformance`](../tools/project/src/main/scala/flix/spec/Conformance.scala) diffs those trees against `fixtures/expected/` and `fixtures/raw/`, validating `mappings` values against `ast/treekind.json` as it runs |
 
 ```mermaid
 flowchart LR
     FIX["fixtures/*.flix"]
-    EXP["fixtures/expected/*.json<br/>generated from the pinned oracle"]
+    RAW["fixtures/raw/*.json<br/>the reference's own tree"]
+    EXP["fixtures/expected/*.json<br/>normalized canonical tree"]
     CONS["consumer parser"]
     ACT["consumer projected trees"]
     MAP["consumer's own projection map"]
-    REP["conformance report<br/>divergence count"]
+    L1["oracle_conformance<br/>structure modulo recovery"]
+    L2["recovery_conformance<br/>error-recovery shape"]
 
-    FIX --> EXP
+    FIX --> RAW -->|"ast/transparency.json"| EXP
     FIX --> CONS --> ACT
-    ACT --> REP
-    EXP --> REP
-    MAP -.->|"vocabulary + transparency"| REP
+    EXP --> L1
+    ACT --> L1
+    RAW -->|"wrapper rules only"| L2
+    ACT --> L2
+    MAP -.->|"vocabulary + transparency"| L1
+    MAP -.->|"vocabulary only"| L2
 ```
 
 ## What is compared
@@ -38,25 +43,56 @@ Per [`PROJECTION.md`](PROJECTION.md) section 3:
   spans are advisory, so comparing either would report differences that are not disagreements
   about structure.
 
-## The two lanes
+## The three lanes
 
-A conformance report has two lanes, and they are deliberately never summed into one score.
+A conformance report has three lanes, and they are deliberately never summed into one score.
 
-| | `oracle_conformance` | `source_invariants` |
-| --- | --- | --- |
-| Compares against | `fixtures/expected`, generated from the pinned reference | the consumer's **own input**, and its own document shape |
-| Authority | `derived` | `independent` |
-| Can falsify the reference | no | yes |
-| Gated by `--baseline` | yes | no |
+| | `oracle_conformance` | `recovery_conformance` | `source_invariants` |
+| --- | --- | --- | --- |
+| Measures | structure, *modulo* error recovery | error-recovery shape, and nothing else | the consumer's output against its own input |
+| Compares against | `fixtures/expected` — the normalized canonical tree | `fixtures/raw` with the wrapper rules applied and the error vocabulary left standing | nothing; it consults no expected tree |
+| Scope | every fixture | only the fixtures whose raw tree contains a recovery marker | every unit the consumer produced |
+| Authority | `derived` | `derived` | `independent` |
+| Can falsify the reference | no | no | yes |
+| Gated by a baseline | `--baseline` | `--recovery-baseline` | no |
 
-The split exists because a single number could not carry the difference. Agreement is measured
-against trees the reference produced, so the first lane inherits the reference's defects by
+The split exists because a single number could not carry the differences. Agreement is measured
+against trees the reference produced, so both derived lanes inherit the reference's defects by
 construction: a consumer that faithfully reproduces a compiler bug scores as agreeing, and one that
 implements the reference's *intent* instead scores as divergent. That is the correct measure of
 **compatibility** — consumers should agree with the exact pinned behaviour — and it is not a measure
-of correctness. See [`DEFECTS.md`](DEFECTS.md), which the lane's `caveat` field names inline.
+of correctness. See [`DEFECTS.md`](DEFECTS.md), which the lanes' `caveat` fields name inline.
 
-The second lane consults no expected tree at all. It asks whether the consumer's output is
+### Why recovery is its own lane
+
+Two parsers can agree completely about what a valid program means and share nothing whatsoever about
+how they resurface from a malformed one. Error recovery is a strategy, not a language feature, and
+folding it into a structural score makes that score mean neither thing.
+
+So the error vocabulary — `ErrorTree`, `OperatorError`, `TrailingDot` — is spliced out of
+`fixtures/expected` before any consumer sees it, and measured on its own against `fixtures/raw`. The
+recovery lane's expectation is **not** the raw tree verbatim: it is the raw tree with the *wrapper*
+rules applied and only the error vocabulary left in, so the sole thing it sees that the structural
+lane does not is recovery shape. Comparing against raw verbatim was the obvious design and the wrong
+one — wrapper divergences the first lane has already accounted for would drown the signal.
+
+**Transparency here has to be symmetric, and that is what a consumer must declare.** One consumer
+tree cannot both have and lack recovery markers, so the projection map names which of its own nodes
+are markers, in `recoveryMarkers`:
+
+- `oracle_conformance` splices them out of the consumer's side, exactly as normalisation spliced
+  `ErrorTree` out of the canonical side. A consumer emitting an `ERROR` node is not penalised for
+  information the canonical tree deliberately dropped.
+- `recovery_conformance` keeps them on both sides and compares nothing else.
+
+Listing such a node in `flatten` instead would remove it from *both* lanes and its shape would be
+measured nowhere; the comparison rejects a node declared as both. A map declaring **no**
+`recoveryMarkers` gets a `not-applicable` verdict with that as the recorded reason, rather than a
+failure for not modelling recovery at all.
+
+### The independent lane
+
+The third lane consults no expected tree at all. It asks whether the consumer's output is
 self-consistent and faithful to the source it was produced from:
 
 | Check | Asks |
@@ -66,13 +102,18 @@ self-consistent and faithful to the source it was produced from:
 | `token-vocabulary` | is every token kind one the reference's lexer defines? |
 | `token-accounting` | does concatenating token text reproduce the source? |
 
-**The lanes are genuinely independent, and the interesting case is lane 1 passing while lane 2
-fails.** Blank one token's text in a copy of `fixtures/expected` and `oracle_conformance` still
-reports every fixture agreeing with zero divergences — kinds, child order and nesting are untouched
-— while `token-accounting` fails. A tree can be perfectly well-shaped and have lost its contents,
-and only the lane that ignores the oracle can see that.
+**The lanes are genuinely independent, and each interesting case is one lane passing while another
+fails.** CI asserts both:
 
-So the second lane gates too, and is **not** subject to `--baseline`. The ratchet exists because
+- Blank one token's text in a copy of `fixtures/expected` and `oracle_conformance` still reports
+  every fixture agreeing with zero divergences — kinds, child order and nesting are untouched — while
+  `token-accounting` fails. A tree can be perfectly well-shaped and have lost its contents, and only
+  the lane that ignores the oracle can see that.
+- Delete the error markers from one raw tree and `oracle_conformance` stays at zero divergences,
+  because normalisation removes those nodes from both sides before it looks, while
+  `recovery_conformance` fails. If it did not, the recovery lane would be measuring nothing.
+
+So the third lane gates too, and is **not** subject to any baseline. The ratchets exist because
 mapping coverage is approached incrementally, one mapping at a time; losing a token's text is not a
 gap a consumer is partway through closing.
 
@@ -159,18 +200,41 @@ Instructing a reader to prefer the artifact does not make a retyped number self-
 block above, which `generateDocs` rewrites and CI diffs. The figures are deliberately not repeated
 here, so that this paragraph cannot become the next example of its own subject.
 
-So the projection map declares transparency on both sides:
-
-- `elide` — canonical kinds the consumer does not produce (`Type.Type`, an empty `Doc`, a
-  single-child `QName`);
-- `ignored` — the consumer's own wrappers with no counterpart in the reference.
-
 A transparent node is **dropped when empty** and **replaced by its child when it has exactly one**.
 With two or more children it is *kept*: splicing its children into the parent would discard real
 structure and let a genuine disagreement pass as a mapping decision.
 
 Handling only one side is worse than handling neither — the other side's wrapper then faces a real
 node and reports as a disagreement.
+
+### The canonical side is handled upstream now
+
+Transparency used to be declared symmetrically *in every consumer's map*: `elide` for canonical
+wrappers and `ignored` for the consumer's own. Half of that was in the wrong repository. Whether
+`Type.Type` carries information is a fact about the reference's grammar, and re-deriving it per
+consumer meant each consumer's own shape leaked into the answer — with one instrumented consumer,
+nothing could have told the difference.
+
+So the canonical half moved to [`ast/transparency.json`](../ast/transparency.json), applied once when
+fixtures are generated (see [`PROJECTION.md`](PROJECTION.md) §2.3). `elide` and `flattenCanonical`
+are deprecated in the map schema, retained only for consumer-specific extras.
+
+What a consumer still declares, and must:
+
+| Field | Names | Applies to |
+| --- | --- | --- |
+| `ignored` | its own wrappers, transparent at arity ≤ 1 | its side |
+| `flatten` | its own pure grouping nodes, spliced at any arity | its side |
+| `recoveryMarkers` | its own error-recovery nodes | its side, in the structural lane only |
+
+**Transparency is one bottom-up fixed point over all of these, not a sequence of passes.** That was
+learned the hard way. An earlier revision applied splicing and elision once per level, in sequence,
+so a node promoted into a level from below never met the other rule — and the canonical trees contain
+exactly that shape, `Type.Type` wrapping an empty `ErrorTree` on a malformed trait signature.
+Splicing the marker leaves the wrapper childless and therefore elidable, which a single pass could
+not see. The raw trees failed their own comparison at two fixtures because of it. `verify.sh` now
+asserts the fixed point by feeding `fixtures/raw` back in as a consumer whose vocabulary happens to
+be the canonical one: both derived lanes must reach zero divergences from the same input.
 
 Each rule was added because measurement demanded it, not by design. Against `tree-sitter-flix`:
 
@@ -281,20 +345,21 @@ reference", and collapsing the two would make an incomplete map look like a brok
 # Identity: the expectations must agree with themselves.
 ./gradlew :tools:project:conformance --args="--actual fixtures/expected"
 
-# A consumer, with its vocabulary map and a ratchet. The map is the consumer's own data, not
+# A consumer, with its vocabulary map and both ratchets. The map is the consumer's own data, not
 # flix-spec's -- see "The split" above -- so it is a path into the consumer's checkout, not this
 # repository.
 ./gradlew :tools:project:conformance --args="\
     --actual path/to/consumer/output \
     --map path/to/consumer/conformance/projection-map.json \
     --report build/conformance.json \
-    --baseline 109"
+    --baseline 61 \
+    --recovery-baseline 45"
 ```
 
-Exit status is non-zero when divergences exceed `--baseline`, **or when the source-invariants lane
-fails**. Lower the baseline as divergences are fixed; never raise it without saying why. The
-baseline does not apply to the second lane, and the report records the baseline it was gated
-against so a passing verdict cannot hide the threshold that produced it.
+Exit status is non-zero when either derived lane exceeds its own baseline, **or when the
+source-invariants lane fails**. Lower a baseline as divergences are fixed; never raise one without
+saying why. No baseline applies to the third lane, and the report records the baseline each lane was
+gated against so a passing verdict cannot hide the threshold that produced it.
 
 ```sh
 # Validate a report against the published shape.
@@ -303,25 +368,54 @@ against so a passing verdict cannot hide the threshold that produced it.
 
 ## Measured baselines
 
-Measured at pin `v0.75.1` (`318bb51a`), fixture revision `6b6a4256`, tree-sitter CLI 0.26.11,
-`tree-sitter-flix` at `9a458c0`. **Reproducible**: `npm run conformance` in that repository, with
+Measured at pin `v0.75.1` (`318bb51a`), fixture revision `4eccee63`, tree-sitter CLI 0.26.11,
+`tree-sitter-flix` at `45fd604`. **Reproducible**: `npm run conformance` in that repository, with
 `FLIX_SPEC` pointing here, adapts all 136 fixtures and runs this comparison.
 
 | Consumer | Lane | Verdict | Detail |
 | --- | --- | --- | --- |
-| `tree-sitter-flix` | `oracle_conformance` | **fail** | 87 / 136 fixtures agree · 104 divergences · 1864 nodes compared · **99% depth** · 20 unmapped |
+| `tree-sitter-flix` | `oracle_conformance` | **pass** (baseline 61) | 103 / 136 fixtures agree · 61 divergences · 1923 nodes compared · **99% depth** · 12 unmapped |
+| `tree-sitter-flix` | `recovery_conformance` | **fail** (baseline 45) | 5 / 21 in-scope fixtures agree · 45 divergences · 182 nodes compared · **100% depth** |
 | `tree-sitter-flix` | `source_invariants` | **pass** (1 of 4 checks evaluated) | `document-shape` pass · the other three `not-applicable` |
 
-Read the second row carefully, because it is the one most easily overstated. The lane passes on the
-strength of a *single* applicable check. `kind-vocabulary` and `token-vocabulary` stand down because
+### What splitting the lanes cost, and what it did not
+
+Moving the canonical transparency rules upstream is only defensible if it is **score-neutral where
+it must be**, and that was measured against the same grammar and the same CLI, before and after:
+
+| | structural agreement | structural divergences | depth | recovery |
+| --- | ---: | ---: | ---: | ---: |
+| before | 102 / 136 | 67 | 99% | not measured |
+| after | 103 / 136 | 61 | 99% | 5 / 21, 45 divergences |
+
+Broken down by fixture polarity, which is the only breakdown that settles it:
+
+- **Positive fixtures: identical.** The same 21 diverge. None started, none stopped, and depth did
+  not move. Ten `elide` entries were deleted from the consumer's map and the structural measurement
+  did not notice — which is the claim that had to hold.
+- **Negative fixtures: the recovery signal relocated.** Six structural divergences became recovery
+  divergences, and `types__effect-annotation-wrong-slash` stopped diverging structurally altogether
+  because its disagreement was purely about recovery shape.
+
+Asserting neutrality over all 136 would have been the wrong test and would have masked a real
+result. Negative fixtures were *supposed* to move; that is what the split is for.
+
+The 45 recovery divergences are not a regression either. They are signal that used to be averaged
+into one number: `tree-sitter-flix`'s `ERROR` node lands in different places than the reference's
+`ErrorTree`, and its `unterminated_literal`/`unterminated_string` are named nodes where the reference
+emits only an `Err` token. Both are real modelling differences, and a lane that surfaces them is
+worth more than a score that absorbed them.
+
+Read the `source_invariants` row carefully, because it is the one most easily overstated. The lane
+passes on the strength of a *single* applicable check. `kind-vocabulary` and `token-vocabulary` stand down because
 a projection map is in play, so native names are what the map exists to translate; `token-accounting`
 stands down because the adapter emits no token text. That is not a criticism of the grammar — it is
 an accurate statement that this consumer exercises a **structural** profile, and that the strongest
 oracle-free check in the suite has nothing to bite on. `checksEvaluated` exists in the report
 precisely so "passes `source_invariants`" cannot be quoted without it.
 
-Agreement moved 77 → 122 across five stages, and then **deliberately back to 107** — the single most
-important number in this table is the one that went down.
+Agreement moved 77 → 122 across five stages, and then **deliberately back to 103** — the single most
+important number in this table is still the one that went down.
 
 ### Agreement and depth trade against each other
 
@@ -367,11 +461,11 @@ reference calls `Ident`; a map entry is per node name with no context, so mappin
 to `Operator` regressed the score. Tree-sitter's `alias()` applies per position, which is what
 carries the distinction into the tree.
 
-What remains is 104 divergences across the fixtures at **99% depth**, with 20 unmapped nodes. The
-projection map is finished: every name that can be mapped is mapped, and the seven that meant
-different things in different positions were split in the grammar instead, because a map keyed on
-node name cannot express position. Three ambiguous names survive (`aliased_name`, `argument`,
-`literal_pattern`) and need the same treatment.
+What remains is 61 structural divergences at **99% depth** with 12 unmapped nodes, plus 45 recovery
+divergences over the 21 in-scope fixtures. The projection map is finished: every name that can be
+mapped is mapped, and the seven that meant different things in different positions were split in the
+grammar instead, because a map keyed on node name cannot express position. Three ambiguous names
+survive (`aliased_name`, `argument`, `literal_pattern`) and need the same treatment.
 
 At this depth the agreement count is almost entirely a function of real disagreement rather than of
 what is being skipped, which is the state the number needed to be in before it was worth optimising.
@@ -387,8 +481,15 @@ two divergences. Not worth it, and now demonstrated rather than assumed.
 
 Reproducing this needs the `tree-sitter` CLI and a built grammar, so it is **not** part of CI here;
 the consumer repository is the right home for that job. What CI does verify is that the comparison
-itself is sound: `fixtures/expected` must agree with itself at zero divergences, and a deliberately
-mutated copy must be detected.
+itself is sound, on four counts:
+
+- `fixtures/expected` agrees with itself at zero divergences;
+- a deliberately mutated copy is detected;
+- `fixtures/raw`, handed back in as a consumer declaring the canonical transparency rules on its own
+  side, reaches zero divergences in **both** derived lanes — the assertion that symmetric
+  transparency composes exactly, and the one that caught the fixed-point defect;
+- deleting the error markers from one raw tree leaves the structural lane at zero and fails the
+  recovery lane, so the split is demonstrably load-bearing rather than decorative.
 
 All fixtures are compared, including the negative ones.
 
@@ -401,7 +502,7 @@ at the closing tag. A consumer-side adapter that silently drops the inputs it ca
 always flatter its own parser, so count what was skipped and why. The current measurement adapts
 136 of 136 fixtures with zero skips, and reports its skip count either way.
 
-### On the adapter, and why the numbers above are not yet reproducible
+### On the adapter
 
 Converting `tree-sitter parse --xml` output into `--actual`'s shape still takes a script that lives
 in neither repository. Only *named* nodes become tree nodes — anonymous tokens are bare text between
@@ -409,9 +510,12 @@ elements, and the comparison drops token leaves anyway — so the conversion is 
 deliberately not written to synthesise token leaves: this adapter has no Flix tokenization, so
 inventing `text` would make `token-accounting` evaluate a fiction rather than stand down honestly.
 
-That the numbers above cannot be re-derived from a clean checkout is a real gap, and the right home
-for the fix is `tree-sitter-flix` — it owns the grammar, the projection map, and the CLI dependency,
-none of which belong here. Until then this row is a measurement someone took, not one CI maintains.
+That script now lives in `tree-sitter-flix` as `scripts/flix-spec-conformance.mjs`, which is the
+right home: that repository owns the grammar, the projection map and the CLI dependency, none of
+which belong here. `npm run conformance` with `FLIX_SPEC` pointing at a checkout of this repository
+re-derives every number in the table above from a clean checkout, and gates on both ratchets in
+`conformance/baseline.json`. It is still a measurement someone runs rather than one this
+repository's CI maintains — the CLI dependency is why.
 
 ## Precedence chains
 
@@ -430,8 +534,16 @@ An earlier validator rejected the overlap, and this consumer is what proved the 
 
 Start empty and let the report drive it: every run lists `unmapped` in frequency order with counts, so the
 next most valuable mapping is always the top of that list. Map what is genuinely the same node;
-declare wrappers transparent; leave the rest unmapped rather than guessing, because a wrong mapping
-reports as agreement and is worse than a gap.
+declare your own wrappers transparent in `ignored`; declare your own error nodes in
+`recoveryMarkers`; leave the rest unmapped rather than guessing, because a wrong mapping reports as
+agreement and is worse than a gap.
+
+Do **not** add `elide` or `flattenCanonical` entries for canonical wrappers. They are deprecated:
+`fixtures/expected` already has those nodes removed, so an entry naming one is dead weight, and an
+entry naming a canonical kind that is *not* transparent in the reference is a claim about the
+reference that belongs in `ast/transparency.json` with an argument behind it — not in a consumer's
+map, where nothing can check it.
 
 `mappings` values are validated against `ast/treekind.json`, so a typo or a stale kind name fails
-immediately instead of silently never matching.
+immediately instead of silently never matching. `validateProjectionMap` also rejects a node declared
+both a recovery marker and flattened, because its shape would then be measured in neither lane.
