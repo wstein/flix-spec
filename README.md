@@ -49,7 +49,7 @@ Key components established:
 - **Corpus definition ([`corpus/`](corpus/))**: 873 pinned `.flix` files (688 under `main/`, 185 under `examples/`), inclusion rules, and a tree-hash-verified fetch script.
 - **Projected fixtures ([`fixtures/`](fixtures/))**: expected trees generated from the pinned oracle and held under a diff gate. Kind names are sub-trait qualified, sources are repository-relative, and diagnostics record `kind`/`line` as gated with `col`/`message` advisory. **23 of the 24 diagnostic kinds `Reader`/`Lexer`/`Parser2` can actually produce are now exercised** — 15 of 15 `LexerError` variants and 8 of 9 `Parser2`-raised `ParseError` variants. The ninth, `MisplacedComments`, is not just unreproduced but **unreachable by construction**: `expect()` calls `open()`, which unconditionally consumes any leading comment before `expect()` ever inspects it, so the match arm mapping a comment to `MisplacedComments` can never fire — see `docs/CONFORMANCE.md` for the full trace. Three further `ParseError` variants (`MissingRegion`, `NeedAtleastOne`, `MissingBinaryOperator`) are raised only by `Weeder2`, a phase this repository's pipeline never runs, and are excluded from that count as structurally out of scope rather than silently missing.
 - **Coverage, reachability and status ([`ast/coverage.json`](ast/coverage.json), [`ast/reachability.json`](ast/reachability.json), [`ast/status.json`](ast/status.json))**: what the fixtures exercise, what the reference emits across the whole corpus, and the joined per-kind verdict — see [Kind status](#kind-status) below.
-- **Conformance checking ([`docs/CONFORMANCE.md`](docs/CONFORMANCE.md))**: consumers emit canonical projected trees; [`Conformance`](tools/project/src/main/scala/flix/spec/Conformance.scala) does the comparison once, here, rather than four times across four repositories. Each consumer's projection map — declaring its vocabulary plus wrapper transparency — encodes facts about that consumer's grammar rather than about the reference, so it lives in that consumer's repository; `flix-spec` owns the schema ([`schemas/projection-map.schema.json`](schemas/projection-map.schema.json)), the canonical vocabulary its targets are checked against, and the comparison.
+- **Conformance checking ([`docs/CONFORMANCE.md`](docs/CONFORMANCE.md))**: consumers emit canonical projected trees; [`Conformance`](tools/project/src/main/scala/flix/spec/Conformance.scala) does the comparison once, here, rather than four times across four repositories. Its report has **two lanes that are never summed**: `oracle_conformance` measures agreement with the pinned reference and inherits its defects, while `source_invariants` checks the consumer's output against its own input and inherits nothing — so a consumer can pass the first and fail the second, which is exactly the case a single score hid. Each consumer's projection map — declaring its vocabulary plus wrapper transparency — encodes facts about that consumer's grammar rather than about the reference, so it lives in that consumer's repository; `flix-spec` owns the schema ([`schemas/projection-map.schema.json`](schemas/projection-map.schema.json)), the canonical vocabulary its targets are checked against, and the comparison.
 - **CI and verification**: actions pinned by commit SHA, runner pinned to `ubuntu-24.04`, and Dependabot for actions and Gradle.
 
   | Workflow | Trigger | Does |
@@ -131,6 +131,7 @@ schemas/
   tokenkind.schema.json     # JSON Schema for ast/tokenkind.json
   projection.schema.json    # JSON Schema for canonical projected trees
   projection-map.schema.json # JSON Schema for consumer projection maps
+  conformance-report.schema.json # JSON Schema for the two-lane conformance report
   unattachable.schema.json  # JSON Schema for ast/unattachable.json
   defect-ledger.schema.json # JSON Schema for defects/ledger.json
 ast/
@@ -163,6 +164,8 @@ tools/
       DefectLedger.scala             # Validates defects/ledger.json; re-runs each reproducer
       DocMetrics.scala               # Rewrites the generated blocks in README.md and docs/
       Conformance.scala              # Compares a consumer's projected trees against fixtures/expected/
+      SourceInvariants.scala         # The oracle-free lane: shape, vocabulary, token accounting
+      TokenAccounting.scala          # The shared "a tree must account for its source" rule
     verify.sh            # End-to-end verification suite
 packaging/               # Gradle module: packages pin.json/ast/schemas/fixtures/corpus.json
                           # into the io.github.wstein:flix-spec Maven artifact
@@ -235,6 +238,7 @@ additionally needs `credentials { username = ...; password = /* a token with rea
 ./gradlew :tools:project:validateDefects                   # Re-check defects/ledger.json against the pinned oracle
 ./gradlew :tools:project:generateDocs                      # Rewrite the generated blocks in README/CONFORMANCE/DEFECTS
 ./gradlew :tools:project:conformance --args='--actual <dir>' # Check a consumer against the fixtures
+./gradlew :tools:project:validateReport --args='<report.json>'  # Validate a two-lane conformance report
 ./gradlew test                                             # ScalaTest suite
 ./tools/project/verify.sh                                  # End-to-end verification suite
 ./gradlew spotlessApply                                    # Format Scala, scripts, workflows, JSON

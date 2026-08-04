@@ -38,6 +38,72 @@ Per [`PROJECTION.md`](PROJECTION.md) section 3:
   spans are advisory, so comparing either would report differences that are not disagreements
   about structure.
 
+## The two lanes
+
+A conformance report has two lanes, and they are deliberately never summed into one score.
+
+| | `oracle_conformance` | `source_invariants` |
+| --- | --- | --- |
+| Compares against | `fixtures/expected`, generated from the pinned reference | the consumer's **own input**, and its own document shape |
+| Authority | `derived` | `independent` |
+| Can falsify the reference | no | yes |
+| Gated by `--baseline` | yes | no |
+
+The split exists because a single number could not carry the difference. Agreement is measured
+against trees the reference produced, so the first lane inherits the reference's defects by
+construction: a consumer that faithfully reproduces a compiler bug scores as agreeing, and one that
+implements the reference's *intent* instead scores as divergent. That is the correct measure of
+**compatibility** — consumers should agree with the exact pinned behaviour — and it is not a measure
+of correctness. See [`DEFECTS.md`](DEFECTS.md), which the lane's `caveat` field names inline.
+
+The second lane consults no expected tree at all. It asks whether the consumer's output is
+self-consistent and faithful to the source it was produced from:
+
+| Check | Asks |
+| --- | --- |
+| `document-shape` | is every unit a well-formed projected document? |
+| `kind-vocabulary` | is every node kind one the reference defines? |
+| `token-vocabulary` | is every token kind one the reference's lexer defines? |
+| `token-accounting` | does concatenating token text reproduce the source? |
+
+**The lanes are genuinely independent, and the interesting case is lane 1 passing while lane 2
+fails.** Blank one token's text in a copy of `fixtures/expected` and `oracle_conformance` still
+reports every fixture agreeing with zero divergences — kinds, child order and nesting are untouched
+— while `token-accounting` fails. A tree can be perfectly well-shaped and have lost its contents,
+and only the lane that ignores the oracle can see that.
+
+So the second lane gates too, and is **not** subject to `--baseline`. The ratchet exists because
+mapping coverage is approached incrementally, one mapping at a time; losing a token's text is not a
+gap a consumer is partway through closing.
+
+### `not-applicable` is a third verdict, and it carries weight
+
+A check that cannot be evaluated says so, with the reason. Spans and tokens are not gated, so a
+purely structural adapter that emits no token text is exercising a choice the contract grants it:
+failing `token-accounting` would penalise a permitted decision, and passing it would claim a
+property nothing established. Neither is true, so neither is reported. The vocabulary checks stand
+down the same way when a projection map is in play, since native node names are then exactly what
+the map exists to translate rather than a defect to report twice.
+
+This is also what makes the report meaningful to a lexical consumer, which has no tree to compare
+and can still pass `token-accounting` on its own merit.
+
+### Provenance
+
+Every report is stamped with `pinTag`, `pinCommit`, `oracleSha256`, `corpusTreeHash`,
+`fixtureRevision` and both vocabulary digests. A conformance number without them is not comparable
+to any other conformance number — this project has already seen a consumer depend on fixtures from
+one Flix release while testing against a checkout of another, a mismatch no naming convention
+detects.
+
+`fixtureRevision` is a SHA-256 over the name and content digest of every expectation, so a renamed
+fixture moves it as surely as an edited one.
+
+The shape is `schemas/conformance-report.schema.json`, and
+`./gradlew :tools:project:validateReport --args='<report.json>'` checks a report against it —
+including the relationships a schema cannot express, such as a verdict that does not follow from
+its own numbers, or more divergences listed than counted.
+
 ## Diagnostic-kind coverage
 
 `Reader`/`Lexer`/`Parser2` can raise 24 distinct diagnostic kinds in this pipeline: 15
@@ -225,8 +291,15 @@ reference", and collapsing the two would make an incomplete map look like a brok
     --baseline 109"
 ```
 
-Exit status is non-zero when divergences exceed `--baseline`, so the ratchet is the gate. Lower the
-baseline as divergences are fixed; never raise it without saying why.
+Exit status is non-zero when divergences exceed `--baseline`, **or when the source-invariants lane
+fails**. Lower the baseline as divergences are fixed; never raise it without saying why. The
+baseline does not apply to the second lane, and the report records the baseline it was gated
+against so a passing verdict cannot hide the threshold that produced it.
+
+```sh
+# Validate a report against the published shape.
+./gradlew :tools:project:validateReport --args='build/conformance.json'
+```
 
 ## Measured baselines
 
