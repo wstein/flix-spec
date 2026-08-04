@@ -2,12 +2,13 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://raw.githubusercontent.com/wstein/flix-spec/main/schemas/projection.schema.json",
   "title": "Flix Projected Concrete Syntax Tree Schema",
-  "description": "Schema for projected concrete syntax trees produced from Flix source files against the pinned oracle.",
+  "description": "Schema for projected concrete syntax trees produced from Flix source files against the pinned oracle. A document is one of two forms of the same parse, and `form` says which: `raw` is the reference's own tree, node for node, and `normalized` is that tree with ast/transparency.json's rules applied. Both are committed -- fixtures/raw/ and fixtures/expected/ -- because they answer different questions, and a projected tree whose shape depends on an unstated normalisation is not comparable to anything.",
   "type": "object",
   "required": [
     "schemaVersion",
     "generatedBy",
     "toolVersion",
+    "form",
     "upstreamCommit",
     "oracleSha256",
     "units"
@@ -15,7 +16,13 @@
   "properties": {
     "schemaVersion": {
       "type": "integer",
-      "minimum": 1
+      "minimum": 2,
+      "description": "2: `form` became required, because there are now two committed forms of every parse and an unlabelled one cannot be placed. A reader that gated on version 1 was reading documents that had no normalisation applied at all; failing loudly is the intended outcome."
+    },
+    "form": {
+      "type": "string",
+      "enum": ["raw", "normalized"],
+      "description": "`raw` -- exactly what the reference parser produced, the provenance record and the authority the recovery lane compares against. `normalized` -- the canonical tree, with wrapper nodes elided and the error vocabulary spliced out per ast/transparency.json, which is what a consumer is asked to agree with."
     },
     "generatedBy": {
       "type": "string",

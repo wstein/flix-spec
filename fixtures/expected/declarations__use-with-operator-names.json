@@ -1,7 +1,8 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "generatedBy": "flix.spec.ProjectionExtractor",
-  "toolVersion": "1.0.0",
+  "toolVersion": "2.0.0",
+  "form": "normalized",
   "upstreamCommit": "318bb51a953c58a8785251a80fad8aea005f729f",
   "oracleSha256": "e3177700aead8a22a42c910e73bfb8a326fefdbab4e3eaeaf6d55c328a6bd938",
   "units": [

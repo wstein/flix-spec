@@ -19,21 +19,33 @@ import scala.jdk.CollectionConverters._
   * What it catches, in any parser and not just this one: dropped tokens, duplicated tokens, and tokens whose recorded
   * text does not match the source they came from. A structural comparison cannot see any of those, because a tree can
   * be perfectly well-shaped and still have lost a token's contents.
+  *
+  * It runs over **both** committed forms, and the second one earns its place. [[Normalizer]] removes nodes, never
+  * leaves: a wrapper's single child takes its position and an error marker's children take its place, so token text is
+  * supposed to be invariant under normalisation. "Supposed to" is how a property stops holding. Asserting losslessness
+  * on `fixtures/expected` as well as `fixtures/raw` turns that into a measurement, and it is the check that would fail
+  * first if a future rule ever discarded a subtree instead of unwrapping one.
   */
 object LosslessCheck {
 
   def main(args: Array[String]): Unit = {
-    val expectedDir = Paths.get("fixtures/expected")
-    val files = Files
-      .list(expectedDir)
-      .iterator()
-      .asScala
-      .filter(_.getFileName.toString.endsWith(".json"))
-      .toList
-      .sortBy(_.toString)
+    val dirs = List(ProjectionExtractor.RawDir, ProjectionExtractor.NormalizedDir).map(Paths.get(_))
+    val files = dirs.flatMap { dir =>
+      if (!Files.isDirectory(dir)) {
+        System.err.println(s"FATAL: $dir/ does not exist — run generateFixtures")
+        sys.exit(1)
+      }
+      Files
+        .list(dir)
+        .iterator()
+        .asScala
+        .filter(_.getFileName.toString.endsWith(".json"))
+        .toList
+        .sortBy(_.toString)
+    }
 
     if (files.isEmpty) {
-      System.err.println("FATAL: no expectations in fixtures/expected/")
+      System.err.println(s"FATAL: no projected trees in ${dirs.mkString(" or ")}")
       sys.exit(1)
     }
 
@@ -49,14 +61,14 @@ object LosslessCheck {
           // Never silently pass over an input we could not read: a check that skips what it
           // cannot handle reports success it has not earned.
           skipped += 1
-          failures += s"${f.getFileName}: source ${source} does not exist"
+          failures += s"$f: source ${source} does not exist"
         } else {
           val fromTree = TokenAccounting.reconstruct(unit("tree"))
           val fromDisk = TokenAccounting.squeeze(Files.readString(source, StandardCharsets.UTF_8))
           checked += 1
           if (fromTree != fromDisk)
             failures +=
-              s"${f.getFileName}: token text does not reconstruct ${unit("source").asString}\n" +
+              s"$f: token text does not reconstruct ${unit("source").asString}\n" +
                 TokenAccounting.describeDivergence(fromTree, fromDisk)
         }
       }

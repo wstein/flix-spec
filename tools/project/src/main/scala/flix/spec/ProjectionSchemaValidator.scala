@@ -3,8 +3,13 @@ package flix.spec
 import java.nio.file.{Files, Paths}
 import scala.jdk.CollectionConverters._
 
-/** Structural validation of `fixtures/expected&#47;*.json` against `schemas/projection.schema.json`, replacing the
-  * former `tools/project/validate-projection.py`. Run from the repository root.
+/** Structural validation of both committed forms -- `fixtures/raw&#47;*.json` and `fixtures/expected&#47;*.json` --
+  * against `schemas/projection.schema.json`, replacing the former `tools/project/validate-projection.py`. Run from the
+  * repository root.
+  *
+  * Both, not one. The normalised trees are the ones consumers compare against, but the raw trees are what the recovery
+  * lane compares against and what every measurement of the reference's own vocabulary is taken from; a malformed
+  * document in either is a malformed published artifact.
   *
   * Two checks the schema alone cannot express, on top of [[SchemaValidator]]'s generic walk:
   *
@@ -73,17 +78,18 @@ object ProjectionSchemaValidator {
       Json.parseFile(Paths.get("ast/tokenkind.json"))("kinds").asArray.map(_("name").asString).toSet
     val errors = new SchemaValidator.Errors
 
-    val files = Files
-      .list(Paths.get("fixtures/expected"))
-      .iterator()
-      .asScala
-      .map(_.toString)
-      .filter(_.endsWith(".json"))
-      .toList
-      .sorted
+    val dirs = List(ProjectionExtractor.RawDir, ProjectionExtractor.NormalizedDir)
+    val files = dirs.flatMap { dir =>
+      val path = Paths.get(dir)
+      if (!Files.isDirectory(path)) {
+        System.err.println(s"FATAL: $dir/ does not exist — run generateFixtures")
+        sys.exit(1)
+      }
+      Files.list(path).iterator().asScala.map(_.toString).filter(_.endsWith(".json")).toList.sorted
+    }
 
     if (files.isEmpty) {
-      System.err.println("FATAL: no expectations found in fixtures/expected/")
+      System.err.println(s"FATAL: no projected trees found in ${dirs.mkString(" or ")}")
       sys.exit(1)
     }
 

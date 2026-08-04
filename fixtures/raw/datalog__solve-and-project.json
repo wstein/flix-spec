@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 2,
+  "generatedBy": "flix.spec.ProjectionExtractor",
+  "toolVersion": "2.0.0",
+  "form": "raw",
+  "upstreamCommit": "318bb51a953c58a8785251a80fad8aea005f729f",
+  "oracleSha256": "e3177700aead8a22a42c910e73bfb8a326fefdbab4e3eaeaf6d55c328a6bd938",
+  "units": [
+    {
+      "source": "fixtures/positive/datalog__solve-and-project.flix",
+      "diagnostics": [],
+      "tree": {"kind":"Root","span":{"start":{"line":1,"col":1},"end":{"line":2,"col":1}},"children":[{"kind":"UsesOrImports.UseOrImportList","span":{"start":{"line":1,"col":1},"end":{"line":1,"col":1}},"children":[]},{"kind":"Decl.Def","span":{"start":{"line":1,"col":1},"end":{"line":1,"col":43}},"children":[{"kind":"Doc","span":{"start":{"line":1,"col":1},"end":{"line":1,"col":1}},"children":[]},{"kind":"AnnotationList","span":{"start":{"line":1,"col":1},"end":{"line":1,"col":1}},"children":[]},{"kind":"ModifierList","span":{"start":{"line":1,"col":1},"end":{"line":1,"col":1}},"children":[]},{"token":"KeywordDef","text":"def","start":{"line":1,"col":1},"end":{"line":1,"col":4}},{"kind":"Ident","span":{"start":{"line":1,"col":5},"end":{"line":1,"col":6}},"children":[{"token":"NameLowercase","text":"f","start":{"line":1,"col":5},"end":{"line":1,"col":6}}]},{"kind":"ParameterList","span":{"start":{"line":1,"col":6},"end":{"line":1,"col":8}},"children":[{"token":"ParenL","text":"(","start":{"line":1,"col":6},"end":{"line":1,"col":7}},{"token":"ParenR","text":")","start":{"line":1,"col":7},"end":{"line":1,"col":8}}]},{"token":"Colon","text":":","start":{"line":1,"col":8},"end":{"line":1,"col":9}},{"kind":"Type.Type","span":{"start":{"line":1,"col":10},"end":{"line":1,"col":14}},"children":[{"kind":"QName","span":{"start":{"line":1,"col":10},"end":{"line":1,"col":14}},"children":[{"kind":"Ident","span":{"start":{"line":1,"col":10},"end":{"line":1,"col":14}},"children":[{"token":"NameUppercase","text":"Unit","start":{"line":1,"col":10},"end":{"line":1,"col":14}}]}]}]},{"token":"Equal","text":"=","start":{"line":1,"col":15},"end":{"line":1,"col":16}},{"kind":"Expr.Expr","span":{"start":{"line":1,"col":17},"end":{"line":1,"col":43}},"children":[{"kind":"Expr.FixpointSolveWithProject","span":{"start":{"line":1,"col":17},"end":{"line":1,"col":43}},"children":[{"token":"KeywordSolve","text":"solve","start":{"line":1,"col":17},"end":{"line":1,"col":22}},{"kind":"Expr.Expr","span":{"start":{"line":1,"col":23},"end":{"line":1,"col":25}},"children":[{"kind":"QName","span":{"start":{"line":1,"col":23},"end":{"line":1,"col":25}},"children":[{"kind":"Ident","span":{"start":{"line":1,"col":23},"end":{"line":1,"col":25}},"children":[{"token":"NameLowercase","text":"db","start":{"line":1,"col":23},"end":{"line":1,"col":25}}]}]}]},{"token":"KeywordProject","text":"project","start":{"line":1,"col":26},"end":{"line":1,"col":33}},{"kind":"Ident","span":{"start":{"line":1,"col":34},"end":{"line":1,"col":43}},"children":[{"token":"NameUppercase","text":"Reachable","start":{"line":1,"col":34},"end":{"line":1,"col":43}}]}]}]}]}]}
+    }
+  ]
+}

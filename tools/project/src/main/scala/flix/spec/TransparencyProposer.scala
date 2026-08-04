@@ -47,9 +47,11 @@ object TransparencyProposer {
     }
 
   def main(args: Array[String]): Unit = {
-    val dir = Paths.get("fixtures/expected")
+    // The verbatim trees, never the normalised ones: a rule cannot be proposed from a tree the rules have already
+    // been applied to, and a committed rule cannot be contradicted by one either.
+    val dir = Paths.get(ProjectionExtractor.RawDir)
     if (!Files.isDirectory(dir)) {
-      System.err.println(s"FATAL: no projected trees in $dir/ — run generateFixtures first")
+      System.err.println(s"FATAL: no raw projected trees in $dir/ — run generateFixtures first")
       sys.exit(1)
     }
     val files = Files
@@ -62,7 +64,7 @@ object TransparencyProposer {
       .sorted
 
     if (files.isEmpty) {
-      System.err.println(s"FATAL: no projected trees in $dir/")
+      System.err.println(s"FATAL: no raw projected trees in $dir/")
       sys.exit(1)
     }
 
