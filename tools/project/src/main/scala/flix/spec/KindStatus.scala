@@ -121,6 +121,9 @@ object KindStatus {
     val reach = Json.parseFile(Paths.get("ast/reachability.json"))
     val unattach = Json.parseFile(Paths.get("ast/unattachable.json"))
     val schema = Json.parseFile(Paths.get("schemas/unattachable.schema.json"))
+    // Loaded for its side effect at this point: it schema-checks itself, asserts its own citations were read at
+    // pin.json's commit, and refuses an entry that also claims to be structurally unattachable.
+    Transparency.load()
 
     val errors = new SchemaValidator.Errors
     SchemaValidator.check(unattach, schema, schema, "unattachable.json", errors)

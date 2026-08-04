@@ -163,6 +163,15 @@ tasks.register<JavaExec>("validateProjectionMap") {
     workingDir = rootProject.projectDir
 }
 
+tasks.register<JavaExec>("proposeTransparency") {
+    description =
+        "Reports which canonical TreeKinds behave like transparent wrappers across the fixtures -- at most one " +
+            "child, never a token child -- and how that compares to ast/transparency.json. Reports; never writes."
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("flix.spec.TransparencyProposer")
+    workingDir = rootProject.projectDir
+}
+
 tasks.register<JavaExec>("generateCoverage") {
     description = "Generates ast/coverage.json: which TreeKinds fixtures/expected/ exercises."
     classpath = sourceSets["main"].runtimeClasspath

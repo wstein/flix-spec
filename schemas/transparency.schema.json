@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/wstein/flix-spec/main/schemas/transparency.schema.json",
+  "title": "Flix Canonical-Tree Transparency Contract",
+  "description": "Schema for ast/transparency.json, the curated list of canonical TreeKinds that are removed when a projected tree is normalised. An entry is a claim about the *reference's own structure* -- this node contributes one edge and no leaf content, or it is a recovery marker rather than syntax -- and it must be argued with source citations. It is never a claim about any consumer: with one instrumented consumer, no automated check can tell a neutral rule from a consumer-shaped one, so the reasons are the only thing that can, and a reason naming a consumer is rejected on sight.",
+  "type": "object",
+  "required": ["schemaVersion", "upstreamCommit", "treeKinds"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "minimum": 1 },
+    "upstreamCommit": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$",
+      "description": "flix/flix commit every citation below was read against. Asserted against pin.json exactly as ast/unattachable.json is, so a pin bump fails until the evidence is re-verified rather than silently carrying stale line numbers."
+    },
+    "note": {
+      "type": "string",
+      "description": "Free-text maintenance note explaining the file's contract to a human editor."
+    },
+    "treeKinds": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/Entry" },
+      "description": "Entries whose name must exist in ast/treekind.json, sorted by name and never repeated."
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "Entry": {
+      "type": "object",
+      "required": ["name", "rule", "reason", "citations"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Qualified TreeKind name, matching ast/treekind.json exactly."
+        },
+        "rule": {
+          "type": "string",
+          "enum": ["elide", "splice"],
+          "description": "`elide` removes the node when it has no children and replaces it with its single child when it has one; a node with two or more children is kept, because splicing it would discard real structure. `splice` lifts the node's children into its parent at any arity, which is stronger and is reserved for nodes that are not syntax at all."
+        },
+        "recoveryMarker": {
+          "type": "boolean",
+          "description": "True when the kind marks error recovery rather than syntax. Such a kind is spliced out of the canonical tree so the main lane measures structure *modulo* recovery, and its shape is measured instead by the recovery lane against fixtures/raw/. Recovery shape is implementation-specific by nature, which is why it is a separate lane rather than a separate score."
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 40,
+          "description": "Why the reference's own structure makes this node carry no information beyond its child, or makes it a recovery marker. Long enough to force an argument rather than an assertion. Must not name a consumer: 'parser X does not produce one' is evidence about X, not about the reference."
+        },
+        "citations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_./-]+\\.scala:[0-9]+$",
+            "description": "Upstream-relative path and line, read at upstreamCommit."
+          },
+          "description": "Every site that closes this kind, so a reader can confirm the arity claim against the parser rather than against this file."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
