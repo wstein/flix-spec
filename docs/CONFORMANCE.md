@@ -304,12 +304,12 @@ against so a passing verdict cannot hide the threshold that produced it.
 ## Measured baselines
 
 Measured at pin `v0.75.1` (`318bb51a`), fixture revision `6b6a4256`, tree-sitter CLI 0.26.11,
-`tree-sitter-flix` at `0df0954`. **Reproducible**: `npm run conformance` in that repository, with
+`tree-sitter-flix` at `3f59a36`. **Reproducible**: `npm run conformance` in that repository, with
 `FLIX_SPEC` pointing here, adapts all 136 fixtures and runs this comparison.
 
 | Consumer | Lane | Verdict | Detail |
 | --- | --- | --- | --- |
-| `tree-sitter-flix` | `oracle_conformance` | **fail** | 111 / 136 fixtures agree · 42 divergences · 908 nodes compared · 84% depth · 178 unmapped |
+| `tree-sitter-flix` | `oracle_conformance` | **fail** | 112 / 136 fixtures agree · 40 divergences · 908 nodes compared · 84% depth · 178 unmapped |
 | `tree-sitter-flix` | `source_invariants` | **pass** (1 of 4 checks evaluated) | `document-shape` pass · the other three `not-applicable` |
 
 Read the second row carefully, because it is the one most easily overstated. The lane passes on the
@@ -320,7 +320,7 @@ an accurate statement that this consumer exercises a **structural** profile, and
 oracle-free check in the suite has nothing to bite on. `checksEvaluated` exists in the report
 precisely so "passes `source_invariants`" cannot be quoted without it.
 
-Agreement moved 77 → 111 and divergences 137 → 42 in three stages, and the split between them is the
+Agreement moved 77 → 112 and divergences 137 → 40 in three stages, and the split between them is the
 useful part. **Data first**: five wrappers (`qualified_name`, `effect_annotation`,
 `variable_pattern`, `annotation`, `modifier`) whose canonical counterparts were already in `elide`
 had no `ignored` entry — the asymmetry this document warns about, worth 21 fixtures on its own with
@@ -333,6 +333,7 @@ with `SyntaxTree.TreeKind`, all found by this report rather than by reading the 
 | `type_variable` becomes a leaf | `Type.Variable` holds its name as a token, not a child node | 103 → 107 |
 | type-level operators too | `Type.Binary`/`Type.Unary` carry an `Operator` exactly as their expression counterparts do | (same pass) |
 | `unterminated_literal`, `trailing_dot` | the reference's Lexer emits an error token and `Parser2` keeps the enclosing declaration rather than discarding it | 107 → 111 |
+| `unterminated_string` (external scanner) | same, for a string with no closing quote | 111 → 112 |
 
 The operator case is the one worth remembering, because a projection map could not have fixed it and
 trying made things worse. `x +++ y` is an operator and `def +++` is a definition name, which the
@@ -340,7 +341,7 @@ reference calls `Ident`; a map entry is per node name with no context, so mappin
 to `Operator` regressed the score. Tree-sitter's `alias()` applies per position, which is what
 carries the distinction into the tree.
 
-What remains is 42 divergences across 25 fixtures — 27 on negative fixtures, 15 on positive ones.
+What remains is 40 divergences across 24 fixtures — 25 on negative fixtures, 15 on positive ones.
 
 **Error-recovery agreement is a goal, not a licence to differ**, and modelling the reference's own
 error markers is what closes it. The reference does not discard a declaration when it meets bad
@@ -349,8 +350,8 @@ input: its Lexer emits an error token, `Parser2` keeps the enclosing `Decl.Def` 
 A consumer that instead collapses the declaration into one big error node disagrees about far more
 than the error. The remaining negative-fixture divergences concentrate in
 `lexical__numeric-literal-errors` (7), `lexical__free-dot-and-unexpected-char` (4) and
-`types__effect-annotation-wrong-slash` (3) — each a distinct recovery shape rather than one systemic
-difference.
+`types__effect-annotation-wrong-slash` (3). Each is a distinct recovery shape rather than one
+systemic difference, so each costs its own production — the cheap systemic wins are spent.
 
 Modelling error markers as nodes has a consequence worth stating, because it caught this project
 out. A file whose only defect is a modelled marker now contains no consumer-side error node, so any
