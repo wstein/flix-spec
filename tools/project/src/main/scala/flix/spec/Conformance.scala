@@ -135,10 +135,164 @@ object Conformance {
     }
   }
 
-  private def esc(s: String): String = s.replace("\\", "\\\\").replace("\"", "\\\"")
+  /** Escapes a string for a JSON string literal.
+    *
+    * Control characters matter here and did not before. The flat report only ever embedded fixture names, kind names
+    * and short reasons, none of which can contain a newline, so escaping quotes and backslashes was sufficient. The
+    * source-invariants lane embeds diagnostic text -- a token-accounting failure carries a two-line before/after window
+    * -- and a raw newline inside a JSON string is a parse error, not a formatting wrinkle. The first mutated consumer
+    * output produced a report no JSON parser would read.
+    */
+  private def esc(s: String): String = {
+    val sb = new StringBuilder(s.length)
+    s.foreach {
+      case '\\'          => sb.append("\\\\")
+      case '"'           => sb.append("\\\"")
+      case '\n'          => sb.append("\\n")
+      case '\r'          => sb.append("\\r")
+      case '\t'          => sb.append("\\t")
+      case c if c < 0x20 => sb.append("\\u%04x".format(c.toInt))
+      case c             => sb.append(c)
+    }
+    sb.toString
+  }
   private def jsonStringArray(items: Seq[String], indent: String): String =
     if (items.isEmpty) "[]"
     else "[\n" + items.map(i => s"""$indent  "${esc(i)}"""").mkString(",\n") + s"\n$indent]"
+
+  /** Identifies every input the verdicts were computed against.
+    *
+    * A conformance result is meaningless without it. This project has already seen a consumer depend on fixtures from
+    * one Flix release while testing against a checkout of another -- a mismatch no naming convention detects, and one
+    * that a report stating only "76/136 agree" cannot expose. Stamping the pin, the corpus, the fixture revision and
+    * the vocabulary digests makes two reports comparable, or provably not comparable, without trusting a filename.
+    *
+    * `fixtureRevision` is computed here rather than read: fixtures are regenerated whenever the oracle or a fixture
+    * source changes, and nothing else in the repository summarises the resulting set in one value.
+    */
+  private def provenance(expectedFiles: List[String]): List[(String, String)] = {
+    val pin = Json.parseFile(Paths.get("pin.json"))
+    val corpus = Json.parseFile(Paths.get("corpus/corpus.json"))
+    val treeInv = Json.parseFile(Paths.get("ast/treekind.json"))
+    val tokenInv = Json.parseFile(Paths.get("ast/tokenkind.json"))
+
+    // Name and content of every expectation, so a renamed fixture moves the revision as surely as an edited one.
+    val manifest = expectedFiles
+      .map(f => s"${Paths.get(f).getFileName}:${TreeKindExtractor.fileDigest(Paths.get(f))}")
+      .mkString("\n")
+
+    List(
+      "pinTag" -> pin("upstream")("tag").asString,
+      "pinCommit" -> pin("upstream")("commit").asString,
+      "oracleSha256" -> pin("oracleArtifact")("sha256").asString,
+      "corpusTreeHash" -> corpus("upstream")("treeHash").asString,
+      "fixtureRevision" -> TreeKindExtractor.sha256Hex(manifest.getBytes(StandardCharsets.UTF_8)),
+      "treeKindDigest" -> treeInv("treeKindDigest").asString,
+      "tokenKindDigest" -> tokenInv("tokenKindDigest").asString
+    )
+  }
+
+  private def renderLaneChecks(checks: List[SourceInvariants.Check]): String =
+    checks
+      .map { c =>
+        val failures = jsonStringArray(c.failures, "        ")
+        s"""      {
+           |        "id": "${esc(c.id)}",
+           |        "verdict": "${esc(c.verdict)}",
+           |        "claim": "${esc(c.claim)}",
+           |        "checked": ${c.checked},
+           |        "failed": ${c.failed},
+           |        "detail": "${esc(c.detail)}",
+           |        "failures": $failures
+           |      }""".stripMargin
+      }
+      .mkString(",\n")
+
+  private def renderReport(
+      consumer: String,
+      expectedFiles: List[String],
+      fixturesCompared: Int,
+      missing: List[String],
+      agreeing: Int,
+      stats: Stats,
+      divergences: List[(String, Divergence)],
+      baseline: Int,
+      invariants: SourceInvariants.Lane
+  ): String = {
+    val sb = new StringBuilder
+    sb.append("{\n")
+    // 2: the flat body became two lanes and gained `provenance`. A consumer reading the old shape
+    // finds none of its keys at the top level, which is the intended outcome -- silently keeping
+    // them would let a reader take a compatibility number for a correctness one, the exact
+    // conflation the split exists to end.
+    sb.append("  \"schemaVersion\": 2,\n")
+    sb.append("  \"generatedBy\": \"flix.spec.Conformance\",\n")
+    sb.append(s"""  "consumer": "${esc(consumer)}",\n""")
+
+    val prov = provenance(expectedFiles)
+    sb.append("  \"provenance\": {\n")
+    prov.zipWithIndex.foreach { case ((k, v), i) =>
+      sb.append(s"""    "$k": "${esc(v)}"${if (i < prov.length - 1) "," else ""}\n""")
+    }
+    sb.append("  },\n")
+
+    sb.append("  \"lanes\": {\n")
+
+    val capped = divergences.take(200)
+    sb.append("    \"oracle_conformance\": {\n")
+    sb.append(s"""      "verdict": "${if (divergences.length > baseline) "fail" else "pass"}",\n""")
+    sb.append(
+      """      "claim": "agrees with the trees the pinned reference compiler produces",
+        |      "authority": "derived",
+        |      "caveat": "inherits the reference's defects by construction; agreeing with a compiler bug scores as agreement. See defects/ledger.json.",
+        |""".stripMargin
+    )
+    sb.append(s"      \"baseline\": $baseline,\n")
+    sb.append(s"      \"fixturesExpected\": ${expectedFiles.length},\n")
+    sb.append(s"      \"fixturesCompared\": $fixturesCompared,\n")
+    sb.append(s"""      "fixturesMissing": ${jsonStringArray(missing, "      ")},\n""")
+    sb.append(s"      \"fixturesAgreeing\": $agreeing,\n")
+    sb.append(s"      \"nodesCompared\": ${stats.counts("compared")},\n")
+    sb.append(s"      \"nodesMapped\": ${stats.counts("mapped")},\n")
+    sb.append(s"      \"nodesIgnored\": ${stats.counts("ignored")},\n")
+    sb.append(s"      \"nodesElided\": ${stats.counts("elided")},\n")
+    sb.append(s"      \"nodesFlattened\": ${stats.counts("flattened")},\n")
+    sb.append(s"      \"nodesUnmapped\": ${stats.counts("unmapped")},\n")
+    sb.append(s"""      "unmappedNames": ${jsonStringArray(stats.unmappedNames.toList.sorted, "      ")},\n""")
+    sb.append(s"      \"divergenceCount\": ${divergences.length},\n")
+    sb.append(s"      \"divergencesListed\": ${capped.length},\n")
+    sb.append("      \"divergences\": [")
+    if (capped.isEmpty) sb.append("]\n")
+    else {
+      sb.append("\n")
+      capped.zipWithIndex.foreach { case ((fixture, d), i) =>
+        val comma = if (i < capped.length - 1) "," else ""
+        sb.append(
+          s"""        {"fixture": "${esc(fixture)}", "path": "${esc(d.path)}", "expected": "${esc(d.expected)}", """
+        )
+        sb.append(s""""actual": "${esc(d.actual)}", "reason": "${esc(d.reason)}"}$comma\n""")
+      }
+      sb.append("      ]\n")
+    }
+    sb.append("    },\n")
+
+    sb.append("    \"source_invariants\": {\n")
+    sb.append(s"""      "verdict": "${esc(invariants.verdict)}",\n""")
+    sb.append(
+      """      "claim": "properties of the consumer's own output, checked against its input rather than against the reference",
+        |      "authority": "independent",
+        |      "caveat": "a failure here is a defect in the consumer regardless of what the reference does; a pass is not evidence of structural agreement.",
+        |""".stripMargin
+    )
+    sb.append("      \"checks\": [\n")
+    sb.append(renderLaneChecks(invariants.checks))
+    sb.append("\n      ]\n")
+    sb.append("    }\n")
+
+    sb.append("  }\n")
+    sb.append("}\n")
+    sb.toString
+  }
 
   final case class Args(
       actual: String,
@@ -243,58 +397,71 @@ object Conformance {
     val encountered = stats.counts("compared") + stats.counts("unmapped")
     val depth = if (encountered == 0) 0.0 else stats.counts("compared").toDouble / encountered
 
+    // The second lane runs over whatever the consumer actually produced, never over the
+    // expectations, so it says something the first lane structurally cannot.
+    lazy val invariants = SourceInvariants.run(
+      expectedFiles
+        .map(ef => Paths.get(args.actual, Paths.get(ef).getFileName.toString))
+        .filter(Files.exists(_))
+        .map(_.toString),
+      mapped = mapping.isDefined,
+      treeInventory = Json.parseFile(Paths.get("ast/treekind.json"))("kinds").asArray.map(_("name").asString).toSet,
+      tokenInventory = Json.parseFile(Paths.get("ast/tokenkind.json"))("kinds").asArray.map(_("name").asString).toSet
+    )
+
     args.report.foreach { reportPath =>
       val p = Paths.get(reportPath)
       Option(p.getParent).foreach(Files.createDirectories(_))
-      val sb = new StringBuilder
-      sb.append("{\n")
-      sb.append("  \"schemaVersion\": 1,\n")
-      sb.append("  \"generatedBy\": \"flix.spec.Conformance\",\n")
-      sb.append(s"""  "consumer": "${esc(consumer)}",\n""")
-      sb.append(s"  \"fixturesExpected\": ${expectedFiles.length},\n")
-      sb.append(s"  \"fixturesCompared\": $fixturesCompared,\n")
-      sb.append(s"""  "fixturesMissing": ${jsonStringArray(missing.toList.sorted, "  ")},\n""")
-      sb.append(s"  \"fixturesAgreeing\": $agreeing,\n")
-      sb.append(s"  \"nodesCompared\": ${stats.counts("compared")},\n")
-      sb.append(s"  \"nodesMapped\": ${stats.counts("mapped")},\n")
-      sb.append(s"  \"nodesIgnored\": ${stats.counts("ignored")},\n")
-      sb.append(s"  \"nodesElided\": ${stats.counts("elided")},\n")
-      sb.append(s"  \"nodesFlattened\": ${stats.counts("flattened")},\n")
-      sb.append(s"  \"nodesUnmapped\": ${stats.counts("unmapped")},\n")
-      sb.append(s"""  "unmappedNames": ${jsonStringArray(stats.unmappedNames.toList.sorted, "  ")},\n""")
-      sb.append(s"  \"divergenceCount\": ${divergenceList.length},\n")
-      sb.append("  \"divergences\": [")
-      val capped = divergenceList.take(200)
-      if (capped.isEmpty) sb.append("]\n")
-      else {
-        sb.append("\n")
-        capped.zipWithIndex.foreach { case ((fixture, d), i) =>
-          val comma = if (i < capped.length - 1) "," else ""
-          sb.append(
-            s"""    {"fixture": "${esc(fixture)}", "path": "${esc(d.path)}", "expected": "${esc(d.expected)}", """
-          )
-          sb.append(s""""actual": "${esc(d.actual)}", "reason": "${esc(d.reason)}"}$comma\n""")
-        }
-        sb.append("  ]\n")
-      }
-      sb.append("}\n")
-      Files.writeString(p, sb.toString, StandardCharsets.UTF_8)
+      Files.writeString(
+        p,
+        renderReport(
+          consumer = consumer,
+          expectedFiles = expectedFiles,
+          fixturesCompared = fixturesCompared,
+          missing = missing.toList.sorted,
+          agreeing = agreeing,
+          stats = stats,
+          divergences = divergenceList,
+          baseline = args.baseline,
+          invariants = invariants
+        ),
+        StandardCharsets.UTF_8
+      )
     }
 
     val unmappedSuffix = if (stats.counts("unmapped") > 0) s", ${stats.counts("unmapped")} unmapped" else ""
     println(
-      s"$consumer: $agreeing/$fixturesCompared fixtures agree, " +
+      s"$consumer: oracle_conformance $agreeing/$fixturesCompared fixtures agree, " +
         s"${divergenceList.length} divergences, ${stats.counts("compared")} nodes compared" +
         f" (depth ${depth * 100}%.0f%%)$unmappedSuffix"
     )
+    println(
+      s"$consumer: source_invariants ${invariants.verdict} — " +
+        invariants.checks.map(c => s"${c.id} ${c.verdict}").mkString(", ")
+    )
     if (missing.nonEmpty) System.err.println(s"  ${missing.length} fixture(s) had no consumer output")
 
-    if (divergenceList.length > args.baseline) {
+    val oracleFailed = divergenceList.length > args.baseline
+    if (oracleFailed) {
       System.err.println(s"FATAL: ${divergenceList.length} divergences exceeds baseline ${args.baseline}")
       divergenceList.take(10).foreach { case (fixture, d) =>
         System.err.println(s"  $fixture ${d.path}: expected '${d.expected}', got '${d.actual}' (${d.reason})")
       }
-      sys.exit(1)
     }
+
+    // The second lane gates too, and is not subject to `--baseline`. The ratchet exists because
+    // agreement with the reference is approached incrementally, one mapping at a time; losing a
+    // token's text is not a mapping gap that a consumer is partway through closing, it is the
+    // output being wrong about its own input. A lane nobody can fail is decoration.
+    val invariantsFailed = invariants.verdict == "fail"
+    if (invariantsFailed) {
+      System.err.println("FATAL: source invariants failed — the consumer's output disagrees with its own input")
+      invariants.checks.filter(_.verdict == "fail").foreach { c =>
+        System.err.println(s"  ${c.id}: ${c.detail}")
+        c.failures.take(5).foreach(f => System.err.println(s"    $f"))
+      }
+    }
+
+    if (oracleFailed || invariantsFailed) sys.exit(1)
   }
 }

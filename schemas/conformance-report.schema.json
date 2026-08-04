@@ -1,0 +1,173 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/wstein/flix-spec/main/schemas/conformance-report.schema.json",
+  "title": "Flix Conformance Report Schema",
+  "description": "Schema for the report emitted by `conformance --report <file>`. Two lanes, deliberately not summed into a single score: `oracle_conformance` measures agreement with the pinned reference and inherits its defects; `source_invariants` measures properties of the consumer's own output against its own input and inherits nothing. A number that averaged them would mean neither.",
+  "type": "object",
+  "required": ["schemaVersion", "generatedBy", "consumer", "provenance", "lanes"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "minimum": 2 },
+    "generatedBy": { "type": "string", "minLength": 1 },
+    "consumer": { "type": "string", "minLength": 1 },
+    "provenance": { "$ref": "#/definitions/Provenance" },
+    "lanes": { "$ref": "#/definitions/Lanes" }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "Provenance": {
+      "type": "object",
+      "description": "Every input the verdicts were computed against. A conformance number without this is not comparable to any other conformance number, and this project has already seen a consumer test fixtures from one Flix release against a checkout of another.",
+      "required": [
+        "pinTag",
+        "pinCommit",
+        "oracleSha256",
+        "corpusTreeHash",
+        "fixtureRevision",
+        "treeKindDigest",
+        "tokenKindDigest"
+      ],
+      "properties": {
+        "pinTag": { "type": "string", "minLength": 1 },
+        "pinCommit": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+        "oracleSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "corpusTreeHash": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+        "fixtureRevision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "SHA-256 over the name and content digest of every expectation, so a renamed fixture moves it as surely as an edited one."
+        },
+        "treeKindDigest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "tokenKindDigest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      },
+      "additionalProperties": false
+    },
+    "Lanes": {
+      "type": "object",
+      "required": ["oracle_conformance", "source_invariants"],
+      "properties": {
+        "oracle_conformance": { "$ref": "#/definitions/OracleLane" },
+        "source_invariants": { "$ref": "#/definitions/InvariantLane" }
+      },
+      "additionalProperties": false
+    },
+    "OracleLane": {
+      "type": "object",
+      "required": [
+        "verdict",
+        "claim",
+        "authority",
+        "caveat",
+        "baseline",
+        "fixturesExpected",
+        "fixturesCompared",
+        "fixturesMissing",
+        "fixturesAgreeing",
+        "nodesCompared",
+        "nodesMapped",
+        "nodesIgnored",
+        "nodesElided",
+        "nodesFlattened",
+        "nodesUnmapped",
+        "unmappedNames",
+        "divergenceCount",
+        "divergencesListed",
+        "divergences"
+      ],
+      "properties": {
+        "verdict": { "type": "string", "enum": ["pass", "fail"] },
+        "claim": { "type": "string", "minLength": 1 },
+        "authority": {
+          "type": "string",
+          "enum": ["derived"],
+          "description": "Fixed. This lane's expectations come from the reference implementation, so it has no authority independent of it."
+        },
+        "caveat": { "type": "string", "minLength": 1 },
+        "baseline": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "The divergence ratchet this run was gated against. Reported so a passing verdict cannot hide the threshold that produced it."
+        },
+        "fixturesExpected": { "type": "integer", "minimum": 0 },
+        "fixturesCompared": { "type": "integer", "minimum": 0 },
+        "fixturesMissing": { "type": "array", "items": { "type": "string" } },
+        "fixturesAgreeing": { "type": "integer", "minimum": 0 },
+        "nodesCompared": { "type": "integer", "minimum": 0 },
+        "nodesMapped": { "type": "integer", "minimum": 0 },
+        "nodesIgnored": { "type": "integer", "minimum": 0 },
+        "nodesElided": { "type": "integer", "minimum": 0 },
+        "nodesFlattened": { "type": "integer", "minimum": 0 },
+        "nodesUnmapped": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Nodes the map has no opinion about. Never counted as divergences: 'we have not mapped this' is a different fact from 'we disagree'."
+        },
+        "unmappedNames": { "type": "array", "items": { "type": "string" } },
+        "divergenceCount": { "type": "integer", "minimum": 0 },
+        "divergencesListed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "How many of divergenceCount appear below. The list is capped; the count never is, so truncation cannot read as success."
+        },
+        "divergences": { "type": "array", "items": { "$ref": "#/definitions/Divergence" } }
+      },
+      "additionalProperties": false
+    },
+    "Divergence": {
+      "type": "object",
+      "required": ["fixture", "path", "expected", "actual", "reason"],
+      "properties": {
+        "fixture": { "type": "string" },
+        "path": { "type": "string" },
+        "expected": { "type": "string" },
+        "actual": { "type": "string" },
+        "reason": { "type": "string", "enum": ["kind", "arity", "missing-unit"] }
+      },
+      "additionalProperties": false
+    },
+    "InvariantLane": {
+      "type": "object",
+      "required": ["verdict", "claim", "authority", "caveat", "checks"],
+      "properties": {
+        "verdict": {
+          "type": "string",
+          "enum": ["pass", "fail", "not-applicable"],
+          "description": "`not-applicable` only when every check was; a lane with one evaluated check reports that check's outcome."
+        },
+        "claim": { "type": "string", "minLength": 1 },
+        "authority": {
+          "type": "string",
+          "enum": ["independent"],
+          "description": "Fixed. These checks consult no expected tree, so unlike the other lane they can contradict the reference."
+        },
+        "caveat": { "type": "string", "minLength": 1 },
+        "checks": { "type": "array", "items": { "$ref": "#/definitions/Check" } }
+      },
+      "additionalProperties": false
+    },
+    "Check": {
+      "type": "object",
+      "required": ["id", "verdict", "claim", "checked", "failed", "detail", "failures"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "enum": ["document-shape", "kind-vocabulary", "token-vocabulary", "token-accounting"]
+        },
+        "verdict": { "type": "string", "enum": ["pass", "fail", "not-applicable"] },
+        "claim": { "type": "string", "minLength": 1 },
+        "checked": { "type": "integer", "minimum": 0 },
+        "failed": { "type": "integer", "minimum": 0 },
+        "detail": {
+          "type": "string",
+          "minLength": 1,
+          "description": "For a not-applicable check, the reason it could not be evaluated. Never blank: 'not applicable' without a reason is indistinguishable from 'not run'."
+        },
+        "failures": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "A sample, capped. `failed` is the exact count."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

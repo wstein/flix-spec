@@ -20,11 +20,20 @@ import scala.jdk.CollectionConverters._
   */
 object ProjectionSchemaValidator {
 
-  private def walk(
+  /** Walks one projected tree, checking node shape and -- optionally -- vocabulary.
+    *
+    * The inventories are `Option` because the two callers ask different questions of the same walk. Validating
+    * `fixtures/expected` checks vocabulary: those trees come from the reference, so a kind outside `ast/treekind.json`
+    * is a generator bug. [[Conformance]]'s source-invariants lane checks the *consumer's* output, which legitimately
+    * carries that consumer's own native vocabulary whenever a projection map is in play -- there, an unrecognised name
+    * is what the map exists to translate, and reporting it here would double-count it as a defect. Passing `None` asks
+    * only "is this a well-formed document", which is true of both.
+    */
+  def walk(
       node: Json,
       path: String,
-      inventory: Set[String],
-      tokenInventory: Set[String],
+      inventory: Option[Set[String]],
+      tokenInventory: Option[Set[String]],
       kindsSeen: scala.collection.mutable.Set[String],
       tokensSeen: scala.collection.mutable.Set[String],
       errors: SchemaValidator.Errors
@@ -39,14 +48,17 @@ object ProjectionSchemaValidator {
       // passes every gate, which is precisely the drift this repository exists to catch.
       node.get("token").map(_.asString).foreach { token =>
         tokensSeen += token
-        if (!tokenInventory.contains(token))
-          errors.add(s"$path: token '$token' is not in ast/tokenkind.json")
+        tokenInventory.foreach { known =>
+          if (!known.contains(token)) errors.add(s"$path: token '$token' is not in ast/tokenkind.json")
+        }
       }
       return
     }
     val kind = node("kind").asString
     kindsSeen += kind
-    if (!inventory.contains(kind)) errors.add(s"$path: kind '$kind' is not in ast/treekind.json")
+    inventory.foreach { known =>
+      if (!known.contains(kind)) errors.add(s"$path: kind '$kind' is not in ast/treekind.json")
+    }
     node.get("children").map(_.asArray).getOrElse(Nil).zipWithIndex.foreach { case (child, i) =>
       walk(child, s"$path.children[$i]", inventory, tokenInventory, kindsSeen, tokensSeen, errors)
     }
@@ -95,7 +107,7 @@ object ProjectionSchemaValidator {
 
         unit
           .get("tree")
-          .foreach(tree => walk(tree, s"$p.tree", inventory, tokenInventory, allKinds, allTokens, errors))
+          .foreach(tree => walk(tree, s"$p.tree", Some(inventory), Some(tokenInventory), allKinds, allTokens, errors))
       }
     }
 
