@@ -95,6 +95,11 @@ object ProjectionMapValidator {
       doc.get("elide").map(_.asArray.map(_.asString)).getOrElse(Nil).sorted.foreach { kind =>
         if (!inventory.contains(kind)) errors.add(s"$path.elide: '$kind' is not in ast/treekind.json")
       }
+      // `flattenCanonical` names canonical kinds, so like `elide` -- and unlike `flatten`, which
+      // names the consumer's own nodes -- every entry must exist in the inventory.
+      doc.get("flattenCanonical").map(_.asArray.map(_.asString)).getOrElse(Nil).sorted.foreach { kind =>
+        if (!inventory.contains(kind)) errors.add(s"$path.flattenCanonical: '$kind' is not in ast/treekind.json")
+      }
 
       // Deliberately not an error: see the class comment. Elision fires only at arity <= 1, so a
       // node can be transparent in one position and substantive in another.

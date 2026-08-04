@@ -6,7 +6,7 @@
   "type": "object",
   "required": ["schemaVersion", "generatedBy", "consumer", "provenance", "lanes"],
   "properties": {
-    "schemaVersion": { "type": "integer", "minimum": 4 },
+    "schemaVersion": { "type": "integer", "minimum": 5 },
     "generatedBy": { "type": "string", "minLength": 1 },
     "consumer": { "type": "string", "minLength": 1 },
     "provenance": { "$ref": "#/definitions/Provenance" },
@@ -67,6 +67,7 @@
         "nodesIgnored",
         "nodesElided",
         "nodesFlattened",
+        "nodesFlattenedCanonical",
         "nodesUnmapped",
         "unmapped",
         "divergenceCount",
@@ -96,6 +97,11 @@
         "nodesIgnored": { "type": "integer", "minimum": 0 },
         "nodesElided": { "type": "integer", "minimum": 0 },
         "nodesFlattened": { "type": "integer", "minimum": 0 },
+        "nodesFlattenedCanonical": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Canonical grouping nodes spliced into their parent. Counted separately from nodesFlattened because the two act on opposite sides: one hides a wrapper the consumer invented, the other a wrapper the reference did."
+        },
         "nodesUnmapped": {
           "type": "integer",
           "minimum": 0,

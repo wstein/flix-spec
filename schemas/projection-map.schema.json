@@ -60,6 +60,13 @@
         "minLength": 1
       },
       "description": "Native grouping nodes whose children are spliced into the parent at any arity. Stronger and more dangerous than `ignored`, which only fires at arity <= 1: flattening a node that carries real structure would hide a genuine disagreement. Use only for pure grouping constructs with no counterpart in the reference, and justify each entry in `notes`."
+    },
+    "flattenCanonical": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Canonical TreeKind names whose children are spliced into the parent at any arity -- the mirror of `flatten`, which does the same on the consumer's side. Needed when the reference groups members the consumer makes direct children: `UsesOrImports.UseOrImportList` holds every use in one node, and `elide` cannot remove it because elision only fires at arity <= 1. Every value must exist in ast/treekind.json."
     }
   },
   "additionalProperties": false

@@ -81,11 +81,16 @@ object Conformance {
     * while the reference makes those direct children of `Decl.Def`. It appears 134 times across the fixtures, and
     * without flattening its whole subtree is never compared -- which is why comparison depth was 51%.
     */
-  private def applyFlatten(children: List[KTree], flatten: Set[String], stats: Stats): List[KTree] =
+  private def applyFlatten(
+      children: List[KTree],
+      flatten: Set[String],
+      stats: Stats,
+      counter: String = "flattened"
+  ): List[KTree] =
     children.flatMap { c =>
       if (flatten.contains(c.kind)) {
-        stats.inc("flattened")
-        applyFlatten(c.children, flatten, stats)
+        stats.inc(counter)
+        applyFlatten(c.children, flatten, stats, counter)
       } else List(c)
     }
 
@@ -116,6 +121,7 @@ object Conformance {
       ignored: Set[String],
       elide: Set[String],
       flatten: Set[String],
+      flattenCanonical: Set[String],
       path: String,
       out: scala.collection.mutable.Buffer[Divergence],
       stats: Stats
@@ -133,7 +139,13 @@ object Conformance {
         return // not a disagreement: we simply have no opinion yet
     }
 
-    val expChildren = applyElision(expected.children, elide, stats, "elided")
+    val expChildren =
+      applyElision(
+        applyFlatten(expected.children, flattenCanonical, stats, "flattenedCanonical"),
+        elide,
+        stats,
+        "elided"
+      )
     val actChildren =
       applyElision(applyFlatten(actual.children, flatten, stats), ignored, stats, "ignored")
 
@@ -147,7 +159,7 @@ object Conformance {
       out += Divergence(path, s"${expChildren.length} children", s"${actChildren.length} children", "arity")
 
     expChildren.zip(actChildren).zipWithIndex.foreach { case ((e, a), i) =>
-      compare(e, a, mapping, ignored, elide, flatten, s"$path.${expected.kind}[$i]", out, stats)
+      compare(e, a, mapping, ignored, elide, flatten, flattenCanonical, s"$path.${expected.kind}[$i]", out, stats)
     }
   }
 
@@ -241,6 +253,8 @@ object Conformance {
     // finds none of its keys at the top level, which is the intended outcome -- silently keeping
     // them would let a reader take a compatibility number for a correctness one, the exact
     // conflation the split exists to end.
+    // 5: oracle_conformance gained nodesFlattenedCanonical, when the map gained a canonical-side
+    // counterpart to `flatten`.
     // 4: unmappedNames (an alphabetical string array) became unmapped (frequency-ranked objects
     // with counts), because the documented workflow -- work down the list, the top is the next
     // most valuable mapping -- was not something the old shape could support.
@@ -248,7 +262,7 @@ object Conformance {
     // as long as it took to measure one real consumer, which reported `pass` on the strength of a
     // single applicable check. Adding the fields without the bump would have been the silent
     // widening this file's own history argues against.
-    sb.append("  \"schemaVersion\": 4,\n")
+    sb.append("  \"schemaVersion\": 5,\n")
     sb.append("  \"generatedBy\": \"flix.spec.Conformance\",\n")
     sb.append(s"""  "consumer": "${esc(consumer)}",\n""")
 
@@ -280,6 +294,7 @@ object Conformance {
     sb.append(s"      \"nodesIgnored\": ${stats.counts("ignored")},\n")
     sb.append(s"      \"nodesElided\": ${stats.counts("elided")},\n")
     sb.append(s"      \"nodesFlattened\": ${stats.counts("flattened")},\n")
+    sb.append(s"      \"nodesFlattenedCanonical\": ${stats.counts("flattenedCanonical")},\n")
     sb.append(s"      \"nodesUnmapped\": ${stats.counts("unmapped")},\n")
     // Frequency first, name second so ties are stable across runs.
     val unmappedRanked = stats.unmapped.toList.sortBy { case (name, n) => (-n, name) }
@@ -376,6 +391,7 @@ object Conformance {
     var ignored: Set[String] = Set.empty
     var elide: Set[String] = Set.empty
     var flatten: Set[String] = Set.empty
+    var flattenCanonical: Set[String] = Set.empty
     var consumer = Paths.get(args.actual.stripSuffix("/")).getFileName.toString
 
     args.map.foreach { mapFile =>
@@ -385,6 +401,7 @@ object Conformance {
       ignored = m.get("ignored").map(_.asArray.map(_.asString).toSet).getOrElse(Set.empty)
       elide = m.get("elide").map(_.asArray.map(_.asString).toSet).getOrElse(Set.empty)
       flatten = m.get("flatten").map(_.asArray.map(_.asString).toSet).getOrElse(Set.empty)
+      flattenCanonical = m.get("flattenCanonical").map(_.asArray.map(_.asString).toSet).getOrElse(Set.empty)
       consumer = m("consumer").asString
 
       val inventory = Json.parseFile(Paths.get("ast/treekind.json"))("kinds").asArray.map(_("name").asString).toSet
@@ -418,8 +435,9 @@ object Conformance {
         val found = scala.collection.mutable.Buffer.empty[Divergence]
         expUnits.foreach { case (source, expTree) =>
           actUnits.get(source).orElse(actUnits.values.headOption) match {
-            case None          => found += Divergence(source, "tree", "nothing", "missing-unit")
-            case Some(actTree) => compare(expTree, actTree, mapping, ignored, elide, flatten, source, found, stats)
+            case None => found += Divergence(source, "tree", "nothing", "missing-unit")
+            case Some(actTree) =>
+              compare(expTree, actTree, mapping, ignored, elide, flatten, flattenCanonical, source, found, stats)
           }
         }
         if (found.nonEmpty) divergences ++= found.map(name -> _)

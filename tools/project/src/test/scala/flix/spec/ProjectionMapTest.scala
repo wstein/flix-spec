@@ -63,6 +63,20 @@ class ProjectionMapTest extends AnyFunSuite with Matchers {
     errors.head should include("not in ast/treekind.json")
   }
 
+  test("a flattenCanonical entry outside the inventory is rejected") {
+    // It names canonical kinds, like `elide` and unlike `flatten`, so the inventory applies.
+    val errors = check(valid.replace("\"elide\": [\"Type.Type\"]", "\"flattenCanonical\": [\"Nope.Kind\"]"))
+    errors should have length 1
+    errors.head should include("flattenCanonical")
+    errors.head should include("Nope.Kind")
+  }
+
+  test("a valid flattenCanonical entry is accepted") {
+    check(
+      valid.replace("\"elide\": [\"Type.Type\"]", "\"flattenCanonical\": [\"UsesOrImports.UseOrImportList\"]")
+    ) shouldBe empty
+  }
+
   test("an elide entry outside the inventory is rejected") {
     val errors = check(valid.replace("\"Type.Type\"", "\"Type.Nope\""))
     errors should have length 1
