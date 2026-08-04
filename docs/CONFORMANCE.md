@@ -304,12 +304,12 @@ against so a passing verdict cannot hide the threshold that produced it.
 ## Measured baselines
 
 Measured at pin `v0.75.1` (`318bb51a`), fixture revision `6b6a4256`, tree-sitter CLI 0.26.11,
-`tree-sitter-flix` at `3f59a36`. **Reproducible**: `npm run conformance` in that repository, with
+`tree-sitter-flix` at `40197ea`. **Reproducible**: `npm run conformance` in that repository, with
 `FLIX_SPEC` pointing here, adapts all 136 fixtures and runs this comparison.
 
 | Consumer | Lane | Verdict | Detail |
 | --- | --- | --- | --- |
-| `tree-sitter-flix` | `oracle_conformance` | **fail** | 112 / 136 fixtures agree · 40 divergences · 908 nodes compared · 84% depth · 178 unmapped |
+| `tree-sitter-flix` | `oracle_conformance` | **fail** | 107 / 136 fixtures agree · 58 divergences · 1400 nodes compared · **90% depth** · 159 unmapped |
 | `tree-sitter-flix` | `source_invariants` | **pass** (1 of 4 checks evaluated) | `document-shape` pass · the other three `not-applicable` |
 
 Read the second row carefully, because it is the one most easily overstated. The lane passes on the
@@ -320,12 +320,35 @@ an accurate statement that this consumer exercises a **structural** profile, and
 oracle-free check in the suite has nothing to bite on. `checksEvaluated` exists in the report
 precisely so "passes `source_invariants`" cannot be quoted without it.
 
-Agreement moved 77 → 112 and divergences 137 → 40 in three stages, and the split between them is the
-useful part. **Data first**: five wrappers (`qualified_name`, `effect_annotation`,
-`variable_pattern`, `annotation`, `modifier`) whose canonical counterparts were already in `elide`
-had no `ignored` entry — the asymmetry this document warns about, worth 21 fixtures on its own with
-no code change at all. **Then grammar**: three shapes where the consumer's tree genuinely disagreed
-with `SyntaxTree.TreeKind`, all found by this report rather than by reading the grammar.
+Agreement moved 77 → 122 across five stages, and then **deliberately back to 107** — the single most
+important number in this table is the one that went down.
+
+### Agreement and depth trade against each other
+
+An unmapped node is skipped, not compared. So a map that maps little compares little and agrees with
+almost everything, which is why the report carries depth alongside the count. Completing
+`tree-sitter-flix`'s mapping set made that concrete and monotonic:
+
+| mappings added | fixtures agreeing | divergences | depth |
+| ---: | ---: | ---: | ---: |
+| baseline | 122 / 136 | 31 | 84% |
+| +6 | 116 / 136 | 44 | 86% |
+| +23 | 113 / 136 | 49 | 88% |
+| +71 | 107 / 136 | 58 | **90%** |
+
+Every mapping added lowers the headline, because each one exposes a subtree that was previously
+never looked at. The divergences were always there. **A consumer reporting 136/136 at 84% depth
+would be making a weaker claim than one reporting 107/136 at 90%**, and nothing but the depth figure
+distinguishes them — which is the whole reason both are in the report and why the baseline file
+records them as a pair.
+
+The mappings themselves were derived rather than guessed: each consumer node was aligned against the
+canonical tree position by position, and only names landing on exactly one canonical kind everywhere
+they occurred were taken. Ambiguous ones were left unmapped — `integer` sits under `Expr.Literal`,
+`ErrorTree` and `Expr.Paren` in different positions, and a projection map keyed on node name cannot
+express that.
+
+### How the earlier gains were made
 
 | Grammar change | Why | Effect |
 | --- | --- | --- |
@@ -341,37 +364,20 @@ reference calls `Ident`; a map entry is per node name with no context, so mappin
 to `Operator` regressed the score. Tree-sitter's `alias()` applies per position, which is what
 carries the distinction into the tree.
 
-What remains is 40 divergences across 24 fixtures — 25 on negative fixtures, 15 on positive ones.
-
-**Error-recovery agreement is a goal, not a licence to differ**, and modelling the reference's own
-error markers is what closes it. The reference does not discard a declaration when it meets bad
-input: its Lexer emits an error token, `Parser2` keeps the enclosing `Decl.Def` and puts an
-`ErrorTree` where the expression should be, and a trailing dot closes a real `TreeKind.TrailingDot`.
-A consumer that instead collapses the declaration into one big error node disagrees about far more
-than the error. The remaining negative-fixture divergences concentrate in
-`lexical__numeric-literal-errors` (7), `lexical__free-dot-and-unexpected-char` (4) and
-`types__effect-annotation-wrong-slash` (3). Each is a distinct recovery shape rather than one
-systemic difference, so each costs its own production — the cheap systemic wins are spent.
-
-Modelling error markers as nodes has a consequence worth stating, because it caught this project
-out. A file whose only defect is a modelled marker now contains no consumer-side error node, so any
-gate that detects failure by looking for one will call it clean. `tree-sitter-flix`'s corpus script
-had exactly that hole opened and then closed: a truncated resiliency file started reporting as a
-successful parse. A consumer adopting this approach needs its own gate to know about its error
-markers.
+What remains is 58 divergences across 29 fixtures at 90% depth — 36 arity, 22 kind. Reaching
+136/136 from here means fixing real disagreements, not adjusting the map: every transparency and
+mapping candidate now measures neutral or worse, and the map is validated against the inventory.
 
 Two limits are structural rather than unfinished:
 
 - **`OperatorError` cannot be expressed in tree-sitter.** The reference inserts it as a *synthetic,
-  zero-width* node for a missing binary operator (`1 2`), and tree-sitter has no way to produce a
-  node spanning no text. Two occurrences, permanently.
-- **One real grammar gap**: `type alias T[a] = a : Type`
-  (`fixtures/positive/type-kind-ascription.flix`) parses in the reference and yields `ERROR` nodes.
-
-The map itself is exhausted — every remaining mapping or transparency candidate measures neutral or
-worse. Mapping `integer` to `Expr.Literal` regresses, because a literal in pattern position sits
-under `literal_pattern` where the reference emits a childless `Pattern.Literal`, and one name cannot
-serve both positions.
+  zero-width* node for a missing binary operator (`1 2`). A grammar rule cannot match empty input,
+  though an external scanner can emit a zero-width token, so this is worth one more attempt before
+  being called impossible.
+- **Ambiguous node names.** `integer` faces `Expr.Literal` in expression position and `ErrorTree`
+  inside `literal_pattern`; one name cannot serve both, and the projection map has no positional
+  form. Fixing these belongs in the grammar — as `alias()` per position, which is how `operator`
+  and `type_variable` were resolved.
 
 Reproducing this needs the `tree-sitter` CLI and a built grammar, so it is **not** part of CI here;
 the consumer repository is the right home for that job. What CI does verify is that the comparison
