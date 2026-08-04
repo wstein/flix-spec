@@ -96,6 +96,22 @@ object DocMetrics {
          |`corpus-only` is the only row that is a to-do list. Machine-readable form:
          |[`ast/status.json`](ast/status.json).""".stripMargin
 
+    val roleTally = status("treeKindRoleTally")
+    def roleRow(label: String, key: String): String = s"| $label | ${roleTally(key).asInt} |"
+    val rolesBlock =
+      s"""|| Role | `TreeKind` |
+         || --- | ---: |
+         |${roleRow("`syntax` — the vocabulary a consumer is asked to agree with", "syntax")}
+         |${roleRow("`wrapper` — carries no information beyond its child; elided when normalising", "wrapper")}
+         |${roleRow(
+           "`error-marker` — marks recovery rather than syntax; spliced out, measured in the recovery lane",
+           "error-marker"
+         )}
+         |${roleRow("`unattachable` — cannot appear in any tree from any input", "unattachable")}
+         |
+         |The four partition the ${roleTally("total").asInt} `TreeKind`s exactly. Machine-readable form:
+         |`treeKindRole` in [`ast/status.json`](ast/status.json).""".stripMargin
+
     val nodeCount = coverage("nodeCount").asInt
     val wrapperNodes = coverage("singleChildWrapperNodes").asInt
     val wrapPct = f"${100.0 * wrapperNodes / nodeCount}%.1f"
@@ -134,6 +150,7 @@ object DocMetrics {
 
     val edits = List(
       (Paths.get("README.md"), "status", statusBlock),
+      (Paths.get("README.md"), "roles", rolesBlock),
       (Paths.get("docs/CONFORMANCE.md"), "wrappers", wrapperBlock),
       (Paths.get("docs/CONFORMANCE.md"), "lossless", losslessBlock),
       (Paths.get("docs/DEFECTS.md"), "defects", defectsBlock)

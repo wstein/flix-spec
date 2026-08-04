@@ -172,6 +172,42 @@ class ProjectionExtractorTest extends AnyFunSuite with Matchers {
     }
   }
 
+  test("the four vocabulary roles partition the TreeKind inventory") {
+    // A partition, not a ranking. The four sources are disjoint by construction -- Transparency refuses an entry that
+    // is also claimed unattachable, and a contract entry carries exactly one rule -- so every kind gets exactly one
+    // role and no kind falls through. Asserting it here is what keeps that argument from quietly becoming false.
+    val status = Json.parseFile(repoRoot.resolve("ast/status.json"))
+    val roles = status("treeKindRole").asObject
+    val inventory =
+      Json.parseFile(repoRoot.resolve("ast/treekind.json"))("kinds").asArray.map(_("name").asString).toSet
+
+    roles.keySet shouldBe inventory
+    withClue("a role outside the four: ") {
+      roles.values.map(_.asString).toSet.diff(Set("syntax", "wrapper", "error-marker", "unattachable")) shouldBe empty
+    }
+
+    val tally = status("treeKindRoleTally")
+    tally("total").asInt shouldBe inventory.size
+    List("syntax", "wrapper", "error-marker", "unattachable").foreach { r =>
+      withClue(s"tally for '$r': ")(tally(r).asInt shouldBe roles.count(_._2.asString == r))
+    }
+    List("syntax", "wrapper", "error-marker", "unattachable").map(tally(_).asInt).sum shouldBe inventory.size
+  }
+
+  test("each role names exactly the kinds its source names") {
+    // The roles are derived, and a derivation nobody checks is a second, silent copy of its inputs.
+    val roles = Json.parseFile(repoRoot.resolve("ast/status.json"))("treeKindRole").asObject
+    val contract = Transparency.parse(Json.parseFile(repoRoot.resolve("ast/transparency.json")))
+    val unattachable =
+      Json.parseFile(repoRoot.resolve("ast/unattachable.json"))("treeKinds").asArray.map(_("name").asString).toSet
+
+    def named(role: String): Set[String] = roles.filter(_._2.asString == role).keySet
+
+    named("wrapper") shouldBe contract.elide
+    named("error-marker") shouldBe contract.recoveryMarkers
+    named("unattachable") shouldBe unattachable
+  }
+
   test("structural-unattachability evidence is argued, not asserted") {
     // The evidence file is the only hand-maintained input to the status join, so it is the only
     // place a wrong claim can enter. Measurement must be able to refute it.
