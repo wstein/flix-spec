@@ -304,12 +304,12 @@ against so a passing verdict cannot hide the threshold that produced it.
 ## Measured baselines
 
 Measured at pin `v0.75.1` (`318bb51a`), fixture revision `6b6a4256`, tree-sitter CLI 0.26.11,
-`tree-sitter-flix` at `ffeaa18`. **Reproducible**: `npm run conformance` in that repository, with
+`tree-sitter-flix` at `643fc92`. **Reproducible**: `npm run conformance` in that repository, with
 `FLIX_SPEC` pointing here, adapts all 136 fixtures and runs this comparison.
 
 | Consumer | Lane | Verdict | Detail |
 | --- | --- | --- | --- |
-| `tree-sitter-flix` | `oracle_conformance` | **fail** | 98 / 136 fixtures agree · 79 divergences · 854 nodes compared · 82% depth · 188 unmapped |
+| `tree-sitter-flix` | `oracle_conformance` | **fail** | 107 / 136 fixtures agree · 48 divergences · 898 nodes compared · 83% depth · 178 unmapped |
 | `tree-sitter-flix` | `source_invariants` | **pass** (1 of 4 checks evaluated) | `document-shape` pass · the other three `not-applicable` |
 
 Read the second row carefully, because it is the one most easily overstated. The lane passes on the
@@ -320,37 +320,39 @@ an accurate statement that this consumer exercises a **structural** profile, and
 oracle-free check in the suite has nothing to bite on. `checksEvaluated` exists in the report
 precisely so "passes `source_invariants`" cannot be quoted without it.
 
-Agreement moved 77 → 98 and divergences 137 → 79 by completing the transparency declarations in the
-consumer's map — five wrappers (`qualified_name`, `effect_annotation`, `variable_pattern`,
-`annotation`, `modifier`) whose canonical counterparts were already in `elide` but which had no
-`ignored` entry. That is the asymmetry this document warns about, and it accounted for over a third
-of all divergences. The grammar itself did not change.
+Agreement moved 77 → 107 and divergences 137 → 48 in two stages, and the split between them is the
+useful part. **Data first**: five wrappers (`qualified_name`, `effect_annotation`,
+`variable_pattern`, `annotation`, `modifier`) whose canonical counterparts were already in `elide`
+had no `ignored` entry — the asymmetry this document warns about, worth 21 fixtures on its own with
+no code change at all. **Then grammar**: three shapes where the consumer's tree genuinely disagreed
+with `SyntaxTree.TreeKind`, all found by this report rather than by reading the grammar.
 
-Of the 79 remaining divergences, 25 are kind mismatches and 54 are arity mismatches. The map can do
-no more: every further mapping or transparency candidate now measures exactly neutral or worse, and
-several that look obviously right are worse. Mapping `integer` to `Expr.Literal` took divergences
-from 99 to 104, because a literal in pattern position sits under `literal_pattern` where the
-reference emits a childless `Pattern.Literal`; a mapping is per node name with no context, so
-expression and pattern position cannot both be served. `generic_operator`, `type_parameter_list`,
-`type_application` and `block` regress for similar reasons. What is left needs grammar shape or
-comparator features, not data:
+| Grammar change | Why | Effect |
+| --- | --- | --- |
+| operators become `operator` nodes | the reference wraps every operator in `TreeKind.Operator`; an anonymous token gave `Expr.Binary` two children where it has three | 98 → 103 |
+| `type_variable` becomes a leaf | `Type.Variable` holds its name as a token, not a child node | 103 → 107 |
+| type-level operators too | `Type.Binary`/`Type.Unary` carry an `Operator` exactly as their expression counterparts do | (same pass) |
 
-- **54 arity mismatches**, dominated by the declaration prologue. The reference wraps annotations
-  and modifiers in `AnnotationList`/`ModifierList`, which `elide` removes only at arity ≤ 1; with
-  two annotations the wrapper stays and faces a flat list of native nodes. `flatten` would splice
-  those at any arity, but it applies to the **consumer** side only — there is no canonical-side
-  equivalent. That asymmetry, not the grammar, is the blocker.
-- **9 `Operator` → `Ident`**: the reference names a user-defined operator with `Operator`; this
-  grammar reaches the same position through a name rule.
-- **7 `ErrorTree` mismatches**, six of them on negative fixtures where both parsers error and
-  recover differently — the genuine "two recovery strategies disagreeing" case, which no mapping
-  closes. The seventh is a real grammar gap: `type alias T[a] = a : Type`
-  (`fixtures/positive/type-kind-ascription.flix`) parses in the reference and produces `ERROR`
-  nodes in this grammar.
+The operator case is the one worth remembering, because a projection map could not have fixed it and
+trying made things worse. `x +++ y` is an operator and `def +++` is a definition name, which the
+reference calls `Ident`; a map entry is per node name with no context, so mapping `generic_operator`
+to `Operator` regressed the score. Tree-sitter's `alias()` applies per position, which is what
+carries the distinction into the tree.
 
-None of the above have been fixed. Expanding `tree-sitter-flix`'s own `conformance/projection-map.json` to resolve the
-mapping-driven divergences, and deciding whether the recovery-driven ones belong in
-`tree-sitter-flix`'s own `DEFECTS.md`-equivalent, is a follow-up, not done here.
+What remains is 14 kind and 34 arity divergences, and **33 of the 48 are on negative fixtures** —
+two independently-implemented error-recovery strategies disagreeing about what a truncated input
+becomes. No mapping or grammar alignment closes those, and closing them is not obviously desirable:
+recovery shape is exactly where a consumer is entitled to differ. Only 15 divergences remain on
+inputs the reference parses cleanly.
+
+Of those, one is a genuine grammar gap rather than a shape difference: `type alias T[a] = a : Type`
+(`fixtures/positive/type-kind-ascription.flix`) parses in the reference and produces `ERROR` nodes
+in that grammar.
+
+The map itself is exhausted — every remaining mapping or transparency candidate measures neutral or
+worse. Mapping `integer` to `Expr.Literal` regresses, because a literal in pattern position sits
+under `literal_pattern` where the reference emits a childless `Pattern.Literal`, and one name cannot
+serve both positions.
 
 Reproducing this needs the `tree-sitter` CLI and a built grammar, so it is **not** part of CI here;
 the consumer repository is the right home for that job. What CI does verify is that the comparison
