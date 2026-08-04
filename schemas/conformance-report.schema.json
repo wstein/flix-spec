@@ -6,7 +6,7 @@
   "type": "object",
   "required": ["schemaVersion", "generatedBy", "consumer", "provenance", "lanes"],
   "properties": {
-    "schemaVersion": { "type": "integer", "minimum": 3 },
+    "schemaVersion": { "type": "integer", "minimum": 4 },
     "generatedBy": { "type": "string", "minLength": 1 },
     "consumer": { "type": "string", "minLength": 1 },
     "provenance": { "$ref": "#/definitions/Provenance" },
@@ -68,7 +68,7 @@
         "nodesElided",
         "nodesFlattened",
         "nodesUnmapped",
-        "unmappedNames",
+        "unmapped",
         "divergenceCount",
         "divergencesListed",
         "divergences"
@@ -101,7 +101,11 @@
           "minimum": 0,
           "description": "Nodes the map has no opinion about. Never counted as divergences: 'we have not mapped this' is a different fact from 'we disagree'."
         },
-        "unmappedNames": { "type": "array", "items": { "type": "string" } },
+        "unmapped": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Unmapped" },
+          "description": "Native node kinds the map has no opinion about, ranked by occurrence count and then by name. Ordered rather than sorted because a map author works down this list: the top entry is the next most valuable mapping to add, and an alphabetical list cannot say which that is."
+        },
         "divergenceCount": { "type": "integer", "minimum": 0 },
         "divergencesListed": {
           "type": "integer",
@@ -109,6 +113,15 @@
           "description": "How many of divergenceCount appear below. The list is capped; the count never is, so truncation cannot read as success."
         },
         "divergences": { "type": "array", "items": { "$ref": "#/definitions/Divergence" } }
+      },
+      "additionalProperties": false
+    },
+    "Unmapped": {
+      "type": "object",
+      "required": ["name", "count"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "count": { "type": "integer", "minimum": 1 }
       },
       "additionalProperties": false
     },
