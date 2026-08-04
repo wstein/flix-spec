@@ -22,28 +22,6 @@ import scala.jdk.CollectionConverters._
   */
 object LosslessCheck {
 
-  private def tokenText(node: Json, sb: StringBuilder): Unit =
-    node.get("kind") match {
-      case Some(_) => node.get("children").map(_.asArray).getOrElse(Nil).foreach(tokenText(_, sb))
-      case None    => node.get("text").foreach(t => sb.append(t.asString))
-    }
-
-  /** Normalises a source or reconstruction for comparison.
-    *
-    * Two things are removed, and only two:
-    *
-    *   - **whitespace**, which Flix does not emit as tokens at all;
-    *   - the **`$` escape marker** before a name. `Lexer.scala:519-521` moves past it explicitly ("Don't include the $
-    *     sign in the name"), so in `x.$and(y)` the token spans `and` and the `$` belongs to no token. It is a marker,
-    *     like whitespace, not content.
-    *
-    * The `$` rule is deliberately narrow -- only when followed by a name character -- so string interpolation
-    * (`${expr}`, where `$` precedes `{`) still has to round-trip, and a genuinely dropped `$` inside a string literal
-    * would still be caught.
-    */
-  private def squeeze(s: String): String =
-    s.replaceAll("\\s+", "").replaceAll("\\$(?=[A-Za-z_])", "")
-
   def main(args: Array[String]): Unit = {
     val expectedDir = Paths.get("fixtures/expected")
     val files = Files
@@ -73,20 +51,13 @@ object LosslessCheck {
           skipped += 1
           failures += s"${f.getFileName}: source ${source} does not exist"
         } else {
-          val sb = new StringBuilder
-          tokenText(unit("tree"), sb)
-          val fromTree = squeeze(sb.toString)
-          val fromDisk = squeeze(Files.readString(source, StandardCharsets.UTF_8))
+          val fromTree = TokenAccounting.reconstruct(unit("tree"))
+          val fromDisk = TokenAccounting.squeeze(Files.readString(source, StandardCharsets.UTF_8))
           checked += 1
-          if (fromTree != fromDisk) {
-            val i = fromTree.zip(fromDisk).indexWhere { case (a, b) => a != b }
-            val at = if (i < 0) math.min(fromTree.length, fromDisk.length) else i
-            val window = 30
+          if (fromTree != fromDisk)
             failures +=
               s"${f.getFileName}: token text does not reconstruct ${unit("source").asString}\n" +
-                s"    tree  (${fromTree.length} chars): …${fromTree.slice(math.max(0, at - window), at + window)}…\n" +
-                s"    source(${fromDisk.length} chars): …${fromDisk.slice(math.max(0, at - window), at + window)}…"
-          }
+                TokenAccounting.describeDivergence(fromTree, fromDisk)
         }
       }
     }

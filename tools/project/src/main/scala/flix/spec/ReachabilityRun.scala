@@ -57,22 +57,6 @@ object ReachabilityRun {
     }
   }
 
-  /** Normalises a source or reconstruction for comparison.
-    *
-    * Two things are removed, and only two:
-    *
-    *   - **whitespace**, which Flix does not emit as tokens at all;
-    *   - the **`$` escape marker** before a name. `Lexer.scala:519-521` moves past it explicitly ("Don't include the $
-    *     sign in the name"), so in `x.$and(y)` the token spans `and` and the `$` belongs to no token. It is a marker,
-    *     like whitespace, not content.
-    *
-    * The `$` rule is deliberately narrow -- only when followed by a name character -- so string interpolation
-    * (`${expr}`, where `$` precedes `{`) still has to round-trip, and a genuinely dropped `$` inside a string literal
-    * would still be caught.
-    */
-  private def squeeze(s: String): String =
-    s.replaceAll("\\s+", "").replaceAll("\\$(?=[A-Za-z_])", "")
-
   /** Result of parsing one corpus file. */
   private final case class FileResult(readable: Boolean, cleanParse: Boolean, lossless: Boolean)
 
@@ -93,8 +77,12 @@ object ReachabilityRun {
     local.kinds.foreach { case (k, n) => t.kinds.update(k, t.kinds.getOrElse(k, 0L) + n) }
     local.tokens.foreach { case (k, n) => t.tokens.update(k, t.tokens.getOrElse(k, 0L) + n) }
 
-    val onDisk = squeeze(Files.readString(file, StandardCharsets.UTF_8))
-    FileResult(readable = true, cleanParse = parserErrors.isEmpty, lossless = squeeze(local.text.toString) == onDisk)
+    val onDisk = TokenAccounting.squeeze(Files.readString(file, StandardCharsets.UTF_8))
+    FileResult(
+      readable = true,
+      cleanParse = parserErrors.isEmpty,
+      lossless = TokenAccounting.squeeze(local.text.toString) == onDisk
+    )
   }
 
   private def obj(sb: StringBuilder, label: String, entries: List[(String, Long)]): Unit = {
