@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 2,
+  "generatedBy": "flix.spec.ProjectionExtractor",
+  "toolVersion": "2.0.0",
+  "form": "raw",
+  "upstreamCommit": "318bb51a953c58a8785251a80fad8aea005f729f",
+  "oracleSha256": "e3177700aead8a22a42c910e73bfb8a326fefdbab4e3eaeaf6d55c328a6bd938",
+  "units": [
+    {
+      "source": "fixtures/positive/declarations__type-alias.flix",
+      "diagnostics": [],
+      "tree": {"kind":"Root","span":{"start":{"line":1,"col":1},"end":{"line":2,"col":1}},"children":[{"kind":"UsesOrImports.UseOrImportList","span":{"start":{"line":1,"col":1},"end":{"line":1,"col":1}},"children":[]},{"kind":"Decl.TypeAlias","span":{"start":{"line":1,"col":1},"end":{"line":1,"col":28}},"children":[{"kind":"Doc","span":{"start":{"line":1,"col":1},"end":{"line":1,"col":1}},"children":[]},{"kind":"AnnotationList","span":{"start":{"line":1,"col":1},"end":{"line":1,"col":1}},"children":[]},{"kind":"ModifierList","span":{"start":{"line":1,"col":1},"end":{"line":1,"col":1}},"children":[]},{"token":"KeywordType","text":"type","start":{"line":1,"col":1},"end":{"line":1,"col":5}},{"token":"KeywordAlias","text":"alias","start":{"line":1,"col":6},"end":{"line":1,"col":11}},{"kind":"Ident","span":{"start":{"line":1,"col":12},"end":{"line":1,"col":16}},"children":[{"token":"NameUppercase","text":"Pair","start":{"line":1,"col":12},"end":{"line":1,"col":16}}]},{"kind":"TypeParameterList","span":{"start":{"line":1,"col":16},"end":{"line":1,"col":19}},"children":[{"token":"BracketL","text":"[","start":{"line":1,"col":16},"end":{"line":1,"col":17}},{"kind":"Parameter","span":{"start":{"line":1,"col":17},"end":{"line":1,"col":18}},"children":[{"kind":"Ident","span":{"start":{"line":1,"col":17},"end":{"line":1,"col":18}},"children":[{"token":"NameLowercase","text":"a","start":{"line":1,"col":17},"end":{"line":1,"col":18}}]}]},{"token":"BracketR","text":"]","start":{"line":1,"col":18},"end":{"line":1,"col":19}}]},{"token":"Equal","text":"=","start":{"line":1,"col":20},"end":{"line":1,"col":21}},{"kind":"Type.Type","span":{"start":{"line":1,"col":22},"end":{"line":1,"col":28}},"children":[{"kind":"Type.Tuple","span":{"start":{"line":1,"col":22},"end":{"line":1,"col":28}},"children":[{"token":"ParenL","text":"(","start":{"line":1,"col":22},"end":{"line":1,"col":23}},{"kind":"Type.Type","span":{"start":{"line":1,"col":23},"end":{"line":1,"col":24}},"children":[{"kind":"Type.Variable","span":{"start":{"line":1,"col":23},"end":{"line":1,"col":24}},"children":[{"token":"NameLowercase","text":"a","start":{"line":1,"col":23},"end":{"line":1,"col":24}}]}]},{"token":"Comma","text":",","start":{"line":1,"col":24},"end":{"line":1,"col":25}},{"kind":"Type.Type","span":{"start":{"line":1,"col":26},"end":{"line":1,"col":27}},"children":[{"kind":"Type.Variable","span":{"start":{"line":1,"col":26},"end":{"line":1,"col":27}},"children":[{"token":"NameLowercase","text":"a","start":{"line":1,"col":26},"end":{"line":1,"col":27}}]}]},{"token":"ParenR","text":")","start":{"line":1,"col":27},"end":{"line":1,"col":28}}]}]}]}]}
+    }
+  ]
+}

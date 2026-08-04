@@ -8,17 +8,36 @@ import ca.uwaterloo.flix.language.phase.{Lexer, Parser2, Reader}
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths}
 
-/** Emits a canonical projected concrete syntax tree for a single `.flix` file, conforming to
-  * `schemas/projection.schema.json` (implementation plan section 3.1).
+/** Emits projected concrete syntax trees for `.flix` files, conforming to `schemas/projection.schema.json`
+  * (implementation plan section 3.1).
   *
   * Drives `Reader.run -> Lexer.run -> Parser2.run` directly rather than `Flix.check()`. The public route returns the
   * CST for the entire compilation, standard library included -- roughly a million nodes for a one-line fixture -- so
   * every expectation would embed the stdlib. The phase pipeline parses exactly the inputs it is given.
+  *
+  * It emits the same parse in **two forms**, and which one a reader wants depends on the question:
+  *
+  *   - `raw` (`fixtures/raw/`) is what the reference produced, node for node. It is the provenance record, the input to
+  *     every measurement about the reference's own vocabulary -- coverage, wrapper shape, the transparency proposer --
+  *     and the authority the recovery lane compares against.
+  *   - `normalized` (`fixtures/expected/`) is that tree with [[Transparency]]'s rules applied: wrappers that carry no
+  *     information beyond their child are gone, and the error vocabulary is spliced out. This is the canonical tree a
+  *     consumer is asked to agree with, so the main conformance lane measures structure *modulo* recovery.
+  *
+  * Every document says which form it is, in `form`. A projected tree whose shape depends on an unstated normalisation
+  * is not comparable to anything, and this repository has already learned that lesson once about pins.
   */
 object ProjectionExtractor {
 
-  /** Bumped whenever the emitted format changes. */
-  val ToolVersion = "1.0.0"
+  /** Bumped whenever the emitted format changes. 2.0.0: `form` added, and `--out` now writes the normalised tree. */
+  val ToolVersion = "2.0.0"
+
+  /** Where the two forms live, so nothing has to spell either directory twice. */
+  val RawDir = "fixtures/raw"
+  val NormalizedDir = "fixtures/expected"
+
+  val RawForm = "raw"
+  val NormalizedForm = "normalized"
 
   private val OracleJar = Paths.get(".oracle/flix.jar")
   private val PinFile = Paths.get("pin.json")
@@ -130,23 +149,29 @@ object ProjectionExtractor {
     Projection(source, printTree(tree), diagnostics)
   }
 
-  def formatJson(p: Projection, upstreamCommit: String, oracleSha256: String): String = {
+  /** Renders one projection as a document of the given `form`.
+    *
+    * `tree` is passed in rather than read off `p` because the two forms differ only there: the same parse, the same
+    * diagnostics, the same provenance header, one tree written verbatim and one normalised.
+    */
+  def formatJson(p: Projection, tree: String, form: String, upstreamCommit: String, oracleSha256: String): String = {
     val diags = p.diagnostics
       .map(d => s"""      {"kind":"${esc(d.kind)}","line":${d.line},"col":${d.col},"message":"${esc(d.message)}"}""")
       .mkString(",\n")
     val diagBlock = if (p.diagnostics.isEmpty) "[]" else s"[\n$diags\n    ]"
 
     s"""{
-       |  "schemaVersion": 1,
+       |  "schemaVersion": 2,
        |  "generatedBy": "flix.spec.ProjectionExtractor",
        |  "toolVersion": "$ToolVersion",
+       |  "form": "$form",
        |  "upstreamCommit": "$upstreamCommit",
        |  "oracleSha256": "$oracleSha256",
        |  "units": [
        |    {
        |      "source": "${esc(p.source)}",
        |      "diagnostics": $diagBlock,
-       |      "tree": ${p.tree}
+       |      "tree": $tree
        |    }
        |  ]
        |}
@@ -156,22 +181,44 @@ object ProjectionExtractor {
   // -------------------------------------------------------------------- main
 
   private val Usage =
-    """usage: ProjectionExtractor [--out <dir>] <path-to-flix-file>...
-      |
-      |  default     print the projected tree for one file to stdout
-      |  --out <dir> write <dir>/<fixture-name>.json for each input instead
-      |""".stripMargin
+    s"""usage: ProjectionExtractor [--out <dir>] [--raw-out <dir>] [--form raw|normalized] <path-to-flix-file>...
+       |
+       |  default          print one file's projected tree to stdout, in --form
+       |  --form <form>    which tree stdout gets; defaults to $RawForm, the reference's own output
+       |  --out <dir>      write <dir>/<fixture-name>.json holding the normalized tree
+       |  --raw-out <dir>  write <dir>/<fixture-name>.json holding the verbatim tree
+       |
+       |Both --out and --raw-out may be given; the file is parsed once and written twice.
+       |""".stripMargin
+
+  private def optionValue(args: Array[String], name: String): Option[String] = {
+    val i = args.indexOf(name)
+    if (i < 0) None
+    else if (i + 1 >= args.length) {
+      System.err.println(s"$name requires an argument\n\n$Usage")
+      sys.exit(2)
+    } else Some(args(i + 1))
+  }
+
+  private def consumedIndices(args: Array[String], names: List[String]): Set[Int] =
+    names.flatMap { name =>
+      val i = args.indexOf(name)
+      // Guard on i >= 0: with the option absent, indexOf returns -1 and i + 1 is 0, which would
+      // silently drop the first file argument.
+      if (i < 0) Nil else List(i, i + 1)
+    }.toSet
 
   def main(args: Array[String]): Unit = {
-    val outIdx = args.indexOf("--out")
-    if (outIdx >= 0 && outIdx + 1 >= args.length) {
-      System.err.println(s"--out requires a directory argument\n\n$Usage")
+    val options = List("--out", "--raw-out", "--form")
+    val outDir = optionValue(args, "--out").map(Paths.get(_))
+    val rawOutDir = optionValue(args, "--raw-out").map(Paths.get(_))
+    val form = optionValue(args, "--form").getOrElse(RawForm)
+    if (form != RawForm && form != NormalizedForm) {
+      System.err.println(s"--form must be $RawForm or $NormalizedForm, got '$form'\n\n$Usage")
       sys.exit(2)
     }
-    val outDir = if (outIdx >= 0) Some(Paths.get(args(outIdx + 1))) else None
-    // Guard on outIdx >= 0: with no --out, indexOf returns -1 and outIdx + 1 is 0, which would
-    // silently drop the first file argument.
-    val consumed = if (outIdx >= 0) Set(outIdx, outIdx + 1) else Set.empty[Int]
+
+    val consumed = consumedIndices(args, options)
     val files = args.zipWithIndex
       .filterNot { case (_, i) => consumed.contains(i) }
       .map(_._1)
@@ -188,19 +235,35 @@ object ProjectionExtractor {
       """"commit"\s*:\s*"([^"]*)"""".r.findFirstMatchIn(pin).map(_.group(1)).get
     val oracleSha256 = TreeKindExtractor.fileDigest(OracleJar)
 
+    // Loaded once, and loaded strictly: it schema-checks itself and refuses to normalise against citations that were
+    // read at a commit other than the one being extracted.
+    val contract = Transparency.load()
+
     val repoRoot = Paths.get("").toAbsolutePath.normalize()
 
     files.sorted.foreach { f =>
-      val json = formatJson(project(Paths.get(f), repoRoot), upstreamCommit, oracleSha256)
-      outDir match {
-        case Some(dir) =>
-          Files.createDirectories(dir)
-          val name = Paths.get(f).getFileName.toString.stripSuffix(".flix") + ".json"
-          Files.writeString(dir.resolve(name), json, StandardCharsets.UTF_8)
-        case None => print(json)
+      val p = project(Paths.get(f), repoRoot)
+      val normalized = Normalizer.normalizeRendered(p.tree, contract)
+      val name = Paths.get(f).getFileName.toString.stripSuffix(".flix") + ".json"
+
+      def write(dir: Path, tree: String, formName: String): Unit = {
+        Files.createDirectories(dir)
+        Files.writeString(
+          dir.resolve(name),
+          formatJson(p, tree, formName, upstreamCommit, oracleSha256),
+          StandardCharsets.UTF_8
+        )
+      }
+
+      rawOutDir.foreach(write(_, p.tree, RawForm))
+      outDir.foreach(write(_, normalized, NormalizedForm))
+      if (rawOutDir.isEmpty && outDir.isEmpty) {
+        val tree = if (form == RawForm) p.tree else normalized
+        print(formatJson(p, tree, form, upstreamCommit, oracleSha256))
       }
     }
 
-    outDir.foreach(dir => println(s"Wrote ${files.length} projected trees to $dir"))
+    rawOutDir.foreach(dir => println(s"Wrote ${files.length} raw projected trees to $dir"))
+    outDir.foreach(dir => println(s"Wrote ${files.length} normalized projected trees to $dir"))
   }
 }

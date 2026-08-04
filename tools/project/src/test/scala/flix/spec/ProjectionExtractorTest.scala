@@ -12,16 +12,24 @@ import scala.jdk.CollectionConverters._
 class ProjectionExtractorTest extends AnyFunSuite with Matchers {
 
   private val repoRoot: Path = Paths.get("../..").toAbsolutePath.normalize()
-  private val expectedDir: Path = repoRoot.resolve("fixtures/expected")
+  private val expectedDir: Path = repoRoot.resolve(ProjectionExtractor.NormalizedDir)
 
-  private def expectations: List[Path] =
+  private def documents(dir: Path): List[Path] =
     Files
-      .list(expectedDir)
+      .list(dir)
       .iterator()
       .asScala
       .filter(_.getFileName.toString.endsWith(".json"))
       .toList
       .sortBy(_.toString)
+
+  private def expectations: List[Path] = documents(expectedDir)
+
+  /** The reference's own trees. Every claim about what the *parser* did -- which error kinds it produced, whether a
+    * fixture is malformed at all -- has to be read here: normalisation splices the error vocabulary out of
+    * `fixtures/expected` on purpose, so asking that form about error recovery would get a confidently wrong answer.
+    */
+  private def rawTrees: List[Path] = documents(repoRoot.resolve(ProjectionExtractor.RawDir))
 
   private def fixtures: List[Path] =
     List("positive", "negative").flatMap { sub =>
@@ -33,12 +41,12 @@ class ProjectionExtractorTest extends AnyFunSuite with Matchers {
         .toList
     }
 
-  test("every fixture has a committed expectation") {
+  test("every fixture has a committed expectation in both forms") {
     val names = fixtures.map(_.getFileName.toString.stripSuffix(".flix")).sorted
-    val have = expectations.map(_.getFileName.toString.stripSuffix(".json")).sorted
 
     names should not be empty
-    have shouldBe names
+    expectations.map(_.getFileName.toString.stripSuffix(".json")).sorted shouldBe names
+    rawTrees.map(_.getFileName.toString.stripSuffix(".json")).sorted shouldBe names
   }
 
   test("kind names are sub-trait qualified, never bare") {
@@ -59,8 +67,8 @@ class ProjectionExtractorTest extends AnyFunSuite with Matchers {
 
   test("sources are repository-relative and diagnostics carry no absolute paths") {
     // An absolute path would make the committed expectation machine-specific and fail the diff
-    // gate on any other checkout.
-    expectations.foreach { p =>
+    // gate on any other checkout. Both forms are committed, so both are gated.
+    (expectations ++ rawTrees).foreach { p =>
       val body = Files.readString(p)
       withClue(s"$p ") {
         """"source": "(/|[A-Za-z]:)""".r.findFirstIn(body) shouldBe None
@@ -72,13 +80,13 @@ class ProjectionExtractorTest extends AnyFunSuite with Matchers {
   /** Kinds the parser emits only for malformed input. */
   private val ErrorKinds = List("ErrorTree", "OperatorError", "TrailingDot", "UnclosedMark")
 
-  test("negative fixtures show malformation; positive fixtures show none") {
+  test("negative fixtures show malformation in the raw tree; positive fixtures show none") {
     // Evidence is a diagnostic *or* an error kind, not a diagnostic alone. Parser2 recovers
     // silently from some malformed input and defers the error to a later phase: a block
     // containing `1 2` yields a synthetic OperatorError node and no parser diagnostic at all,
     // because Weeder2 is what turns it into MissingBinaryOperator. A consumer cannot be required
     // to report a diagnostic where the reference itself reports none.
-    expectations.foreach { p =>
+    rawTrees.foreach { p =>
       val body = Files.readString(p)
       val isNegative = body.contains("\"source\": \"fixtures/negative/")
       val hasDiagnostics = !body.contains("\"diagnostics\": []")
@@ -90,11 +98,22 @@ class ProjectionExtractorTest extends AnyFunSuite with Matchers {
   }
 
   test("no positive fixture parses to an error kind") {
-    expectations.foreach { p =>
+    rawTrees.foreach { p =>
       val body = Files.readString(p)
       if (body.contains("\"source\": \"fixtures/positive/")) {
         ErrorKinds.foreach(k => withClue(s"$p ") { body should not include s""""kind":"$k"""" })
       }
+    }
+  }
+
+  test("the normalized form keeps every diagnostic the raw form recorded") {
+    // Normalisation removes the error *vocabulary* from the tree, never the diagnostics. Losing those would make the
+    // negative fixtures indistinguishable from the positive ones in the form consumers actually read, and the
+    // diagnostic contract (kind and line gated, col and message advisory) applies to both.
+    rawTrees.zip(expectations).foreach { case (r, e) =>
+      val raw = Json.parseFile(r)("units").asArray.map(_("diagnostics").asArray.length)
+      val normalized = Json.parseFile(e)("units").asArray.map(_("diagnostics").asArray.length)
+      withClue(s"${r.getFileName}: ")(normalized shouldBe raw)
     }
   }
 

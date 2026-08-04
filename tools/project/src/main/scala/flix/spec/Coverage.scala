@@ -10,6 +10,11 @@ import scala.jdk.CollectionConverters._
   * Implementation plan section 7, Phase 2: fixture coverage must be a measurable artifact rather than a claim. A kind
   * is *covered* when at least one committed expectation contains a node of that kind.
   *
+  * Measured over `fixtures/raw/`, never the normalised trees. Coverage is a statement about the reference's own
+  * vocabulary -- which kinds this suite can make the reference emit -- and normalisation deliberately removes some of
+  * them. Reading the normalised trees would report `ErrorTree` as uncovered and let the status join conclude that 873
+  * files of real Flix reach a kind no fixture does, which would be false twice over.
+  *
   * An uncovered kind is not automatically a gap. Some kinds are only reachable from inputs no fixture yet exercises;
   * others may be unreachable from any input at all, which is a fact about Flix rather than about this suite.
   * Distinguishing the two needs the corpus-wide reachability run ([[ReachabilityRun]]), so this deliberately reports
@@ -77,12 +82,12 @@ object Coverage {
     val inventory = Json.parseFile(Paths.get("ast/treekind.json"))
     val allKinds = inventory("kinds").asArray.map(_("name").asString)
 
-    val expectedDir = Paths.get("fixtures/expected")
+    val rawDir = Paths.get(ProjectionExtractor.RawDir)
     val fixtures =
-      Files.list(expectedDir).iterator().asScala.map(_.toString).filter(_.endsWith(".json")).toList.sorted
+      Files.list(rawDir).iterator().asScala.map(_.toString).filter(_.endsWith(".json")).toList.sorted
 
     if (fixtures.isEmpty) {
-      System.err.println("FATAL: no expectations in fixtures/expected/")
+      System.err.println(s"FATAL: no raw projected trees in $rawDir/")
       sys.exit(1)
     }
 

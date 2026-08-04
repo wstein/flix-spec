@@ -50,7 +50,9 @@ tasks.register<JavaExec>("extract") {
 }
 
 tasks.register<JavaExec>("generateFixtures") {
-    description = "Regenerates fixtures/expected/*.json for every fixture under fixtures/."
+    description =
+        "Regenerates both committed forms for every fixture under fixtures/: fixtures/raw/*.json (the reference's " +
+            "own tree) and fixtures/expected/*.json (that tree normalized under ast/transparency.json)."
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set("flix.spec.ProjectionExtractor")
     workingDir = rootProject.projectDir
@@ -59,7 +61,7 @@ tasks.register<JavaExec>("generateFixtures") {
             val root = rootProject.projectDir
             val fixtures = rootProject.fileTree("fixtures") { include("positive/**/*.flix", "negative/**/*.flix") }
                 .files.map { it.relativeTo(root).path }.sorted()
-            listOf("--out", "fixtures/expected") + fixtures
+            listOf("--raw-out", "fixtures/raw", "--out", "fixtures/expected") + fixtures
         },
     )
 }
@@ -130,9 +132,20 @@ tasks.register<JavaExec>("validateTreeKind") {
 }
 
 tasks.register<JavaExec>("validateProjection") {
-    description = "Validates fixtures/expected/*.json against schemas/projection.schema.json and ast/treekind.json."
+    description =
+        "Validates fixtures/raw/*.json and fixtures/expected/*.json against schemas/projection.schema.json and " +
+            "ast/treekind.json."
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set("flix.spec.ProjectionSchemaValidator")
+    workingDir = rootProject.projectDir
+}
+
+tasks.register<JavaExec>("checkNormalization") {
+    description =
+        "Asserts fixtures/expected/ is exactly normalize(fixtures/raw/) under ast/transparency.json, re-deriving " +
+            "the relationship rather than trusting that one generator wrote both."
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("flix.spec.NormalizationCheck")
     workingDir = rootProject.projectDir
 }
 
