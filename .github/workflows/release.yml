@@ -75,6 +75,17 @@ jobs:
                 LICENSE.md NOTICE.md README.md "dist/${BUNDLE}/"
           cp corpus/corpus.json "dist/${BUNDLE}/corpus/"
 
+          # Both projected-tree forms and the transparency contract are load-bearing for a
+          # consumer: fixtures/expected is what conformance compares against, fixtures/raw is what
+          # the recovery lane compares against, and ast/transparency.json is the only thing that
+          # explains the difference. The copies above are recursive and pick all three up today;
+          # asserting it means a future narrowing of that copy fails here rather than shipping a
+          # bundle whose canonical trees cannot be explained.
+          for required in fixtures/raw fixtures/expected ast/transparency.json; do
+            test -e "dist/${BUNDLE}/${required}" \
+              || { echo "FATAL: release bundle is missing ${required}" >&2; exit 1; }
+          done
+
           tar -czf "dist/${BUNDLE}.tar.gz" -C dist "${BUNDLE}"
           ( cd dist && sha256sum "${BUNDLE}.tar.gz" > SHA256SUMS )
           ( cd "dist/${BUNDLE}" && find . -type f -print0 \
