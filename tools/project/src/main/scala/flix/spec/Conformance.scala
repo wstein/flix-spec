@@ -15,8 +15,20 @@ import scala.jdk.CollectionConverters._
   *   - spans and tokens are not compared -- token vocabularies differ legitimately between parsers, and spans are
   *     advisory, so comparing either would report differences that are not disagreements about structure.
   *
+  * The report it writes has **two lanes, never summed into one score**:
+  *
+  *   - `oracle_conformance` -- this comparison. Its expectations come from the pinned reference, so it inherits the
+  *     reference's defects by construction and measures *compatibility*, not correctness. A consumer reproducing a
+  *     compiler bug scores as agreeing; one implementing the reference's intent instead scores as divergent.
+  *   - `source_invariants` -- [[SourceInvariants]], which consults no expected tree and can therefore contradict the
+  *     reference. A consumer can pass the first lane and fail the second, and that case is the reason for the split:
+  *     blanking one token's text leaves kind, child order and nesting untouched, so every fixture still agrees while
+  *     the output has demonstrably lost its input.
+  *
   * Usage: `conformance --actual <dir> [--map <file>] [--report <file>] [--baseline <n>]`. Exit status is non-zero when
-  * divergences exceed `--baseline` (default 0), so the ratchet is the gate. Run from the repository root.
+  * divergences exceed `--baseline` (default 0) **or** the source-invariants lane fails. The baseline is a ratchet for
+  * mapping coverage, which is closed incrementally; it does not apply to the second lane, because losing a token is not
+  * a gap someone is partway through closing. Run from the repository root.
   */
 object Conformance {
 
