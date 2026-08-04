@@ -3,6 +3,13 @@
 // rather add a dependency than vendor files by hand. Published to a Maven
 // repository hosted on GitHub Pages (docs/PIN-BUMP.md, section "Publishing").
 //
+// fixtures/ ships both projected-tree forms, and a consumer needs both:
+// fixtures/expected/ is the canonical tree conformance compares against, and
+// fixtures/raw/ is the reference's own tree, which the recovery lane compares
+// against and which every measurement of the reference's own vocabulary is
+// taken from. ast/transparency.json ships alongside them because it is the
+// only thing that explains the difference between the two.
+//
 // Versioning (see docs/VERSIONING.md): plain semver, no decoration. major.minor
 // track the upstream Flix line and patch is this repository's own revision
 // counter, so `0.75.1` is derived from Flix 0.75.x and `0.75.2` is the next
