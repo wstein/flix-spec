@@ -188,6 +188,15 @@ tasks.register<JavaExec>("generateDocs") {
     workingDir = rootProject.projectDir
 }
 
+tasks.register<JavaExec>("validateReport") {
+    description =
+        "Validates a conformance report against schemas/conformance-report.schema.json, including the count and " +
+            "verdict relationships the schema cannot express: ./gradlew :tools:project:validateReport --args='<report.json>'"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("flix.spec.ConformanceReportValidator")
+    workingDir = rootProject.projectDir
+}
+
 tasks.register<JavaExec>("validateDefects") {
     description =
         "Validates defects/ledger.json: schema, expiry, upstream-link consistency, and -- for each entry -- " +

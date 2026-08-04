@@ -75,6 +75,17 @@ echo "== losslessness: trees must reconstruct their source =="
 echo "== conformance: expectations must agree with themselves =="
 ./gradlew -q :tools:project:conformance --args="--actual fixtures/expected"
 
+echo "== conformance: the two-lane report must be well-formed =="
+# The report is the artifact consumers actually read, and it is produced in their repositories where
+# nothing here can check it. Generating one from the identity case and validating it is what keeps
+# the published shape honest -- including that both lanes reach a verdict rather than one silently
+# reporting nothing.
+REPORT="$WORK/conformance.json"
+./gradlew -q :tools:project:conformance --args="--actual fixtures/expected --report $REPORT" > /dev/null
+./gradlew -q :tools:project:validateReport --args="$REPORT"
+jq -e '.lanes.oracle_conformance.verdict == "pass" and .lanes.source_invariants.verdict == "pass"' "$REPORT" > /dev/null
+echo "OK: both lanes pass on the identity case"
+
 echo "== conformance: a mutated tree must be detected =="
 # A comparison that cannot fail is not a check. Rename one kind and drop one child, then require a
 # non-zero exit -- otherwise a silently no-op comparator would report every consumer as conforming.
