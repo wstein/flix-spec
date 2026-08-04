@@ -15,24 +15,37 @@ import scala.jdk.CollectionConverters._
   *   - spans and tokens are not compared -- token vocabularies differ legitimately between parsers, and spans are
   *     advisory, so comparing either would report differences that are not disagreements about structure.
   *
-  * The report it writes has **two lanes, never summed into one score**:
+  * The report it writes has **three lanes, never summed into one score**:
   *
-  *   - `oracle_conformance` -- this comparison. Its expectations come from the pinned reference, so it inherits the
-  *     reference's defects by construction and measures *compatibility*, not correctness. A consumer reproducing a
-  *     compiler bug scores as agreeing; one implementing the reference's intent instead scores as divergent.
+  *   - `oracle_conformance` -- structure *modulo* recovery. Compared against `fixtures/expected/`, the normalised
+  *     canonical tree, so wrapper nodes and the error vocabulary have already been removed by [[Transparency]]'s rules.
+  *     Its expectations come from the pinned reference, so it inherits the reference's defects by construction and
+  *     measures *compatibility*, not correctness: a consumer reproducing a compiler bug scores as agreeing, and one
+  *     implementing the reference's intent instead scores as divergent.
+  *   - `recovery_conformance` -- error-recovery shape, scoped to the fixtures whose raw tree actually contains recovery
+  *     markers. Compared against `fixtures/raw/` with the wrapper rules applied but the error vocabulary left in, so
+  *     the *only* difference from the first lane is the recovery markers. Comparing against raw verbatim was the
+  *     obvious design and the wrong one: it would drown the recovery signal in wrapper divergences the first lane has
+  *     already accounted for, and this lane exists to isolate recovery shape, not to re-measure transparency.
   *   - `source_invariants` -- [[SourceInvariants]], which consults no expected tree and can therefore contradict the
-  *     reference. A consumer can pass the first lane and fail the second, and that case is the reason for the split:
+  *     reference. A consumer can pass the derived lanes and fail this one, and that case is the reason for the split:
   *     blanking one token's text leaves kind, child order and nesting untouched, so every fixture still agrees while
   *     the output has demonstrably lost its input.
   *
-  * Usage: `conformance --actual <dir> [--map <file>] [--report <file>] [--baseline <n>]`. Exit status is non-zero when
-  * divergences exceed `--baseline` (default 0) **or** the source-invariants lane fails. The baseline is a ratchet for
-  * mapping coverage, which is closed incrementally; it does not apply to the second lane, because losing a token is not
-  * a gap someone is partway through closing. Run from the repository root.
+  * Splitting recovery out is not a way of forgiving it. It is the recognition that recovery shape is
+  * implementation-specific by nature -- two parsers can agree completely about what a valid program means and share
+  * nothing about how they resurface from a malformed one -- so a single score that mixed it with structure would mean
+  * neither. The lane keeps its own verdict and its own baseline, and both gate.
+  *
+  * Usage: `conformance --actual <dir> [--map <file>] [--report <file>] [--baseline <n>] [--recovery-baseline <n>]`.
+  * Exit status is non-zero when either derived lane exceeds its own baseline **or** the source-invariants lane fails. A
+  * baseline is a ratchet for mapping coverage, which is closed incrementally; it does not apply to the third lane,
+  * because losing a token is not a gap someone is partway through closing. Run from the repository root.
   */
 object Conformance {
 
-  private val ExpectedDir = "fixtures/expected"
+  private val ExpectedDir = ProjectionExtractor.NormalizedDir
+  private val RawDir = ProjectionExtractor.RawDir
   private val MaxDivergencesPerFixture = 20
 
   final case class KTree(kind: String, children: List[KTree])
@@ -45,13 +58,22 @@ object Conformance {
         Some(KTree(k.asString, children))
     }
 
-  private def loadUnits(path: String): Map[String, KTree] =
+  /** Loads a projected document's units as kind-only trees, optionally normalising first.
+    *
+    * `normalizeWith` is what lets the recovery lane build its expectation from `fixtures/raw` without a second copy of
+    * anything: it is the transparency contract minus its recovery markers, so the raw tree loses exactly the wrappers
+    * the canonical tree lost and keeps exactly the error vocabulary the canonical tree dropped.
+    */
+  private def loadUnits(path: String, normalizeWith: Option[Transparency.Contract] = None): Map[String, KTree] =
     Json
       .parseFile(Paths.get(path))
       .get("units")
       .map(_.asArray)
       .getOrElse(Nil)
-      .map(u => u("source").asString -> kindTree(u("tree")).get)
+      .map { u =>
+        val tree = normalizeWith.fold(u("tree"))(Normalizer.normalize(u("tree"), _))
+        u("source").asString -> kindTree(tree).get
+      }
       .toMap
 
   final class Stats {
@@ -66,69 +88,124 @@ object Conformance {
 
   final case class Divergence(path: String, expected: String, actual: String, reason: String)
 
-  /** Removes transparent nodes from a child list. Used on both sides: `elide` names canonical wrappers the consumer
-    * does not produce, `ignored` names the consumer's own wrappers with no counterpart in the reference. A transparent
-    * node is dropped when empty and replaced by its child when it has exactly one; a node with two or more children is
-    * kept, since splicing its children into the parent would discard real structure.
+  /** The consumer's own vocabulary declarations, read once from its projection map and applied identically by every
+    * derived lane. Grouping them keeps the comparison's signature honest about what varies between lanes -- the
+    * expectations and the baseline -- and what does not.
     */
-  /** Splices a grouping node's children into its parent, at any arity.
-    *
-    * Stronger and more dangerous than elision, which only fires at arity <= 1. Flattening a node that carries real
-    * structure would hide a genuine disagreement, so it is opt-in per node name and belongs only on pure grouping
-    * constructs with no counterpart in the reference.
-    *
-    * Grammar-Kit needs it: `DECLARATION` wraps every declaration together with its doc, annotations and modifiers,
-    * while the reference makes those direct children of `Decl.Def`. It appears 134 times across the fixtures, and
-    * without flattening its whole subtree is never compared -- which is why comparison depth was 51%.
-    */
-  private def applyFlatten(
-      children: List[KTree],
-      flatten: Set[String],
-      stats: Stats,
-      counter: String = "flattened"
-  ): List[KTree] =
-    children.flatMap { c =>
-      if (flatten.contains(c.kind)) {
-        stats.inc(counter)
-        applyFlatten(c.children, flatten, stats, counter)
-      } else List(c)
-    }
+  final case class Vocabulary(
+      mapping: Option[Map[String, String]] = None,
+      ignored: Set[String] = Set.empty,
+      elide: Set[String] = Set.empty,
+      flatten: Set[String] = Set.empty,
+      flattenCanonical: Set[String] = Set.empty,
+      recoveryMarkers: Set[String] = Set.empty
+  ) {
 
-  private def applyElision(children: List[KTree], elide: Set[String], stats: Stats, counter: String): List[KTree] = {
-    val out = List.newBuilder[KTree]
-    children.foreach { start =>
-      var current = Option(start)
-      var looping = true
-      while (looping) {
-        current match {
-          case Some(KTree(kind, kids)) if elide.contains(kind) && kids.length <= 1 =>
-            stats.inc(counter)
-            current = kids.headOption
-            if (current.isEmpty) looping = false
-          case _ => looping = false
-        }
-      }
-      current.foreach(out += _)
-    }
-    out.result()
+    /** The vocabulary the structural lane uses: the consumer's own recovery markers are spliced out of its tree,
+      * mirroring what normalisation already did to the canonical one.
+      *
+      * Transparency has to be symmetric or it is worse than absent -- the side that still has the wrapper faces a real
+      * node on the other and reports a disagreement that is really a modelling difference. That argument was made for
+      * wrappers and it applies unchanged to recovery markers: `fixtures/expected` has none, so a consumer that emits an
+      * `ERROR` node would be penalised for information the canonical tree deliberately dropped.
+      */
+    def moduloRecovery: Vocabulary = copy(flatten = flatten ++ recoveryMarkers)
   }
 
-  /** Walks both trees in lockstep, appending divergences to `out`. */
+  /** One measured lane whose expectations come from the reference. Both derived lanes have this shape, and the report
+    * renders them through the same writer, because a reader comparing the two must not have to reconcile two layouts.
+    */
+  final case class DerivedLane(
+      claim: String,
+      caveat: String,
+      baseline: Int,
+      fixturesExpected: Int,
+      fixturesMissing: List[String],
+      fixturesAgreeing: Int,
+      stats: Stats,
+      divergences: List[(String, Divergence)],
+      notApplicable: Option[String] = None
+  ) {
+    def fixturesCompared: Int = fixturesExpected - fixturesMissing.length
+    def verdict: String =
+      if (notApplicable.isDefined) "not-applicable"
+      else if (divergences.length > baseline) "fail"
+      else "pass"
+
+    /** The share of encountered nodes actually compared. Agreement alone is gameable -- a map that maps almost nothing
+      * compares almost nothing and so agrees with almost everything -- so depth is what makes the count mean anything.
+      */
+    def depth: Double = {
+      val encountered = stats.counts("compared") + stats.counts("unmapped")
+      if (encountered == 0) 0.0 else stats.counts("compared").toDouble / encountered
+    }
+  }
+
+  /** Removes transparent nodes from a whole tree, bottom-up, as a single fixed point.
+    *
+    * Two rules, and they must be applied together rather than in sequence:
+    *
+    *   - `splice` -- the node's children replace it in its parent, at any arity. Stronger and more dangerous than
+    *     elision, so it is opt-in per node name and belongs only on pure grouping constructs with no counterpart on the
+    *     other side. Grammar-Kit needs it: `DECLARATION` wraps every declaration together with its doc, annotations and
+    *     modifiers, while the reference makes those direct children of `Decl.Def`; without splicing, its whole subtree
+    *     is never compared, which is why comparison depth was once 51%.
+    *   - `elide` -- the node is dropped when it has no children and replaced by its child when it has exactly one. At
+    *     two or more it is kept, since splicing a branching node would discard real structure rather than a wrapper.
+    *
+    * **Bottom-up, and that is not a detail.** An earlier revision applied the two rules once per level, in sequence,
+    * and a node promoted into a level from below never met the other rule. The canonical trees contain exactly that
+    * shape -- `Type.Type` wrapping an empty `ErrorTree` -- where splicing the marker leaves the wrapper childless and
+    * therefore elidable, which a single pass could not see. This is the same fixed point [[Normalizer]] computes when
+    * it writes `fixtures/expected`, and the two must agree exactly or the canonical trees would not survive their own
+    * comparison. `verify.sh` asserts that by feeding `fixtures/raw` back in as a consumer.
+    */
+  private def transparent(
+      node: KTree,
+      splice: Set[String],
+      elide: Set[String],
+      stats: Stats,
+      spliceCounter: String,
+      elideCounter: String
+  ): List[KTree] = {
+    val kids = node.children.flatMap(transparent(_, splice, elide, stats, spliceCounter, elideCounter))
+    if (splice.contains(node.kind)) {
+      stats.inc(spliceCounter)
+      kids
+    } else if (elide.contains(node.kind) && kids.length <= 1) {
+      stats.inc(elideCounter)
+      kids
+    } else List(KTree(node.kind, kids))
+  }
+
+  /** Applies transparency to a tree while leaving its root alone: the root has no parent to be spliced into. */
+  private def transparentTree(
+      root: KTree,
+      splice: Set[String],
+      elide: Set[String],
+      stats: Stats,
+      spliceCounter: String,
+      elideCounter: String
+  ): KTree =
+    KTree(root.kind, root.children.flatMap(transparent(_, splice, elide, stats, spliceCounter, elideCounter)))
+
+  /** Walks both trees in lockstep, appending divergences to `out`.
+    *
+    * Both trees arrive with transparency already applied, so this does one job: match kinds and arity, position by
+    * position. Doing the two in one pass is what let the rules interact with the walk's own recursion and hid the
+    * fixed-point bug described on [[transparent]].
+    */
   private def compare(
       expected: KTree,
       actual: KTree,
-      mapping: Option[Map[String, String]],
-      ignored: Set[String],
-      elide: Set[String],
-      flatten: Set[String],
-      flattenCanonical: Set[String],
+      vocab: Vocabulary,
       path: String,
       out: scala.collection.mutable.Buffer[Divergence],
       stats: Stats
   ): Unit = {
     if (out.length >= MaxDivergencesPerFixture) return
 
-    val actKind = mapping match {
+    val actKind = vocab.mapping match {
       case None => actual.kind
       case Some(m) if m.contains(actual.kind) =>
         stats.inc("mapped")
@@ -139,28 +216,78 @@ object Conformance {
         return // not a disagreement: we simply have no opinion yet
     }
 
-    val expChildren =
-      applyElision(
-        applyFlatten(expected.children, flattenCanonical, stats, "flattenedCanonical"),
-        elide,
-        stats,
-        "elided"
-      )
-    val actChildren =
-      applyElision(applyFlatten(actual.children, flatten, stats), ignored, stats, "ignored")
-
     stats.inc("compared")
     if (expected.kind != actKind) {
       out += Divergence(path, expected.kind, actKind, "kind")
       return // subtree shape is meaningless once the kinds disagree
     }
 
-    if (expChildren.length != actChildren.length)
-      out += Divergence(path, s"${expChildren.length} children", s"${actChildren.length} children", "arity")
+    if (expected.children.length != actual.children.length)
+      out += Divergence(
+        path,
+        s"${expected.children.length} children",
+        s"${actual.children.length} children",
+        "arity"
+      )
 
-    expChildren.zip(actChildren).zipWithIndex.foreach { case ((e, a), i) =>
-      compare(e, a, mapping, ignored, elide, flatten, flattenCanonical, s"$path.${expected.kind}[$i]", out, stats)
+    expected.children.zip(actual.children).zipWithIndex.foreach { case ((e, a), i) =>
+      compare(e, a, vocab, s"$path.${expected.kind}[$i]", out, stats)
     }
+  }
+
+  /** Runs one derived lane: every expectation in `expectedFiles` against the consumer's output of the same name.
+    *
+    * The two lanes differ only in what they are handed. The mechanics -- which nodes are compared, how the map is
+    * applied, what counts as a divergence -- are the same, and must be: a difference in method between them would make
+    * the two divergence counts incomparable, and the whole point is that together they account for every divergence the
+    * single lane used to report.
+    */
+  private def runLane(
+      expectedFiles: List[String],
+      normalizeWith: Option[Transparency.Contract],
+      actualDir: String,
+      vocab: Vocabulary,
+      baseline: Int,
+      claim: String,
+      caveat: String
+  ): DerivedLane = {
+    val stats = new Stats
+    val divergences = scala.collection.mutable.Buffer.empty[(String, Divergence)]
+    val missing = scala.collection.mutable.Buffer.empty[String]
+    var agreeing = 0
+
+    expectedFiles.foreach { ef =>
+      val name = Paths.get(ef).getFileName.toString
+      val af = Paths.get(actualDir, name).toString
+      if (!Files.exists(Paths.get(af))) missing += name
+      else {
+        val expUnits = loadUnits(ef, normalizeWith)
+        val actUnits = loadUnits(af)
+        val found = scala.collection.mutable.Buffer.empty[Divergence]
+        expUnits.foreach { case (source, expRaw) =>
+          actUnits.get(source).orElse(actUnits.values.headOption) match {
+            case None => found += Divergence(source, "tree", "nothing", "missing-unit")
+            case Some(actRaw) =>
+              val expTree =
+                transparentTree(expRaw, vocab.flattenCanonical, vocab.elide, stats, "flattenedCanonical", "elided")
+              val actTree = transparentTree(actRaw, vocab.flatten, vocab.ignored, stats, "flattened", "ignored")
+              compare(expTree, actTree, vocab, source, found, stats)
+          }
+        }
+        if (found.nonEmpty) divergences ++= found.map(name -> _) else agreeing += 1
+      }
+    }
+
+    DerivedLane(
+      claim = claim,
+      caveat = caveat,
+      baseline = baseline,
+      fixturesExpected = expectedFiles.length,
+      fixturesMissing = missing.toList.sorted,
+      fixturesAgreeing = agreeing,
+      stats = stats,
+      divergences = divergences.toList
+    )
   }
 
   /** Escapes a string for a JSON string literal.
@@ -196,17 +323,25 @@ object Conformance {
     * the vocabulary digests makes two reports comparable, or provably not comparable, without trusting a filename.
     *
     * `fixtureRevision` is computed here rather than read: fixtures are regenerated whenever the oracle or a fixture
-    * source changes, and nothing else in the repository summarises the resulting set in one value.
+    * source changes, and nothing else in the repository summarises the resulting set in one value. It covers **both**
+    * committed forms, because a change confined to nodes normalisation removes -- a different `ErrorTree` shape, say --
+    * moves `fixtures/raw` and leaves `fixtures/expected` untouched. That change is invisible to the first lane and
+    * decisive for the recovery lane, so a revision computed over the normalised trees alone would report two genuinely
+    * different measurements as comparable.
     */
-  private def provenance(expectedFiles: List[String]): List[(String, String)] = {
+  private def provenance(expectedFiles: List[String], rawFiles: List[String]): List[(String, String)] = {
     val pin = Json.parseFile(Paths.get("pin.json"))
     val corpus = Json.parseFile(Paths.get("corpus/corpus.json"))
     val treeInv = Json.parseFile(Paths.get("ast/treekind.json"))
     val tokenInv = Json.parseFile(Paths.get("ast/tokenkind.json"))
 
-    // Name and content of every expectation, so a renamed fixture moves the revision as surely as an edited one.
-    val manifest = expectedFiles
-      .map(f => s"${Paths.get(f).getFileName}:${TreeKindExtractor.fileDigest(Paths.get(f))}")
+    // Name and content of every expectation, so a renamed fixture moves the revision as surely as an edited one. The
+    // parent directory is in the key so the two forms of one fixture cannot collide.
+    val manifest = (rawFiles ++ expectedFiles)
+      .map { f =>
+        val p = Paths.get(f)
+        s"${p.getParent.getFileName}/${p.getFileName}:${TreeKindExtractor.fileDigest(p)}"
+      }
       .mkString("\n")
 
     List(
@@ -236,15 +371,67 @@ object Conformance {
       }
       .mkString(",\n")
 
+  /** Renders one derived lane. Both go through this, so the two cannot drift into different shapes. */
+  private def renderDerivedLane(name: String, lane: DerivedLane, indent: String): String = {
+    val sb = new StringBuilder
+    val i = indent
+    sb.append(s"""$i"$name": {\n""")
+    sb.append(s"""$i  "verdict": "${lane.verdict}",\n""")
+    sb.append(s"""$i  "claim": "${esc(lane.claim)}",\n""")
+    sb.append(s"""$i  "authority": "derived",\n""")
+    sb.append(s"""$i  "caveat": "${esc(lane.caveat)}",\n""")
+    // Never blank when the lane stood down: "not applicable" without a reason is indistinguishable from "not run",
+    // which is the same argument the source-invariants checks already make for their own `detail`.
+    lane.notApplicable.foreach(reason => sb.append(s"""$i  "notApplicable": "${esc(reason)}",\n"""))
+    sb.append(s"""$i  "baseline": ${lane.baseline},\n""")
+    sb.append(s"""$i  "fixturesExpected": ${lane.fixturesExpected},\n""")
+    sb.append(s"""$i  "fixturesCompared": ${lane.fixturesCompared},\n""")
+    sb.append(s"""$i  "fixturesMissing": ${jsonStringArray(lane.fixturesMissing, s"$i  ")},\n""")
+    sb.append(s"""$i  "fixturesAgreeing": ${lane.fixturesAgreeing},\n""")
+    sb.append(s"""$i  "nodesCompared": ${lane.stats.counts("compared")},\n""")
+    sb.append(s"""$i  "nodesMapped": ${lane.stats.counts("mapped")},\n""")
+    sb.append(s"""$i  "nodesIgnored": ${lane.stats.counts("ignored")},\n""")
+    sb.append(s"""$i  "nodesElided": ${lane.stats.counts("elided")},\n""")
+    sb.append(s"""$i  "nodesFlattened": ${lane.stats.counts("flattened")},\n""")
+    sb.append(s"""$i  "nodesFlattenedCanonical": ${lane.stats.counts("flattenedCanonical")},\n""")
+    sb.append(s"""$i  "nodesUnmapped": ${lane.stats.counts("unmapped")},\n""")
+    // Frequency first, name second so ties are stable across runs.
+    val unmappedRanked = lane.stats.unmapped.toList.sortBy { case (name, n) => (-n, name) }
+    sb.append(s"""$i  "unmapped": [""")
+    if (unmappedRanked.isEmpty) sb.append("],\n")
+    else {
+      sb.append("\n")
+      unmappedRanked.zipWithIndex.foreach { case ((n, count), idx) =>
+        val comma = if (idx < unmappedRanked.length - 1) "," else ""
+        sb.append(s"""$i    {"name": "${esc(n)}", "count": $count}$comma\n""")
+      }
+      sb.append(s"$i  ],\n")
+    }
+    val capped = lane.divergences.take(200)
+    sb.append(s"""$i  "divergenceCount": ${lane.divergences.length},\n""")
+    sb.append(s"""$i  "divergencesListed": ${capped.length},\n""")
+    sb.append(s"""$i  "divergences": [""")
+    if (capped.isEmpty) sb.append("]\n")
+    else {
+      sb.append("\n")
+      capped.zipWithIndex.foreach { case ((fixture, d), idx) =>
+        val comma = if (idx < capped.length - 1) "," else ""
+        sb.append(s"""$i    {"fixture": "${esc(fixture)}", "path": "${esc(d.path)}", """)
+        sb.append(s""""expected": "${esc(d.expected)}", "actual": "${esc(d.actual)}", """)
+        sb.append(s""""reason": "${esc(d.reason)}"}$comma\n""")
+      }
+      sb.append(s"$i  ]\n")
+    }
+    sb.append(s"$i}")
+    sb.toString
+  }
+
   private def renderReport(
       consumer: String,
       expectedFiles: List[String],
-      fixturesCompared: Int,
-      missing: List[String],
-      agreeing: Int,
-      stats: Stats,
-      divergences: List[(String, Divergence)],
-      baseline: Int,
+      rawFiles: List[String],
+      oracle: DerivedLane,
+      recovery: DerivedLane,
       invariants: SourceInvariants.Lane
   ): String = {
     val sb = new StringBuilder
@@ -262,11 +449,14 @@ object Conformance {
     // as long as it took to measure one real consumer, which reported `pass` on the strength of a
     // single applicable check. Adding the fields without the bump would have been the silent
     // widening this file's own history argues against.
-    sb.append("  \"schemaVersion\": 5,\n")
+    // 6: recovery_conformance joined the lanes, and fixtureRevision now covers both committed
+    // fixture forms. Both are breaking: a reader that required exactly two lanes now finds three,
+    // and a revision computed the old way is not comparable to one computed the new way.
+    sb.append("  \"schemaVersion\": 6,\n")
     sb.append("  \"generatedBy\": \"flix.spec.Conformance\",\n")
     sb.append(s"""  "consumer": "${esc(consumer)}",\n""")
 
-    val prov = provenance(expectedFiles)
+    val prov = provenance(expectedFiles, rawFiles)
     sb.append("  \"provenance\": {\n")
     prov.zipWithIndex.foreach { case ((k, v), i) =>
       sb.append(s"""    "$k": "${esc(v)}"${if (i < prov.length - 1) "," else ""}\n""")
@@ -275,55 +465,10 @@ object Conformance {
 
     sb.append("  \"lanes\": {\n")
 
-    val capped = divergences.take(200)
-    sb.append("    \"oracle_conformance\": {\n")
-    sb.append(s"""      "verdict": "${if (divergences.length > baseline) "fail" else "pass"}",\n""")
-    sb.append(
-      """      "claim": "agrees with the trees the pinned reference compiler produces",
-        |      "authority": "derived",
-        |      "caveat": "inherits the reference's defects by construction; agreeing with a compiler bug scores as agreement. See defects/ledger.json.",
-        |""".stripMargin
-    )
-    sb.append(s"      \"baseline\": $baseline,\n")
-    sb.append(s"      \"fixturesExpected\": ${expectedFiles.length},\n")
-    sb.append(s"      \"fixturesCompared\": $fixturesCompared,\n")
-    sb.append(s"""      "fixturesMissing": ${jsonStringArray(missing, "      ")},\n""")
-    sb.append(s"      \"fixturesAgreeing\": $agreeing,\n")
-    sb.append(s"      \"nodesCompared\": ${stats.counts("compared")},\n")
-    sb.append(s"      \"nodesMapped\": ${stats.counts("mapped")},\n")
-    sb.append(s"      \"nodesIgnored\": ${stats.counts("ignored")},\n")
-    sb.append(s"      \"nodesElided\": ${stats.counts("elided")},\n")
-    sb.append(s"      \"nodesFlattened\": ${stats.counts("flattened")},\n")
-    sb.append(s"      \"nodesFlattenedCanonical\": ${stats.counts("flattenedCanonical")},\n")
-    sb.append(s"      \"nodesUnmapped\": ${stats.counts("unmapped")},\n")
-    // Frequency first, name second so ties are stable across runs.
-    val unmappedRanked = stats.unmapped.toList.sortBy { case (name, n) => (-n, name) }
-    sb.append("      \"unmapped\": [")
-    if (unmappedRanked.isEmpty) sb.append("],\n")
-    else {
-      sb.append("\n")
-      unmappedRanked.zipWithIndex.foreach { case ((name, n), i) =>
-        val comma = if (i < unmappedRanked.length - 1) "," else ""
-        sb.append(s"""        {"name": "${esc(name)}", "count": $n}$comma\n""")
-      }
-      sb.append("      ],\n")
-    }
-    sb.append(s"      \"divergenceCount\": ${divergences.length},\n")
-    sb.append(s"      \"divergencesListed\": ${capped.length},\n")
-    sb.append("      \"divergences\": [")
-    if (capped.isEmpty) sb.append("]\n")
-    else {
-      sb.append("\n")
-      capped.zipWithIndex.foreach { case ((fixture, d), i) =>
-        val comma = if (i < capped.length - 1) "," else ""
-        sb.append(
-          s"""        {"fixture": "${esc(fixture)}", "path": "${esc(d.path)}", "expected": "${esc(d.expected)}", """
-        )
-        sb.append(s""""actual": "${esc(d.actual)}", "reason": "${esc(d.reason)}"}$comma\n""")
-      }
-      sb.append("      ]\n")
-    }
-    sb.append("    },\n")
+    sb.append(renderDerivedLane("oracle_conformance", oracle, "    "))
+    sb.append(",\n")
+    sb.append(renderDerivedLane("recovery_conformance", recovery, "    "))
+    sb.append(",\n")
 
     sb.append("    \"source_invariants\": {\n")
     sb.append(s"""      "verdict": "${esc(invariants.verdict)}",\n""")
@@ -349,11 +494,15 @@ object Conformance {
     sb.toString
   }
 
+  private val Usage =
+    "usage: Conformance --actual <dir> [--map <file>] [--report <file>] [--baseline <n>] [--recovery-baseline <n>]"
+
   final case class Args(
       actual: String,
       map: Option[String],
       report: Option[String],
-      baseline: Int
+      baseline: Int,
+      recoveryBaseline: Int
   )
 
   private def parseArgs(argv: Array[String]): Args = {
@@ -361,13 +510,15 @@ object Conformance {
     var map: Option[String] = None
     var report: Option[String] = None
     var baseline = 0
+    var recoveryBaseline = 0
     var i = 0
     while (i < argv.length) {
       argv(i) match {
-        case "--actual"   => actual = Some(argv(i + 1)); i += 2
-        case "--map"      => map = Some(argv(i + 1)); i += 2
-        case "--report"   => report = Some(argv(i + 1)); i += 2
-        case "--baseline" => baseline = argv(i + 1).toInt; i += 2
+        case "--actual"            => actual = Some(argv(i + 1)); i += 2
+        case "--map"               => map = Some(argv(i + 1)); i += 2
+        case "--report"            => report = Some(argv(i + 1)); i += 2
+        case "--baseline"          => baseline = argv(i + 1).toInt; i += 2
+        case "--recovery-baseline" => recoveryBaseline = argv(i + 1).toInt; i += 2
         case other =>
           System.err.println(s"unknown argument: $other")
           sys.exit(2)
@@ -375,33 +526,52 @@ object Conformance {
     }
     Args(
       actual.getOrElse {
-        System.err.println("usage: Conformance --actual <dir> [--map <file>] [--report <file>] [--baseline <n>]")
+        System.err.println(Usage)
         sys.exit(2)
       },
       map,
       report,
-      baseline
+      baseline,
+      recoveryBaseline
     )
+  }
+
+  /** Every projected document in a directory, sorted. */
+  private def documents(dir: String): List[String] =
+    Files.list(Paths.get(dir)).iterator().asScala.map(_.toString).filter(_.endsWith(".json")).toList.sorted
+
+  /** Whether a raw projected document contains any of the recovery markers.
+    *
+    * This is what scopes the recovery lane. Running it over every fixture would report 130-odd fixtures agreeing about
+    * error recovery when they contain no errors at all -- a large, meaningless majority that would make the lane's
+    * verdict move for reasons unrelated to recovery.
+    */
+  private def hasRecoveryMarker(path: String, markers: Set[String]): Boolean = {
+    def walk(node: Json): Boolean = node.get("kind") match {
+      case Some(k) => markers.contains(k.asString) || node.get("children").map(_.asArray).getOrElse(Nil).exists(walk)
+      case None    => false
+    }
+    Json.parseFile(Paths.get(path)).get("units").map(_.asArray).getOrElse(Nil).exists(u => walk(u("tree")))
   }
 
   def main(argv: Array[String]): Unit = {
     val args = parseArgs(argv)
 
-    var mapping: Option[Map[String, String]] = None
-    var ignored: Set[String] = Set.empty
-    var elide: Set[String] = Set.empty
-    var flatten: Set[String] = Set.empty
-    var flattenCanonical: Set[String] = Set.empty
+    var vocab = Vocabulary()
     var consumer = Paths.get(args.actual.stripSuffix("/")).getFileName.toString
 
     args.map.foreach { mapFile =>
       val m = Json.parseFile(Paths.get(mapFile))
       val mappings = m("mappings").asObject.view.mapValues(_.asString).toMap
-      mapping = Some(mappings)
-      ignored = m.get("ignored").map(_.asArray.map(_.asString).toSet).getOrElse(Set.empty)
-      elide = m.get("elide").map(_.asArray.map(_.asString).toSet).getOrElse(Set.empty)
-      flatten = m.get("flatten").map(_.asArray.map(_.asString).toSet).getOrElse(Set.empty)
-      flattenCanonical = m.get("flattenCanonical").map(_.asArray.map(_.asString).toSet).getOrElse(Set.empty)
+      def names(key: String): Set[String] = m.get(key).map(_.asArray.map(_.asString).toSet).getOrElse(Set.empty)
+      vocab = Vocabulary(
+        mapping = Some(mappings),
+        ignored = names("ignored"),
+        elide = names("elide"),
+        flatten = names("flatten"),
+        flattenCanonical = names("flattenCanonical"),
+        recoveryMarkers = names("recoveryMarkers")
+      )
       consumer = m("consumer").asString
 
       val inventory = Json.parseFile(Paths.get("ast/treekind.json"))("kinds").asArray.map(_("name").asString).toSet
@@ -410,59 +580,97 @@ object Conformance {
         System.err.println(s"FATAL: projection map targets kinds absent from the inventory: $bad")
         sys.exit(1)
       }
+
+      // A node removed on both lanes is a node whose recovery shape is never measured, which defeats the reason the
+      // second lane exists. The distinction is the whole point of declaring recovery markers separately.
+      val doubleDeclared = vocab.recoveryMarkers.intersect(vocab.flatten ++ vocab.ignored).toList.sorted
+      if (doubleDeclared.nonEmpty) {
+        System.err.println(
+          s"FATAL: projection map declares these as recovery markers and also flattens or ignores them, " +
+            s"so their recovery shape would never be measured: $doubleDeclared"
+        )
+        sys.exit(1)
+      }
     }
 
-    val expectedFiles =
-      Files.list(Paths.get(ExpectedDir)).iterator().asScala.map(_.toString).filter(_.endsWith(".json")).toList.sorted
+    val expectedFiles = documents(ExpectedDir)
     if (expectedFiles.isEmpty) {
       System.err.println(s"FATAL: no expectations in $ExpectedDir/")
       sys.exit(1)
     }
-
-    val stats = new Stats
-    val divergences = scala.collection.mutable.Buffer.empty[(String, Divergence)]
-    var agreeing = 0
-    val missing = scala.collection.mutable.Buffer.empty[String]
-
-    expectedFiles.foreach { ef =>
-      val name = Paths.get(ef).getFileName.toString
-      val af = Paths.get(args.actual, name).toString
-      if (!Files.exists(Paths.get(af))) {
-        missing += name
-      } else {
-        val expUnits = loadUnits(ef)
-        val actUnits = loadUnits(af)
-        val found = scala.collection.mutable.Buffer.empty[Divergence]
-        expUnits.foreach { case (source, expTree) =>
-          actUnits.get(source).orElse(actUnits.values.headOption) match {
-            case None => found += Divergence(source, "tree", "nothing", "missing-unit")
-            case Some(actTree) =>
-              compare(expTree, actTree, mapping, ignored, elide, flatten, flattenCanonical, source, found, stats)
-          }
-        }
-        if (found.nonEmpty) divergences ++= found.map(name -> _)
-        else agreeing += 1
-      }
+    val rawFiles = documents(RawDir)
+    if (rawFiles.isEmpty) {
+      System.err.println(s"FATAL: no raw trees in $RawDir/")
+      sys.exit(1)
     }
 
-    val fixturesCompared = expectedFiles.length - missing.length
-    val divergenceList = divergences.toList
+    val contract = Transparency.load()
 
-    // Agreement alone is gameable: a map that maps almost nothing compares almost nothing and so
-    // agrees with almost everything. Depth -- the share of encountered nodes actually compared --
-    // is what makes the agreement count mean anything, so it is reported rather than left for a
-    // reader to derive.
-    val encountered = stats.counts("compared") + stats.counts("unmapped")
-    val depth = if (encountered == 0) 0.0 else stats.counts("compared").toDouble / encountered
+    val oracleClaim =
+      "agrees with the normalized canonical trees the pinned reference compiler produces, modulo error recovery"
+    val oracleCaveat =
+      "inherits the reference's defects by construction; agreeing with a compiler bug scores as agreement. See " +
+        "defects/ledger.json. Error-recovery shape is deliberately not measured here — see recovery_conformance."
+    val recoveryClaim =
+      "reproduces the reference's error-recovery shape on the fixtures that recover from something"
+    val recoveryCaveat =
+      "error recovery is implementation-specific by nature: two parsers can agree completely about valid programs " +
+        "and share nothing about how they resurface from a malformed one. A divergence here is weaker evidence than " +
+        "one in oracle_conformance, which is why the two are never summed."
 
-    // The second lane runs over whatever the consumer actually produced, never over the
-    // expectations, so it says something the first lane structurally cannot.
+    val oracle = runLane(
+      expectedFiles = expectedFiles,
+      normalizeWith = None,
+      actualDir = args.actual,
+      vocab = vocab.moduloRecovery,
+      baseline = args.baseline,
+      claim = oracleClaim,
+      caveat = oracleCaveat
+    )
+
+    // Scoped to the fixtures that actually recover from something, and compared against the raw trees with the
+    // wrapper rules applied but the error vocabulary left standing -- on both sides. So the only thing this lane sees
+    // that the first does not is recovery shape.
+    //
+    // A consumer that declares no recovery vocabulary is not measured here at all. It has nothing this lane could
+    // compare, and failing it would penalise a modelling decision the contract never required -- the same argument
+    // that gives the source-invariants checks a `not-applicable` verdict. Omission is the declaration, and the reason
+    // is recorded so "not applicable" can never be mistaken for "not run".
+    val recovery =
+      if (vocab.recoveryMarkers.isEmpty)
+        DerivedLane(
+          claim = recoveryClaim,
+          caveat = recoveryCaveat,
+          baseline = args.recoveryBaseline,
+          fixturesExpected = 0,
+          fixturesMissing = Nil,
+          fixturesAgreeing = 0,
+          stats = new Stats,
+          divergences = Nil,
+          notApplicable = Some(
+            "the projection map declares no recoveryMarkers, so this consumer models no error-recovery vocabulary " +
+              "for the lane to compare"
+          )
+        )
+      else
+        runLane(
+          expectedFiles = rawFiles.filter(hasRecoveryMarker(_, contract.recoveryMarkers)),
+          normalizeWith = Some(contract.withoutRecoveryMarkers),
+          actualDir = args.actual,
+          vocab = vocab,
+          baseline = args.recoveryBaseline,
+          claim = recoveryClaim,
+          caveat = recoveryCaveat
+        )
+
+    // The third lane runs over whatever the consumer actually produced, never over the
+    // expectations, so it says something the derived lanes structurally cannot.
     lazy val invariants = SourceInvariants.run(
       expectedFiles
         .map(ef => Paths.get(args.actual, Paths.get(ef).getFileName.toString))
         .filter(Files.exists(_))
         .map(_.toString),
-      mapped = mapping.isDefined,
+      mapped = vocab.mapping.isDefined,
       treeInventory = Json.parseFile(Paths.get("ast/treekind.json"))("kinds").asArray.map(_("name").asString).toSet,
       tokenInventory = Json.parseFile(Paths.get("ast/tokenkind.json"))("kinds").asArray.map(_("name").asString).toSet
     )
@@ -475,42 +683,53 @@ object Conformance {
         renderReport(
           consumer = consumer,
           expectedFiles = expectedFiles,
-          fixturesCompared = fixturesCompared,
-          missing = missing.toList.sorted,
-          agreeing = agreeing,
-          stats = stats,
-          divergences = divergenceList,
-          baseline = args.baseline,
+          rawFiles = rawFiles,
+          oracle = oracle,
+          recovery = recovery,
           invariants = invariants
         ),
         StandardCharsets.UTF_8
       )
     }
 
-    val unmappedSuffix = if (stats.counts("unmapped") > 0) s", ${stats.counts("unmapped")} unmapped" else ""
-    println(
-      s"$consumer: oracle_conformance $agreeing/$fixturesCompared fixtures agree, " +
-        s"${divergenceList.length} divergences, ${stats.counts("compared")} nodes compared" +
-        f" (depth ${depth * 100}%.0f%%)$unmappedSuffix"
-    )
+    def summarise(name: String, lane: DerivedLane): String = lane.notApplicable match {
+      case Some(reason) => s"$consumer: $name not-applicable — $reason"
+      case None =>
+        val unmapped = lane.stats.counts("unmapped")
+        val suffix = if (unmapped > 0) s", $unmapped unmapped" else ""
+        s"$consumer: $name ${lane.fixturesAgreeing}/${lane.fixturesCompared} fixtures agree, " +
+          s"${lane.divergences.length} divergences, ${lane.stats.counts("compared")} nodes compared" +
+          f" (depth ${lane.depth * 100}%.0f%%)$suffix"
+    }
+    println(summarise("oracle_conformance", oracle))
+    println(summarise("recovery_conformance", recovery))
     println(
       s"$consumer: source_invariants ${invariants.verdict} — " +
         invariants.checks.map(c => s"${c.id} ${c.verdict}").mkString(", ")
     )
-    if (missing.nonEmpty) System.err.println(s"  ${missing.length} fixture(s) had no consumer output")
 
-    val oracleFailed = divergenceList.length > args.baseline
-    if (oracleFailed) {
-      System.err.println(s"FATAL: ${divergenceList.length} divergences exceeds baseline ${args.baseline}")
-      divergenceList.take(10).foreach { case (fixture, d) =>
-        System.err.println(s"  $fixture ${d.path}: expected '${d.expected}', got '${d.actual}' (${d.reason})")
+    def report(name: String, lane: DerivedLane): Boolean = {
+      if (lane.fixturesMissing.nonEmpty)
+        System.err.println(s"  $name: ${lane.fixturesMissing.length} fixture(s) had no consumer output")
+      val failed = lane.verdict == "fail"
+      if (failed) {
+        System.err.println(s"FATAL: $name: ${lane.divergences.length} divergences exceeds baseline ${lane.baseline}")
+        lane.divergences.take(10).foreach { case (fixture, d) =>
+          System.err.println(s"  $fixture ${d.path}: expected '${d.expected}', got '${d.actual}' (${d.reason})")
+        }
       }
+      failed
     }
 
-    // The second lane gates too, and is not subject to `--baseline`. The ratchet exists because
+    // Both derived lanes gate, each against its own baseline. A lane that could only ever be read and never failed
+    // would be decoration, and splitting recovery out was never meant to stop measuring it.
+    val oracleFailed = report("oracle_conformance", oracle)
+    val recoveryFailed = report("recovery_conformance", recovery)
+
+    // The third lane gates too, and is not subject to any baseline. A ratchet exists because
     // agreement with the reference is approached incrementally, one mapping at a time; losing a
     // token's text is not a mapping gap that a consumer is partway through closing, it is the
-    // output being wrong about its own input. A lane nobody can fail is decoration.
+    // output being wrong about its own input.
     val invariantsFailed = invariants.verdict == "fail"
     if (invariantsFailed) {
       System.err.println("FATAL: source invariants failed — the consumer's output disagrees with its own input")
@@ -520,6 +739,6 @@ object Conformance {
       }
     }
 
-    if (oracleFailed || invariantsFailed) sys.exit(1)
+    if (oracleFailed || recoveryFailed || invariantsFailed) sys.exit(1)
   }
 }

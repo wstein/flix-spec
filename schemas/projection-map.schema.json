@@ -62,6 +62,14 @@
       },
       "description": "Native grouping nodes whose children are spliced into the parent at any arity. Stronger and more dangerous than `ignored`, which only fires at arity <= 1: flattening a node that carries real structure would hide a genuine disagreement. Use only for pure grouping constructs with no counterpart in the reference, and justify each entry in `notes`."
     },
+    "recoveryMarkers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Native nodes that mark error recovery rather than syntax -- tree-sitter's ERROR node, a Grammar-Kit error element. The consumer-side mirror of ast/transparency.json's `splice` rule, and the reason it must be declared separately from `flatten`: `oracle_conformance` splices these out on both sides so structure is compared modulo recovery, while `recovery_conformance` keeps them on both sides and compares nothing else. A node listed in `flatten` would be removed from both lanes and its recovery shape never measured; one listed here and nowhere else is measured in exactly one lane. Declaring none is a statement in itself -- `recovery_conformance` then reports `not-applicable` with that as the reason, rather than failing a consumer for not modelling recovery at all. Entries may also appear in `mappings`, which is how the recovery lane knows what canonical kind to compare them against; they may not also appear in `flatten` or `ignored`."
+    },
     "flattenCanonical": {
       "type": "array",
       "deprecated": true,

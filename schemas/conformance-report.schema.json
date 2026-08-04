@@ -2,11 +2,11 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://raw.githubusercontent.com/wstein/flix-spec/main/schemas/conformance-report.schema.json",
   "title": "Flix Conformance Report Schema",
-  "description": "Schema for the report emitted by `conformance --report <file>`. Two lanes, deliberately not summed into a single score: `oracle_conformance` measures agreement with the pinned reference and inherits its defects; `source_invariants` measures properties of the consumer's own output against its own input and inherits nothing. A number that averaged them would mean neither.",
+  "description": "Schema for the report emitted by `conformance --report <file>`. Three lanes, deliberately not summed into a single score: `oracle_conformance` measures structural agreement with the pinned reference, modulo error recovery, and inherits the reference's defects; `recovery_conformance` measures error-recovery shape alone, on the fixtures that recover from something; `source_invariants` measures properties of the consumer's own output against its own input and inherits nothing. A number that averaged them would mean none of the three.",
   "type": "object",
   "required": ["schemaVersion", "generatedBy", "consumer", "provenance", "lanes"],
   "properties": {
-    "schemaVersion": { "type": "integer", "minimum": 5 },
+    "schemaVersion": { "type": "integer", "minimum": 6 },
     "generatedBy": { "type": "string", "minLength": 1 },
     "consumer": { "type": "string", "minLength": 1 },
     "provenance": { "$ref": "#/definitions/Provenance" },
@@ -34,7 +34,7 @@
         "fixtureRevision": {
           "type": "string",
           "pattern": "^[a-f0-9]{64}$",
-          "description": "SHA-256 over the name and content digest of every expectation, so a renamed fixture moves it as surely as an edited one."
+          "description": "SHA-256 over the name and content digest of every expectation in *both* committed forms, so a renamed fixture moves it as surely as an edited one. Both, because a change confined to nodes normalisation removes -- a different ErrorTree shape, say -- moves fixtures/raw and leaves fixtures/expected untouched; that change is invisible to oracle_conformance and decisive for recovery_conformance, so a revision over the normalised trees alone would report two genuinely different measurements as comparable."
         },
         "treeKindDigest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
         "tokenKindDigest": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
@@ -43,14 +43,21 @@
     },
     "Lanes": {
       "type": "object",
-      "required": ["oracle_conformance", "source_invariants"],
+      "required": ["oracle_conformance", "recovery_conformance", "source_invariants"],
       "properties": {
-        "oracle_conformance": { "$ref": "#/definitions/OracleLane" },
+        "oracle_conformance": {
+          "$ref": "#/definitions/DerivedLane",
+          "description": "Structure modulo recovery, compared against fixtures/expected/ -- the normalised canonical tree, with wrapper nodes elided and the error vocabulary spliced out per ast/transparency.json."
+        },
+        "recovery_conformance": {
+          "$ref": "#/definitions/DerivedLane",
+          "description": "Error-recovery shape, compared against fixtures/raw/ with the wrapper rules applied but the error vocabulary left standing, and scoped to the fixtures whose raw tree actually contains a recovery marker. The only thing this lane sees that oracle_conformance does not is recovery shape. `fixturesExpected` is therefore the size of that scope, not the whole suite."
+        },
         "source_invariants": { "$ref": "#/definitions/InvariantLane" }
       },
       "additionalProperties": false
     },
-    "OracleLane": {
+    "DerivedLane": {
       "type": "object",
       "required": [
         "verdict",
@@ -75,20 +82,33 @@
         "divergences"
       ],
       "properties": {
-        "verdict": { "type": "string", "enum": ["pass", "fail"] },
+        "verdict": {
+          "type": "string",
+          "enum": ["pass", "fail", "not-applicable"],
+          "description": "`not-applicable` is reachable only for recovery_conformance, when the consumer's projection map declares no recoveryMarkers: there is then no error-recovery vocabulary for the lane to compare, and failing a consumer for not modelling recovery would penalise a decision the contract never required."
+        },
         "claim": { "type": "string", "minLength": 1 },
         "authority": {
           "type": "string",
           "enum": ["derived"],
-          "description": "Fixed. This lane's expectations come from the reference implementation, so it has no authority independent of it."
+          "description": "Fixed for both derived lanes. Their expectations come from the reference implementation, so neither has any authority independent of it."
         },
         "caveat": { "type": "string", "minLength": 1 },
+        "notApplicable": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Present exactly when the verdict is `not-applicable`, and never blank: a lane that stood down without a reason is indistinguishable from one that was never run."
+        },
         "baseline": {
           "type": "integer",
           "minimum": 0,
           "description": "The divergence ratchet this run was gated against. Reported so a passing verdict cannot hide the threshold that produced it."
         },
-        "fixturesExpected": { "type": "integer", "minimum": 0 },
+        "fixturesExpected": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "How many fixtures this lane is answerable for. The whole suite for oracle_conformance; only the fixtures that recover from something for recovery_conformance."
+        },
         "fixturesCompared": { "type": "integer", "minimum": 0 },
         "fixturesMissing": { "type": "array", "items": { "type": "string" } },
         "fixturesAgreeing": { "type": "integer", "minimum": 0 },
