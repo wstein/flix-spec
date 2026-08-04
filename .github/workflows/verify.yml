@@ -65,6 +65,7 @@ jobs:
           # it is a committed, published artifact, and it is the authority the
           # recovery lane compares against. Gating only the normalized form
           # would let the reference's own tree drift silently.
-          PATHS="ast/ fixtures/raw/ fixtures/expected/ README.md docs/CONFORMANCE.md docs/DEFECTS.md"
-          git add --intent-to-add --all $PATHS
-          git diff --exit-code $PATHS
+          git add --intent-to-add --all \
+            ast/ fixtures/raw/ fixtures/expected/ README.md docs/CONFORMANCE.md docs/DEFECTS.md
+          git diff --exit-code \
+            ast/ fixtures/raw/ fixtures/expected/ README.md docs/CONFORMANCE.md docs/DEFECTS.md
