@@ -13,11 +13,15 @@ import scala.jdk.CollectionConverters._
   * `flix-spec` keeps the halves that are genuinely shared: the schema, the canonical `TreeKind` vocabulary the map's
   * targets are checked against, and the comparison itself.
   *
-  * Beyond the schema, checks two things it cannot express:
+  * Beyond the schema, checks three things it cannot express:
   *
   *   - every `mappings` value and every `elide` entry must name a kind that exists in `ast/treekind.json` -- a typo or
   *     a stale kind name would otherwise silently never match and read as agreement;
-  *   - a node listed in `ignored` but never in `mappings` must actually be transparent in practice.
+  *   - a node listed in `ignored` but never in `mappings` must actually be transparent in practice;
+  *   - a node declared in `recoveryMarkers` may not also be flattened or ignored. Recovery markers are spliced out of
+  *     the structural lane and kept in the recovery lane -- that asymmetry is the whole reason they are declared
+  *     separately -- so removing one on both sides would leave its shape measured nowhere, silently, with the report
+  *     still reading `pass`.
   *
   * A node may legitimately appear in **both** `ignored` and `mappings`. That is not a contradiction: elision only fires
   * when a node has at most one child, so the two entries describe different situations -- "splice me when I wrap a
@@ -104,10 +108,22 @@ object ProjectionMapValidator {
       // Deliberately not an error: see the class comment. Elision fires only at arity <= 1, so a
       // node can be transparent in one position and substantive in another.
 
+      // A recovery marker is spliced out of the structural lane and kept in the recovery lane, which
+      // is the whole reason it is declared separately. Also flattening or ignoring it removes it
+      // from both lanes, so its shape would be measured nowhere -- silently, and with the report
+      // still reading `pass`.
+      val recoveryMarkers = doc.get("recoveryMarkers").map(_.asArray.map(_.asString).toSet).getOrElse(Set.empty)
+      recoveryMarkers.intersect(flatten ++ ignored).toList.sorted.foreach { native =>
+        errors.add(
+          s"$path.recoveryMarkers: '$native' is also flattened or ignored, so its recovery shape " +
+            "would be measured in neither lane"
+        )
+      }
+
       doc.get("notes").map(_.asObject.keySet).getOrElse(Set.empty).toList.sorted.foreach { native =>
         val known =
           mappings.contains(native) || ignored.contains(native) || flatten.contains(native) ||
-            inventory.contains(native)
+            recoveryMarkers.contains(native) || inventory.contains(native)
         if (!known) errors.add(s"$path.notes['$native']: notes an unknown node")
       }
     }

@@ -44,7 +44,7 @@ flowchart TD
     C["3 · <code>proposeTreeKind</code><br/>report count + digest, assert nothing"]
     D["4 · Paste count + digest into <code>pin.json</code>"]
     E["5 · <code>generateTreeKind</code><br/>regenerate under assertion"]
-    F["6 · Re-read <code>ast/unattachable.json</code><br/>citations, then restamp"]
+    F["6 · Re-read the two curated evidence files'<br/>citations, then restamp"]
     G["7 · <code>corpus/fetch</code> · <code>verify.sh</code> · <code>spotlessApply</code>"]
     H["8 · Open PR — the diff is the review"]
 
@@ -87,18 +87,21 @@ flowchart TD
    Now that `pin.json` carries the new values, this must succeed. If it does not, the jar and the
    pin disagree and the bump is wrong.
 
-6. **Re-verify the structural-unattachability evidence.** `ast/unattachable.json` is the one
-   hand-maintained input to `ast/status.json`, and every entry cites upstream source *by line*.
-   Line numbers do not survive a pin bump on trust, so the file carries the `upstreamCommit` it was
-   read against and `generateStatus` refuses to run while that disagrees with `pin.json`:
+6. **Re-verify both curated evidence files.** `ast/unattachable.json` and `ast/transparency.json`
+   are the only hand-maintained inputs in this repository, and every entry in each cites upstream
+   source *by line*. Line numbers do not survive a pin bump on trust, so both files carry the
+   `upstreamCommit` they were read against and `generateStatus` refuses to run while either
+   disagrees with `pin.json`:
 
    ```text
    FATAL: ast/unattachable.json is at upstreamCommit <old>, but pin.json is at <new>.
+   FATAL: ast/transparency.json is at upstreamCommit <old>, but pin.json is at <new>.
    ```
 
-   Re-read each citation at the new commit and confirm the argument still holds — a kind can become
-   constructible, or a dead store can be fixed upstream, and either would silently turn a
-   `structurally-unattachable` verdict into a lie. Then restamp `upstreamCommit`.
+   **`ast/unattachable.json`** — re-read each citation at the new commit and confirm the argument
+   still holds. A kind can become constructible, or a dead store can be fixed upstream, and either
+   would silently turn a `structurally-unattachable` verdict into a lie. Then restamp
+   `upstreamCommit`.
 
    Two outcomes are worth expecting rather than treating as surprises:
    - **An entry no longer holds.** Delete it. If the kind is genuinely reachable now, the next
@@ -107,6 +110,26 @@ flowchart TD
    - **A new kind appears with no evidence either way.** Leave it `unknown`. `generateStatus`
      reports unknowns but does not fail on them, precisely so that nobody is pressured into
      inventing an unargued entry to get a green build.
+
+   **`ast/transparency.json`** — the same treatment, and it is the one with teeth, because every
+   entry changes the shape of `fixtures/expected` and therefore of every consumer's score. Re-read
+   each citation and confirm the arity claim still holds at the new commit: an `elide` entry asserts
+   the node contributes one edge and no leaf content, and a production that gains a second child or a
+   token of its own falsifies it.
+
+   `./gradlew :tools:project:proposeTransparency` reports the measured candidate set and flags any
+   committed rule the fixtures now contradict — run it after regenerating fixtures, and read both
+   directions of its output:
+   - **`CONTRADICTED`** means a committed rule is now wrong. Remove it, or narrow it, and expect
+     `fixtures/expected` to change.
+   - **`NOT IN CONTRACT`** means a kind now behaves like a wrapper. That is a *candidate*, never a
+     conclusion: adding it needs an argument from the reference's own structure and citations a
+     reader can check. A reason of the form "consumer X does not produce one" is rejected by the
+     checker and by a test, and for good reason — with one instrumented consumer, nothing else could
+     tell a neutral rule from one shaped by that consumer.
+
+   A change here is **breaking for consumers**, because the canonical trees they compare against
+   change shape. Call it out explicitly in the PR body (step 8).
 
 7. **Refresh the corpus and run the full suite:**
    ```sh
@@ -127,8 +150,11 @@ flowchart TD
      parent breaks the qualified name. Each is breaking for consumers and must be called out
      explicitly, never left for a reader to spot in the diff;
    - **any movement in `ast/status.json`** — a kind leaving `structurally-unattachable`, or arriving
-     as `unknown`, is a statement about the reference compiler and deserves a sentence rather than a
-     line in a generated file;
+     as `unknown`, or changing `treeKindRole`, is a statement about the reference compiler and
+     deserves a sentence rather than a line in a generated file;
+   - **any change to `ast/transparency.json`**, which changes the shape of the canonical trees every
+     consumer compares against. State the rule added or removed and its measured effect on
+     `checkNormalization`'s node-removal figure;
    - fixture output changes and any shift in negative-fixture diagnostic class or line;
    - whether `oracleArtifact.attestation` still reads `digest-only`, or whether upstream has since
      started publishing build attestations.

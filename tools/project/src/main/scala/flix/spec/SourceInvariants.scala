@@ -3,17 +3,18 @@ package flix.spec
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
 
-/** The second lane of a conformance report: what can be said about a consumer's output **without** the oracle.
+/** The independent lane of a conformance report: what can be said about a consumer's output **without** the oracle.
   *
-  * The first lane compares the consumer against `fixtures/expected`, which was generated from the pinned reference. It
-  * measures *compatibility*, and it is honest about what it cannot do: a derived suite cannot falsify its reference, so
-  * agreeing with a compiler bug scores as agreement. `defects/ledger.json` exists because of that.
+  * The two derived lanes compare the consumer against trees generated from the pinned reference -- `fixtures/expected`
+  * for structure, `fixtures/raw` for error-recovery shape. Both measure *compatibility*, and both are honest about what
+  * they cannot do: a derived suite cannot falsify its reference, so agreeing with a compiler bug scores as agreement.
+  * `defects/ledger.json` exists because of that.
   *
   * These checks are different in kind. Each compares the consumer's output against its own *input*, or against its own
-  * internal shape, and none consults an expected tree. A consumer can therefore fail this lane while passing the first,
-  * which is the interesting case: it means the output agrees with the reference and still lost something. It can also
-  * pass this lane with no projection map at all, which is what makes the lane meaningful to a lexical consumer that has
-  * no tree to compare.
+  * internal shape, and none consults an expected tree. A consumer can therefore fail this lane while passing the
+  * derived ones, which is the interesting case: it means the output agrees with the reference and still lost something.
+  * It can also pass this lane with no projection map at all, which is what makes the lane meaningful to a lexical
+  * consumer that has no tree to compare.
   *
   * Every check reports one of three verdicts, and the third carries the weight:
   *

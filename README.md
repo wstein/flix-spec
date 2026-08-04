@@ -47,15 +47,15 @@ Key components established:
 - **Committed AST inventory ([`ast/treekind.json`](ast/treekind.json))**: 192 `TreeKind` nodes with qualified names, parent traits and forms, name-set digest `ef4c5a85…`, and a provenance header naming the generator, tool version, upstream commit and the exact oracle jar it was derived from.
 - **Token inventory ([`ast/tokenkind.json`](ast/tokenkind.json))**: 160 `TokenKind`s (159 case objects plus `Err`), digest-pinned in `pin.json`. This is the contract for **lexical** consumers such as `flix-textmate`, which have no parse tree and cannot consume `fixtures/expected/`. Every `token` in a projected tree is validated against it — previously the projection schema declared `token` as an unconstrained string, so 134 distinct names were committed and checked against nothing. Fixture coverage of the lexical vocabulary is now measured exactly as tree-kind coverage is, and reported in [Kind status](#kind-status); `Eof` is the single exception, and it is structurally rather than incidentally uncovered: the lexer always appends it as a virtual sentinel, but the parser only ever tests `at(TokenKind.Eof)` to decide when to stop — it is never pushed onto the tree as a node's child, so no fixture, however constructed, can make it appear in a projected tree.
 - **Corpus definition ([`corpus/`](corpus/))**: 873 pinned `.flix` files (688 under `main/`, 185 under `examples/`), inclusion rules, and a tree-hash-verified fetch script.
-- **Projected fixtures ([`fixtures/`](fixtures/))**: expected trees generated from the pinned oracle and held under a diff gate. Kind names are sub-trait qualified, sources are repository-relative, and diagnostics record `kind`/`line` as gated with `col`/`message` advisory. **23 of the 24 diagnostic kinds `Reader`/`Lexer`/`Parser2` can actually produce are now exercised** — 15 of 15 `LexerError` variants and 8 of 9 `Parser2`-raised `ParseError` variants. The ninth, `MisplacedComments`, is not just unreproduced but **unreachable by construction**: `expect()` calls `open()`, which unconditionally consumes any leading comment before `expect()` ever inspects it, so the match arm mapping a comment to `MisplacedComments` can never fire — see `docs/CONFORMANCE.md` for the full trace. Three further `ParseError` variants (`MissingRegion`, `NeedAtleastOne`, `MissingBinaryOperator`) are raised only by `Weeder2`, a phase this repository's pipeline never runs, and are excluded from that count as structurally out of scope rather than silently missing.
+- **Projected fixtures ([`fixtures/`](fixtures/))**: **two committed forms of every parse**, both generated from the pinned oracle and both held under a diff gate. `fixtures/raw/` is the reference's own tree, node for node — the provenance record, the input to every measurement of the reference's own vocabulary, and the authority the recovery conformance lane compares against. `fixtures/expected/` is that tree **normalized**: 718 of 4228 nodes (17.0%) removed by [`ast/transparency.json`](ast/transparency.json), which elides wrapper nodes that carry no information beyond their child and splices out the error-recovery vocabulary. Doing that once here, with a reason argued from the reference's own structure and citations a reader can check, is neutral in a way that asking each consumer to re-derive it never was — with one instrumented consumer, no measurement could have told a neutral rule from one shaped by that consumer's grammar. Every document declares which form it is, in `form`. Kind names are sub-trait qualified, sources are repository-relative, and diagnostics record `kind`/`line` as gated with `col`/`message` advisory. **23 of the 24 diagnostic kinds `Reader`/`Lexer`/`Parser2` can actually produce are now exercised** — 15 of 15 `LexerError` variants and 8 of 9 `Parser2`-raised `ParseError` variants. The ninth, `MisplacedComments`, is not just unreproduced but **unreachable by construction**: `expect()` calls `open()`, which unconditionally consumes any leading comment before `expect()` ever inspects it, so the match arm mapping a comment to `MisplacedComments` can never fire — see `docs/CONFORMANCE.md` for the full trace. Three further `ParseError` variants (`MissingRegion`, `NeedAtleastOne`, `MissingBinaryOperator`) are raised only by `Weeder2`, a phase this repository's pipeline never runs, and are excluded from that count as structurally out of scope rather than silently missing.
 - **Coverage, reachability and status ([`ast/coverage.json`](ast/coverage.json), [`ast/reachability.json`](ast/reachability.json), [`ast/status.json`](ast/status.json))**: what the fixtures exercise, what the reference emits across the whole corpus, and the joined per-kind verdict — see [Kind status](#kind-status) below.
-- **Conformance checking ([`docs/CONFORMANCE.md`](docs/CONFORMANCE.md))**: consumers emit canonical projected trees; [`Conformance`](tools/project/src/main/scala/flix/spec/Conformance.scala) does the comparison once, here, rather than four times across four repositories. Its report has **two lanes that are never summed**: `oracle_conformance` measures agreement with the pinned reference and inherits its defects, while `source_invariants` checks the consumer's output against its own input and inherits nothing — so a consumer can pass the first and fail the second, which is exactly the case a single score hid. Each consumer's projection map — declaring its vocabulary plus wrapper transparency — encodes facts about that consumer's grammar rather than about the reference, so it lives in that consumer's repository; `flix-spec` owns the schema ([`schemas/projection-map.schema.json`](schemas/projection-map.schema.json)), the canonical vocabulary its targets are checked against, and the comparison.
+- **Conformance checking ([`docs/CONFORMANCE.md`](docs/CONFORMANCE.md))**: consumers emit canonical projected trees; [`Conformance`](tools/project/src/main/scala/flix/spec/Conformance.scala) does the comparison once, here, rather than four times across four repositories. Its report has **three lanes that are never summed**: `oracle_conformance` measures structure *modulo* error recovery against the normalized canonical tree; `recovery_conformance` measures error-recovery shape alone, against `fixtures/raw/`, scoped to the fixtures that recover from something; `source_invariants` checks the consumer's output against its own input and inherits nothing. A consumer can pass any one and fail another, and CI asserts two such cases rather than asserting them in prose. Splitting recovery out is not forgiveness — recovery is a strategy, not a language feature, and two parsers can agree completely about valid programs while sharing nothing about how they resurface from a malformed one. Each consumer's projection map — its vocabulary, its own wrappers, and which of its own nodes are recovery markers — encodes facts about that consumer's grammar rather than about the reference, so it lives in that consumer's repository; `flix-spec` owns the schema ([`schemas/projection-map.schema.json`](schemas/projection-map.schema.json)), the canonical vocabulary its targets are checked against, and the comparison.
 - **CI and verification**: actions pinned by commit SHA, runner pinned to `ubuntu-24.04`, and Dependabot for actions and Gradle.
 
   | Workflow | Trigger | Does |
   | --- | --- | --- |
   | [`oracle.yml`](.github/workflows/oracle.yml) | `pin.json` changes, manual | Fetch the pinned jar, verify its SHA-256, cache it by digest |
-  | [`verify.yml`](.github/workflows/verify.yml) | push, PR | Format check, tests, end-to-end suite, regenerate and diff `ast/treekind.json` |
+  | [`verify.yml`](.github/workflows/verify.yml) | push, PR | Format check, tests, end-to-end suite, regenerate and diff `ast/`, both fixture forms, and the generated doc blocks |
   | [`corpus.yml`](.github/workflows/corpus.yml) | weekly, manual | Clone upstream, verify tree hash and counts, regenerate reachability; report if the pin is behind |
   | [`release.yml`](.github/workflows/release.yml) | `v*` tag | Verify, then publish the artifact bundle with `SHA256SUMS` |
   | [`pages.yml`](.github/workflows/pages.yml) | push to `main`, `v*` tag | Verify, then publish the Maven package (see "Consuming as a Maven package" below) |
@@ -158,8 +158,9 @@ schemas/
   tokenkind.schema.json     # JSON Schema for ast/tokenkind.json
   projection.schema.json    # JSON Schema for canonical projected trees
   projection-map.schema.json # JSON Schema for consumer projection maps
-  conformance-report.schema.json # JSON Schema for the two-lane conformance report
+  conformance-report.schema.json # JSON Schema for the three-lane conformance report
   unattachable.schema.json  # JSON Schema for ast/unattachable.json
+  transparency.schema.json  # JSON Schema for ast/transparency.json
   defect-ledger.schema.json # JSON Schema for defects/ledger.json
 ast/
   projection/            # Consumer vocabulary maps (tree-sitter-flix, ...)
@@ -167,8 +168,9 @@ ast/
   tokenkind.json         # GENERATED — 160 lexical token kinds, digest, provenance header
   coverage.json          # GENERATED — which kinds and tokens the fixture suite exercises
   reachability.json      # GENERATED — which kinds the reference emits across the whole corpus
-  status.json            # GENERATED — the two joined: one evidence-backed status per kind
+  status.json            # GENERATED — the two joined: a status and a role per kind
   unattachable.json      # HAND-MAINTAINED — cited evidence that a kind can never appear in a tree
+  transparency.json      # HAND-MAINTAINED — cited evidence for which kinds normalization removes
 corpus/
   corpus.json            # Pinned corpus inventory specification & inclusion rules
   fetch                  # Clone, check out, and verify the corpus tree hash
@@ -178,19 +180,24 @@ defects/
 fixtures/
   positive/              # Sources the reference parses cleanly
   negative/              # Sources the reference rejects or recovers from
-  expected/              # GENERATED — canonical projected trees
+  raw/                   # GENERATED — the reference's own trees, verbatim (form: raw)
+  expected/              # GENERATED — those trees normalized (form: normalized)
 tools/
   oracle/                # fetch.sh (pinned jar + checksum), build-from-source.sh (fallback)
   project/               # Gradle + Scala module: extractors, validators, conformance, tests
     src/main/scala/flix/spec/
       TreeKindSchemaValidator.scala  # Validates ast/treekind.json against its schema
-      ProjectionSchemaValidator.scala # Schema + kind-vocabulary validation of fixtures/expected/
+      ProjectionSchemaValidator.scala # Schema + kind-vocabulary validation of both fixture forms
       ProjectionMapValidator.scala   # Validates a consumer's projection map against the schema
-      Coverage.scala                 # Generates ast/coverage.json
+      Transparency.scala             # Reads and checks ast/transparency.json
+      TransparencyProposer.scala     # Reports wrapper candidates by measurement; never writes
+      Normalizer.scala               # Applies the transparency rules; oracle-free by construction
+      NormalizationCheck.scala       # Asserts fixtures/expected == normalize(fixtures/raw)
+      Coverage.scala                 # Generates ast/coverage.json (measured over fixtures/raw/)
       KindStatus.scala               # Generates ast/status.json (coverage + reachability + evidence)
       DefectLedger.scala             # Validates defects/ledger.json; re-runs each reproducer
       DocMetrics.scala               # Rewrites the generated blocks in README.md and docs/
-      Conformance.scala              # Compares a consumer's projected trees against fixtures/expected/
+      Conformance.scala              # The three-lane comparison against both fixture forms
       SourceInvariants.scala         # The oracle-free lane: shape, vocabulary, token accounting
       TokenAccounting.scala          # The shared "a tree must account for its source" rule
     verify.sh            # End-to-end verification suite
@@ -257,15 +264,17 @@ additionally needs `credentials { username = ...; password = /* a token with rea
 ./gradlew :tools:project:proposeTreeKind                   # Report count + digest without asserting (pin bumps)
 ./gradlew :tools:project:generateTokenKind                 # Regenerate ast/tokenkind.json (asserts against pin.json)
 ./gradlew :tools:project:proposeTokenKind                  # Report token count + digest without asserting
-./gradlew :tools:project:extract --args=path/to/file.flix  # Emit a projected concrete syntax tree
-./gradlew :tools:project:generateFixtures                  # Regenerate fixtures/expected/*.json
+./gradlew :tools:project:extract --args=path/to/file.flix  # Emit a projected tree (--form raw|normalized)
+./gradlew :tools:project:generateFixtures                  # Regenerate fixtures/raw/ and fixtures/expected/
+./gradlew :tools:project:checkNormalization                # Assert fixtures/expected == normalize(fixtures/raw)
+./gradlew :tools:project:proposeTransparency               # Report wrapper candidates; never writes
 ./gradlew :tools:project:reachability                      # Regenerate ast/reachability.json (needs ./corpus/fetch)
-./gradlew :tools:project:generateCoverage                  # Regenerate ast/coverage.json
+./gradlew :tools:project:generateCoverage                  # Regenerate ast/coverage.json (from fixtures/raw/)
 ./gradlew :tools:project:generateStatus                    # Regenerate ast/status.json (JSON join; no oracle needed)
 ./gradlew :tools:project:validateDefects                   # Re-check defects/ledger.json against the pinned oracle
 ./gradlew :tools:project:generateDocs                      # Rewrite the generated blocks in README/CONFORMANCE/DEFECTS
 ./gradlew :tools:project:conformance --args='--actual <dir>' # Check a consumer against the fixtures
-./gradlew :tools:project:validateReport --args='<report.json>'  # Validate a two-lane conformance report
+./gradlew :tools:project:validateReport --args='<report.json>'  # Validate a three-lane conformance report
 ./gradlew test                                             # ScalaTest suite
 ./tools/project/verify.sh                                  # End-to-end verification suite
 ./gradlew spotlessApply                                    # Format Scala, scripts, workflows, JSON

@@ -105,6 +105,41 @@ class ProjectionMapTest extends AnyFunSuite with Matchers {
     errors.exists(_.contains("surprise")) shouldBe true
   }
 
+  test("a recovery marker is accepted, and may also be mapped") {
+    // Both, deliberately: the mapping is how the recovery lane knows which canonical kind to compare
+    // it against, and the declaration is how the structural lane knows to splice it out first.
+    check(
+      valid.replace(
+        """  "elide": ["Type.Type"]""",
+        """  "elide": ["Type.Type"],
+      |  "recoveryMarkers": ["call_expression"]""".stripMargin
+      )
+    ) shouldBe empty
+  }
+
+  test("a recovery marker that is also flattened or ignored is rejected") {
+    // The failure this check exists for is silent: a node removed on both lanes has its recovery
+    // shape measured nowhere, and the report still reads `pass`.
+    val withMarker = valid.replace(
+      """  "elide": ["Type.Type"]""",
+      """  "elide": ["Type.Type"],
+      |  "recoveryMarkers": ["error_node"]""".stripMargin
+    )
+    val cases = List(
+      "ignored" -> withMarker.replace("""["source_file"]""", """["source_file", "error_node"]"""),
+      "flatten" -> withMarker.replace(
+        """  "ignored": ["source_file"],""",
+        """  "ignored": ["source_file"],
+      |  "flatten": ["error_node"],""".stripMargin
+      )
+    )
+    cases.foreach { case (field, body) =>
+      withClue(s"$field: ") {
+        check(body).exists(e => e.contains("error_node") && e.contains("neither lane")) shouldBe true
+      }
+    }
+  }
+
   test("a note about an unknown node is rejected") {
     val errors = check(
       valid.replace(
