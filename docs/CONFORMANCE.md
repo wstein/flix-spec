@@ -330,16 +330,21 @@ the first time (`sealed_declaration`, the `rvadd`/`rvsub`/`rvand`/`rvnot`/`xor` 
 productions, `lambda`, `record_expression`, and dozens more). Divergences worth noting rather than
 silently absorbing into "add more mappings":
 
-- Several `Ident` vs `QName` kind mismatches: `QName` is in `elide`, but only fires when tree-sitter's
-  `qualified_name` has at most one canonical child; where it has two the elision rule (by design)
-  declines to fire, and the two trees disagree at that node.
-- Several `Type.Effect` vs `Type.Constant`/`Type.Unary`/`Type.Binary`/`Type.EffectSet` mismatches:
-  the current map appears to send more native effect-formula node kinds to `Type.Effect` than the
-  canonical tree actually produces that shape for.
-- The `unterminated-*` negative fixtures diverge in arity or kind at the error site, which is not a
-  mapping gap at all — it is two independently-implemented recovery strategies genuinely disagreeing
-  about what a truncated input becomes, which is exactly the kind of fact this comparison exists to
-  surface.
+Of the 137 divergences, 83 are kind mismatches and 54 are arity mismatches.
+
+- **`QName` elision dominates: 60 of the 83 kind mismatches involve `QName` or `Ident`**, and
+  `Ident → QName` alone accounts for 38. `QName` is in `elide`, but elision only fires when
+  tree-sitter's `qualified_name` has at most one canonical child; where it has two the rule declines
+  to fire by design, and the two trees disagree at that node. This is one rule's boundary, not
+  dozens of unrelated faults, and it is far and away the highest-value thing to fix next.
+- 10 mismatches involve `Type.Effect` against `Type.Constant`/`Type.Unary`/`Type.Binary`/
+  `Type.EffectSet`: the map appears to send more native effect-formula node kinds to `Type.Effect`
+  than the canonical tree produces that shape for.
+- **18 of the 21 negative fixtures diverge**, including all six `lexical__unterminated-*`. That is
+  not a mapping gap at all — it is two independently-implemented recovery strategies genuinely
+  disagreeing about what a truncated input becomes, which is exactly the kind of fact this
+  comparison exists to surface. Error recovery is where these parsers agree least, and no amount of
+  mapping will close it.
 
 None of the above have been fixed. Expanding `tree-sitter-flix`'s own `conformance/projection-map.json` to resolve the
 mapping-driven divergences, and deciding whether the recovery-driven ones belong in
