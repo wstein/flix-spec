@@ -439,6 +439,41 @@ simply "better" — the first compares more of each tree and therefore finds mor
 which is the trade the depth column exists to make visible. Their recovery lanes separate them much
 more sharply than their structural ones do: 5/21 against 19/21.
 
+### What the recovery lane found, and why it is not map surgery
+
+The lane's first measurement was diagnosed rather than merely recorded, and the answer is worth
+keeping because two plausible cheap fixes were tried and both were wrong.
+
+`tree-sitter-flix`'s 45 divergences concentrate in `lexical__numeric-literal-errors` (10) and
+`declarations__trait-and-instance-with-an-operator-signature` (7). The dominant shapes are
+`expected 'ErrorTree' got 'Expr.Literal'` and `expected 'ErrorTree' got 'Ident'` — which reads like
+the grammar accepting input the reference rejects. It does not. Both parsers reject `1_`; they
+disagree about **where the error is**:
+
+```
+reference          Expr.Expr > ErrorTree > Err '1_'        one token, one marker
+tree-sitter        body: (integer '1')  +  (ERROR (wildcard '_'))
+```
+
+The reference's lexer takes a maximal number-ish run and emits a single `Err`; tree-sitter's takes
+the valid prefix as an `integer` and leaves `_` to generic recovery, which lands the `ERROR` node in
+a different part of the tree entirely. That is a genuine error-boundary disagreement, and it is
+exactly the sort of thing that must not be folded into a structural score: it says nothing about
+whether the two agree on valid Flix.
+
+Two map-level hypotheses were tested and rejected by measurement:
+
+- declaring `unterminated_literal`/`unterminated_string` transparent instead of recovery markers —
+  **worse**, 5/21 to 1/21, because the reference genuinely does wrap those in an `ErrorTree`;
+- removing the unreachable mappings — real, but worth 1 fixture, and already applied.
+
+The remaining fix is a lexer rule in the consumer: a negative-precedence token matching a
+digit-started run that forms no valid literal, mirroring the existing `unterminated_literal`. A first
+attempt at exactly that made `tree-sitter generate` fail to terminate — the obvious pattern overlaps
+`integer`, `float` and identifiers far too broadly — so it needs a tighter enumeration of the
+malformed shapes rather than a catch-all, and it belongs to whoever owns that grammar. Recorded here
+so the next person does not repeat the attempt blind.
+
 ### What splitting the lanes cost, and what it did not
 
 Moving the canonical transparency rules upstream is only defensible if it is **score-neutral where
