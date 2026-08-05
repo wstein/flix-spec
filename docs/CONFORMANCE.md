@@ -491,12 +491,26 @@ Two map-level hypotheses were tested and rejected by measurement:
   **worse**, 5/21 to 1/21, because the reference genuinely does wrap those in an `ErrorTree`;
 - removing the unreachable mappings — real, but worth 1 fixture, and already applied.
 
-The remaining fix is a lexer rule in the consumer: a negative-precedence token matching a
-digit-started run that forms no valid literal, mirroring the existing `unterminated_literal`. A first
-attempt at exactly that made `tree-sitter generate` fail to terminate — the obvious pattern overlaps
-`integer`, `float` and identifiers far too broadly — so it needs a tighter enumeration of the
-malformed shapes rather than a catch-all, and it belongs to whoever owns that grammar. Recorded here
-so the next person does not repeat the attempt blind.
+The remaining fix is a lexer rule in the consumer, and the shape it must take is now settled by
+elimination rather than guessed.
+
+The rule to mirror is not an approximation: `Lexer.acceptNumber` and `acceptHexNumber` recover from
+every malformed-number error identically, with `advanceWhile(isNumberLikeChar)` over
+`digit | letter | '.' | '_'`, so the reference's error token is exactly the maximal such run and
+`Parser2` wraps precisely that in one `ErrorTree`.
+
+**Expressing it as a tree-sitter regex token does not work, and that is measured.** Three attempts —
+a nested repetition, the flat `/[0-9][0-9a-zA-Z._]*/` that states the reference's rule exactly, and
+a narrowed `/[0-9][0-9a-zA-Z_]*/` without the dot — each made `tree-sitter generate` fail to
+terminate, the last still running at a 200-second timeout. A digit-started maximal munch overlaps
+`integer`, `float` and every identifier-shaped continuation, and the lexer generator has to split
+states across that whole product.
+
+That leaves the **external scanner**, which is how the same repository already solved the same class
+of problem for `unterminated_string`: a hand-written C scanner is not subject to the DFA
+construction that explodes here. It is real work in `scanner.c` and it belongs to whoever owns that
+grammar. Recorded at this level of detail so the next attempt starts from the scanner, and does not
+spend another afternoon proving the regex route closed.
 
 ### What splitting the lanes cost, and what it did not
 
