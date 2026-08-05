@@ -424,6 +424,15 @@ Measured at pin `v0.75.1` (`318bb51a`), fixture revision `4eccee63`, tree-sitter
 | `flix-jetbrains-plugin` | `recovery_conformance` | — | 19 / 21 in-scope fixtures agree · 5 divergences · **94% depth** |
 | `flix-jetbrains-plugin` | `source_invariants` | **pass** (1 of 4 checks evaluated) | `document-shape` pass · the other three `not-applicable` |
 
+`flix-jetbrains-plugin`'s rows carry no verdict on purpose. They were measured by running this
+repository's comparison directly against the trees its own test suite emits, using a **migrated map
+that is not yet committed there**: that repository consumes `flix-spec` as a released Maven artifact,
+and the migration depends on `ast/transparency.json` shipping in one. Until that release, its
+committed map is correct for the artifact it actually resolves, and its own gate stays green. The
+migration is three edits — drop the seven contract-covered `elide` entries, move the seven
+now-unreachable `mappings` to `ignored`, declare its thirteen error elements in `recoveryMarkers` —
+and the numbers above are what they buy.
+
 The two consumers are worth reading against each other rather than separately. `tree-sitter-flix`
 reaches 99% depth and 103/136; `flix-jetbrains-plugin` reaches 133/136 at 93% depth. Neither is
 simply "better" — the first compares more of each tree and therefore finds more to disagree about,
