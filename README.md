@@ -163,7 +163,6 @@ schemas/
   transparency.schema.json  # JSON Schema for ast/transparency.json
   defect-ledger.schema.json # JSON Schema for defects/ledger.json
 ast/
-  projection/            # Consumer vocabulary maps (tree-sitter-flix, ...)
   treekind.json          # GENERATED — 192 qualified syntax tree kinds, digest, provenance header
   tokenkind.json         # GENERATED — 160 lexical token kinds, digest, provenance header
   coverage.json          # GENERATED — which kinds and tokens the fixture suite exercises
@@ -221,7 +220,7 @@ moved to the consumers that own them, nothing here could enumerate them without 
 Everything in `ast/`, `schemas/`, `fixtures/` and `corpus/corpus.json`, plus `pin.json`, is also
 published as `io.github.wstein:flix-spec` — for a consumer that would rather add a dependency than
 vendor files by hand. Versioning is documented in [`docs/VERSIONING.md`](docs/VERSIONING.md); in
-short it is plain semver, `<flixMajor>.<flixMinor>.<revision>` — currently `0.75.1`, derived from
+short it is plain semver, `<flixMajor>.<flixMinor>.<revision>` — currently `0.75.2`, derived from
 Flix v0.75.1.
 
 The pin is deliberately **not** encoded in the version. A version can advertise a pin but never
@@ -248,7 +247,7 @@ repositories {
 }
 
 dependencies {
-    implementation("io.github.wstein:flix-spec:0.75.1")
+    implementation("io.github.wstein:flix-spec:0.75.2")
 }
 ```
 
