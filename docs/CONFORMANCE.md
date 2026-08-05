@@ -433,6 +433,30 @@ migration is three edits — drop the seven contract-covered `elide` entries, mo
 now-unreachable `mappings` to `ignored`, declare its thirteen error elements in `recoveryMarkers` —
 and the numbers above are what they buy.
 
+#### A ported comparison drifts, and this one has
+
+`flix-jetbrains-plugin` cannot shell out to the comparison the way `tree-sitter-flix` does: the
+published Maven artifact is **data only** — `pin.json`, `ast/`, `schemas/`, `fixtures/` — so a JVM
+consumer that wants a verdict has to re-implement the algorithm. That repository carries a Kotlin
+port of it.
+
+Running the *same* trees through the *same* map gives two different answers:
+
+| | agreement | divergences |
+| --- | ---: | ---: |
+| this repository's comparison | 133 / 136 | 3 |
+| the Kotlin port | 119 / 136 | 30 |
+
+The port is behind in two ways that both change results: it does not know `recoveryMarkers`, so a
+consumer's error elements are never spliced out of the structural lane, and it applies transparency
+level-wise rather than as a bottom-up fixed point — the same defect this repository had until
+`fixtures/raw` was fed back through its own comparison and exposed it.
+
+Neither number is wrong about the grammar; the port is measuring a different question. But "the
+comparison lives here so four repositories do not re-derive it four times" is this project's stated
+reason to exist, and a data-only artifact is what forces the fourth re-derivation. **Publishing the
+comparison itself, not just its inputs, is the obvious fix** and is not done yet.
+
 The two consumers are worth reading against each other rather than separately. `tree-sitter-flix`
 reaches 99% depth and 103/136; `flix-jetbrains-plugin` reaches 133/136 at 93% depth. Neither is
 simply "better" — the first compares more of each tree and therefore finds more to disagree about,
