@@ -227,6 +227,49 @@ What a consumer still declares, and must:
 | `flatten` | its own pure grouping nodes, spliced at any arity | its side |
 | `recoveryMarkers` | its own error-recovery nodes | its side, in the structural lane only |
 
+### Triangulation: does the contract describe the reference, or one consumer?
+
+This is the design's one structural weakness, and it cannot be argued away — only measured. Every
+rule in `ast/transparency.json` is justified from the reference's own source, but the rules were
+*written* while looking at one consumer's divergences, and no check inside this repository could
+tell a neutral rule from one shaped by that consumer.
+
+So the contract was tested against a second, independently-written map: `flix-jetbrains-plugin`, a
+Grammar-Kit grammar whose shape differs from the reference far more than tree-sitter's does — 30% of
+its nodes are always single-child wrappers, against 11.4% on the canonical side. Its `elide` list was
+written before the contract existed, by someone solving a different problem.
+
+| Contract rule | Independently declared transparent by `flix-jetbrains-plugin` |
+| --- | --- |
+| `Argument`, `Doc`, `Pattern.Variable`, `Predicate.Body`, `Type.Argument`, `Type.Effect`, `Type.Type` | **yes — 7 of 12, listed explicitly** |
+| `Expr.HoleVariable`, `Expr.StructPutRHS`, `Expr.UnsafeAsEffFragment` | not listed, but every fixture containing them **agrees**, so that consumer produces no counterpart either |
+| `Expr.DebugInterpolator`, `Predicate.LatticeTerm` | unresolved — those fixtures diverge, for the reason below |
+
+**Then the decisive test: removing the 7 contract-covered entries from that consumer's map changed
+nothing.** Not approximately — 117/136 agreeing, 34 divergences, 1250 nodes compared, 93% depth,
+1477 nodes elided, and the same 34 individual divergences, before and after, bit for bit. The
+entries were matching nothing, because normalisation had already removed what they named. The same
+experiment on `tree-sitter-flix` gave the same answer.
+
+That is as close to evidence of neutrality as two consumers can provide. It is not proof: both are
+still parsers of the same language written against the same reference, and a rule wrong in a way
+*both* would reproduce would survive this. A third consumer of a genuinely different kind — a
+lexical one, or a hand-written recursive-descent parser — would tighten it further.
+
+#### What triangulation actually found
+
+Not a bad rule. A defect class nobody had thought to look for.
+
+Both consumers still mapped native nodes **onto canonical kinds the contract removes**. Such a
+mapping cannot match — the canonical tree has no such node — so it does not merely do nothing: the
+consumer's own node keeps standing where nothing is expected, and the mapping *manufactures*
+divergences. On `flix-jetbrains-plugin` seven of them were worth **31 of its 34 divergences**;
+removing them took it from 117/136 to **133/136**.
+
+`validateProjectionMap` now rejects it, with the fix named in the message. A mapping onto a *spliced*
+kind is the one exception, and only when the native node is declared in `recoveryMarkers` — the
+recovery lane keeps those on both sides, which is exactly what makes such a mapping reachable.
+
 **Transparency is one bottom-up fixed point over all of these, not a sequence of passes.** That was
 learned the hard way. An earlier revision applied splicing and elision once per level, in sequence,
 so a node promoted into a level from below never met the other rule — and the canonical trees contain
@@ -377,6 +420,15 @@ Measured at pin `v0.75.1` (`318bb51a`), fixture revision `4eccee63`, tree-sitter
 | `tree-sitter-flix` | `oracle_conformance` | **pass** (baseline 61) | 103 / 136 fixtures agree · 61 divergences · 1923 nodes compared · **99% depth** · 12 unmapped |
 | `tree-sitter-flix` | `recovery_conformance` | **fail** (baseline 45) | 5 / 21 in-scope fixtures agree · 45 divergences · 182 nodes compared · **100% depth** |
 | `tree-sitter-flix` | `source_invariants` | **pass** (1 of 4 checks evaluated) | `document-shape` pass · the other three `not-applicable` |
+| `flix-jetbrains-plugin` | `oracle_conformance` | — | 133 / 136 fixtures agree · 3 divergences · 1258 nodes compared · **93% depth** · 89 unmapped |
+| `flix-jetbrains-plugin` | `recovery_conformance` | — | 19 / 21 in-scope fixtures agree · 5 divergences · **94% depth** |
+| `flix-jetbrains-plugin` | `source_invariants` | **pass** (1 of 4 checks evaluated) | `document-shape` pass · the other three `not-applicable` |
+
+The two consumers are worth reading against each other rather than separately. `tree-sitter-flix`
+reaches 99% depth and 103/136; `flix-jetbrains-plugin` reaches 133/136 at 93% depth. Neither is
+simply "better" — the first compares more of each tree and therefore finds more to disagree about,
+which is the trade the depth column exists to make visible. Their recovery lanes separate them much
+more sharply than their structural ones do: 5/21 against 19/21.
 
 ### What splitting the lanes cost, and what it did not
 
