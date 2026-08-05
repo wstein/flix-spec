@@ -3,12 +3,13 @@
   <groupId>io.github.wstein</groupId>
   <artifactId>flix-spec</artifactId>
   <versioning>
-    <latest>0.75.1-SNAPSHOT</latest>
+    <latest>0.75.2-SNAPSHOT</latest>
     <release>0.75.1</release>
     <versions>
       <version>0.75.1-SNAPSHOT</version>
       <version>0.75.1</version>
+      <version>0.75.2-SNAPSHOT</version>
     </versions>
-    <lastUpdated>20260803055700</lastUpdated>
+    <lastUpdated>20260805074656</lastUpdated>
   </versioning>
 </metadata>

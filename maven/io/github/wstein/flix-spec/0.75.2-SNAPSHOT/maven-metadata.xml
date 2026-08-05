@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata modelVersion="1.1.0">
+  <groupId>io.github.wstein</groupId>
+  <artifactId>flix-spec</artifactId>
+  <versioning>
+    <lastUpdated>20260805074655</lastUpdated>
+    <snapshot>
+      <timestamp>20260805.074655</timestamp>
+      <buildNumber>1</buildNumber>
+    </snapshot>
+    <snapshotVersions>
+      <snapshotVersion>
+        <extension>jar</extension>
+        <value>0.75.2-20260805.074655-1</value>
+        <updated>20260805074655</updated>
+      </snapshotVersion>
+      <snapshotVersion>
+        <extension>pom</extension>
+        <value>0.75.2-20260805.074655-1</value>
+        <updated>20260805074655</updated>
+      </snapshotVersion>
+    </snapshotVersions>
+  </versioning>
+  <version>0.75.2-SNAPSHOT</version>
+</metadata>

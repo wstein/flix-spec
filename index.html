@@ -59,7 +59,6 @@
   .badge-release { background: var(--badge-release-bg); color: var(--badge-release-fg); }
   .badge-snapshot { background: var(--badge-snapshot-bg); color: var(--badge-snapshot-fg); }
   .badge-build { background: var(--badge-build-bg); color: var(--badge-build-fg); }
-  .self-declared { font-size: 0.85rem; color: var(--muted); margin-top: 0.4rem; }
   footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.85rem; }
   pre { overflow-x: auto; background: var(--code-bg); padding: 0.9rem 1rem; border-radius: 8px; font-size: 0.85rem; }
   .overflow { overflow-x: auto; }
@@ -123,6 +122,11 @@
 <table>
   <tr><th>Version</th><th></th><th></th></tr>
         <tr>
+          <td><code>0.75.2-SNAPSHOT</code></td>
+          <td><span class="badge badge-snapshot">snapshot</span></td>
+          <td><a href="maven/io/github/wstein/flix-spec/0.75.2-SNAPSHOT/">browse</a></td>
+        </tr>
+        <tr>
           <td><code>0.75.1-SNAPSHOT</code></td>
           <td><span class="badge badge-snapshot">snapshot</span></td>
           <td><a href="maven/io/github/wstein/flix-spec/0.75.1-SNAPSHOT/">browse</a></td>
@@ -136,23 +140,6 @@
 </div>
 <p style="font-size: 0.85rem; color: var(--muted);">
   Read from this repository's own <code>maven-metadata.xml</code> &mdash; not maintained separately here.
-</p>
-
-<h2>Dependents</h2>
-<p class="note">
-  Parsers with a committed projection map in
-  <a href="https://github.com/wstein/flix-spec/tree/main/ast/projection">ast/projection/</a>,
-  mapping their own node vocabulary onto the kinds above.
-</p>
-<div class="overflow">
-<table>
-  <tr><th>Consumer</th><th>Coverage</th><th></th></tr>
-        <tr><td colspan="3">none yet</td></tr>
-</table>
-</div>
-<p class="self-declared">
-  Self-declared by this repository, not discovered from external usage &mdash; there is no registry
-  of who depends on flix-spec, only the projection maps committed here.
 </p>
 
 <h2>Use it</h2>
