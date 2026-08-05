@@ -424,6 +424,10 @@ Measured at pin `v0.75.1` (`318bb51a`), fixture revision `4eccee63`, tree-sitter
 | `flix-jetbrains-plugin` | `recovery_conformance` | — | 19 / 21 in-scope fixtures agree · 5 divergences · **94% depth** |
 | `flix-jetbrains-plugin` | `source_invariants` | **pass** (1 of 4 checks evaluated) | `document-shape` pass · the other three `not-applicable` |
 
+| `flix-antlr-grammar` | `oracle_conformance` | **pass** (baseline 75) | 76 / 136 fixtures agree · 75 divergences · 818 nodes compared · **88% depth** · 113 unmapped |
+| `flix-antlr-grammar` | `recovery_conformance` | **not-applicable** | declares no `recoveryMarkers`; ANTLR's recovery inserts nodes the parse tree does not name |
+| `flix-antlr-grammar` | `source_invariants` | **pass** (1 of 4 checks evaluated) | `document-shape` pass · the other three `not-applicable` |
+
 `flix-jetbrains-plugin`'s rows carry no verdict on purpose. They were measured by running this
 repository's comparison directly against the trees its own test suite emits, using a **migrated map
 that is not yet committed there**: that repository consumes `flix-spec` as a released Maven artifact,
@@ -457,7 +461,23 @@ comparison lives here so four repositories do not re-derive it four times" is th
 reason to exist, and a data-only artifact is what forces the fourth re-derivation. **Publishing the
 comparison itself, not just its inputs, is the obvious fix** and is not done yet.
 
-The two consumers are worth reading against each other rather than separately. `tree-sitter-flix`
+`flix-antlr-grammar` was wired from nothing in one sitting, and what it cost is the useful part of
+the record. It began at **0/136 with 316 divergences**, and two findings account for almost all of
+the distance to 76/136:
+
+- **Symmetric transparency for wrappers ANTLR omits.** The reference emits
+  `UsesOrImports.UseOrImportList`, `AnnotationList` and `ModifierList` on every file, empty or not;
+  ANTLR omits an optional rule that matched nothing. Declaring those transparent on both sides →
+  2/136.
+- **Name rules are wrappers, not names.** The reference's `Ident` holds its token directly, so
+  mapping both `definitionName` and `nameLowercase` onto `Ident` produced `Ident` inside `Ident` on
+  every declaration. That one class was **126 of the divergences** → 76/136.
+
+It also declined a mapping, which matters more than the ones it took. Mapping `expr`'s branching
+case to `Expr.Binary` raises depth 88% → 94% and drops agreement 76 → 40 — the signature of a guess
+that is often wrong, and precisely what "leave it unmapped rather than guess" is for.
+
+The consumers are worth reading against each other rather than separately. `tree-sitter-flix`
 reaches 99% depth and 103/136; `flix-jetbrains-plugin` reaches 133/136 at 93% depth. Neither is
 simply "better" — the first compares more of each tree and therefore finds more to disagree about,
 which is the trade the depth column exists to make visible. Their recovery lanes separate them much
