@@ -28,13 +28,14 @@ class ProjectionMapTest extends AnyFunSuite with Matchers {
   private val schema = Json.parseFile(repoRoot.resolve("schemas/projection-map.schema.json"))
   private val inventory =
     Json.parseFile(repoRoot.resolve("ast/treekind.json"))("kinds").asArray.map(_("name").asString).toSet
+  private val contract = Transparency.parse(Json.parseFile(repoRoot.resolve("ast/transparency.json")))
 
   /** Writes `body` to a temp file and validates it, returning the messages raised. */
   private def check(body: String): List[String] = {
     val dir = Files.createTempDirectory("projection-map-test")
     val file = dir.resolve("map.json")
     Files.writeString(file, body, StandardCharsets.UTF_8)
-    try ProjectionMapValidator.validate(List(file.toString), schema, inventory).toList
+    try ProjectionMapValidator.validate(List(file.toString), schema, inventory, contract).toList
     finally {
       Files.deleteIfExists(file)
       Files.deleteIfExists(dir)
@@ -137,6 +138,34 @@ class ProjectionMapTest extends AnyFunSuite with Matchers {
       withClue(s"$field: ") {
         check(body).exists(e => e.contains("error_node") && e.contains("neither lane")) shouldBe true
       }
+    }
+  }
+
+  test("a mapping onto an elided kind is rejected") {
+    // Not merely dead: the canonical tree has no such node, so the consumer's own node stands where
+    // nothing is expected and the mapping *manufactures* divergences. Measured on a real consumer,
+    // seven such mappings were worth 31 of its 34 divergences.
+    val errors = check(valid.replace("\"Expr.Apply\"", "\"Type.Type\""))
+    errors should have length 1
+    errors.head should include("elided by ast/transparency.json")
+    errors.head should include("`ignored`")
+  }
+
+  test("a mapping onto a spliced kind needs the node declared as a recovery marker") {
+    val onto = valid.replace("\"Expr.Apply\"", "\"ErrorTree\"")
+    withClue("undeclared: ") {
+      val errors = check(onto)
+      errors should have length 1
+      errors.head should include("unreachable in both lanes")
+    }
+    withClue("declared: ") {
+      check(
+        onto.replace(
+          """  "elide": ["Type.Type"]""",
+          """  "elide": ["Type.Type"],
+      |  "recoveryMarkers": ["call_expression"]""".stripMargin
+        )
+      ) shouldBe empty
     }
   }
 
