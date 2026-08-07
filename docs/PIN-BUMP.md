@@ -10,9 +10,9 @@ The manual procedure for bumping the pinned upstream Flix release in `wstein/fli
 - **Automation**: pin bumps are **never automated and never auto-merged**. A bump requires human
   review of the structural diff.
 
-**Dependabot cannot do this.** The Flix pin is not a package ecosystem, so nothing will notice that
-0.75.2 exists. Dependabot covers GitHub Actions and Gradle dependencies only. This asymmetry is
-deliberate — do not "fix" the apparent gap by pointing any check at a moving ref.
+**Dependabot cannot do this.** The Flix pin is not a package ecosystem, so Dependabot will not
+notice when a release such as 0.75.2 exists. It covers GitHub Actions and Gradle dependencies only.
+This asymmetry is deliberate — do not "fix" the apparent gap by pointing any check at a moving ref.
 
 **What does notice.** `tools/oracle/check-drift.sh`, run weekly by `corpus.yml`, compares the blob
 SHAs of the four upstream files that define the vocabularies and the parser's behaviour
@@ -161,16 +161,17 @@ flowchart TD
 
 ## Bumping the published Maven version
 
-The pin bump alone moves the published artifact's version automatically: `packaging/build.gradle.kts`
-derives the `-flix<version>` suffix from `pin.json.upstream.tag` at build time (see
-[`docs/VERSIONING.md`](VERSIONING.md)). Nothing to do there.
+The published version is hand-maintained in `gradle.properties`; a pin bump does not change it
+automatically. Follow the plain-semver scheme in [`VERSIONING.md`](VERSIONING.md): major and minor
+track the upstream Flix line, while the final component is this repository's revision within that
+line. Moving from Flix v0.75.1 to v0.75.2 therefore advances a current `0.75.2` package to `0.75.3`.
+Moving to Flix v0.76.0 resets the package version to `0.76.0`.
 
-What the pin bump does **not** do automatically: if step 7's PR body says a kind was removed or
-re-parented (a breaking change for consumers), bump `gradle.properties`' `version` field's major
-component by hand, in the same PR. A kind added with no removal is a minor bump; a bump with no
-schema change at all (pure content refresh) is a patch bump. `.github/workflows/pages.yml` will
-refuse to publish if the resulting full version already exists, so getting this wrong fails loudly
-rather than silently overwriting a prior release.
+TreeKind or TokenKind removals remain breaking changes for consumers and must be called out in the
+pull request and release notes. They do not change this coordinate scheme: consumers detect data
+contract compatibility through the artifacts' in-band `schemaVersion` fields and verify the exact
+upstream identity through `pin.json`. `.github/workflows/pages.yml` refuses to publish an existing
+release version, so forgetting to advance the revision fails rather than overwriting a release.
 
 ## If the release has no `flix.jar` asset
 
