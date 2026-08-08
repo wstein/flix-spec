@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "upstreamCommit": "318bb51a953c58a8785251a80fad8aea005f729f",
+  "upstreamCommit": "40949531b4d42e5eaf2e4b9997537eaf793c24e7",
   "note": "HAND-MAINTAINED. The curated input to fixture normalisation: every entry names a canonical TreeKind that ProjectionExtractor removes when it writes fixtures/expected/, and that fixtures/raw/ still carries verbatim. Two rules exist. `elide` is for nodes that contribute exactly one edge and no leaf content -- across the whole suite they never hold more than one child and never hold a token, so their name can never be what groups siblings or what gives a token its role. `splice` is for the error vocabulary, which is not syntax at all; splicing it out is what makes the main conformance lane measure structure *modulo* recovery, and the recovery lane is where its shape is measured instead. Every reason below is an argument about the reference's own structure. A reason of the form 'consumer X does not produce one' is inadmissible and must be rejected in review: this repository instruments a single consumer, so no automated check can distinguish a neutral rule from one shaped by that consumer, and the reasons are the only thing that can. Line numbers refer to upstreamCommit, so a pin bump fails until every citation has been re-read against the new source. Deliberately absent: UnclosedMark. It is a placeholder the parser overwrites and can appear in no tree from any input, so it is argued in ast/unattachable.json instead -- a normalisation rule for a node that never occurs would be unfalsifiable, and claiming it is 'measured in the recovery lane' would be false.",
   "treeKinds": [
     {
@@ -8,8 +8,8 @@
       "rule": "elide",
       "reason": "argument() opens a mark, parses one expression, and closes Argument only on the branch where no `=` follows -- the named branch closes ArgumentNamed instead. The single expression is therefore the whole content, and the position in the enclosing ArgumentList is what makes it an argument.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1885",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:2129"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1861",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:2105"
       ]
     },
     {
@@ -17,7 +17,7 @@
       "rule": "elide",
       "reason": "docComment() opens a mark and immediately closes it as Doc, relying on open() having already consumed any leading comment run into a CommentList. So Doc holds either nothing, when the declaration is undocumented, or exactly that one CommentList, which carries the comment tokens; Doc itself never holds a token.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1414"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1390"
       ]
     },
     {
@@ -36,7 +36,7 @@
       "rule": "elide",
       "reason": "The debug-interpolation production opens a mark, parses one expression and closes DebugInterpolator around it with no delimiter tokens of its own; the surrounding interpolation tokens belong to the enclosing string expression.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3267"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3243"
       ]
     },
     {
@@ -44,7 +44,7 @@
       "rule": "elide",
       "reason": "The hole-variable production closes around a single name node; the `?` marker is lexed into the name token itself rather than kept as a separate child, so the node adds an edge and nothing else.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:2018"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1994"
       ]
     },
     {
@@ -52,7 +52,7 @@
       "rule": "elide",
       "reason": "The struct-put production opens a second mark after the `=` token, which it has already eaten, and closes StructPutRHS around the single right-hand expression. The operator stays a child of the enclosing Expr.StructPut, so this node holds one expression and nothing else.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1579"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1555"
       ]
     },
     {
@@ -60,8 +60,8 @@
       "rule": "elide",
       "reason": "unsafeExpr()'s own shape comment shows the fragment holding exactly one Type.Type, and the production closes it immediately after that single type; the `as` keyword is eaten before the mark is opened.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:2710",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:2725"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:2686",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:2701"
       ]
     },
     {
@@ -70,7 +70,7 @@
       "recoveryMarker": true,
       "reason": "Not syntax, and not even text. It is closed over a zero-width mark opened and closed at the same position when a binary operator is missing, so it holds no children and no tokens at all; it exists to give Weeder2 a place to raise MissingBinaryOperator later.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1503"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1479"
       ]
     },
     {
@@ -78,7 +78,7 @@
       "rule": "elide",
       "reason": "variablePat() opens a mark, calls nameUnqualified once and closes; the name becomes an Ident node, so Pattern.Variable holds exactly that one node. An Ident directly under a pattern position already is the variable case, so the wrapper distinguishes nothing.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3358"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3334"
       ]
     },
     {
@@ -86,9 +86,9 @@
       "rule": "elide",
       "reason": "Every close site wraps exactly one already-closed predicate node -- atom, functional or guard -- with the leading `not`/`fix` qualifiers eaten into that inner node rather than kept here, so the body node contributes one edge and no leaf content.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3951",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3954",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3957"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3927",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3930",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3933"
       ]
     },
     {
@@ -96,10 +96,10 @@
       "rule": "elide",
       "reason": "The lattice-term productions eat the `;` separator before opening the mark and close around a single expression or pattern, so the node never holds the separator and never holds more than the one term.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3840",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3922",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3939",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:4050"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3816",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3898",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3915",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:4026"
       ]
     },
     {
@@ -117,7 +117,7 @@
       "rule": "elide",
       "reason": "The type-argument production closes around a single Type.Type and never holds the surrounding brackets or commas, which belong to the enclosing Type.ArgumentList.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3543"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3519"
       ]
     },
     {
@@ -125,8 +125,8 @@
       "rule": "elide",
       "reason": "Both close sites wrap the single effect type parsed after a `\\` that has already been eaten, so the node carries one type node and no token of its own.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3445",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3450"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3421",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3426"
       ]
     },
     {
@@ -134,10 +134,10 @@
       "rule": "elide",
       "reason": "The type productions re-close a single already-closed type node as Type.Type at every level of the precedence climb, using openBefore on the node they just built. It is the type equivalent of a parenthesis-free grouping level: one child, never a token, and never more than one.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3462",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3480",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3489",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3654"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3438",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3456",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3465",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3630"
       ]
     }
   ]

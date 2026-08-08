@@ -8,5 +8,6 @@ build/
 .oracle/
 
 .vscode/
+.metals/
 nohup.out
 dist/

@@ -12,7 +12,7 @@ import scala.jdk.CollectionConverters._
   *
   * Measured over `fixtures/raw/`, never the normalised trees. Coverage is a statement about the reference's own
   * vocabulary -- which kinds this suite can make the reference emit -- and normalisation deliberately removes some of
-  * them. Reading the normalised trees would report `ErrorTree` as uncovered and let the status join conclude that 873
+  * them. Reading the normalised trees would report `ErrorTree` as uncovered and let the status join conclude that 874
   * files of real Flix reach a kind no fixture does, which would be false twice over.
   *
   * An uncovered kind is not automatically a gap. Some kinds are only reachable from inputs no fixture yet exercises;

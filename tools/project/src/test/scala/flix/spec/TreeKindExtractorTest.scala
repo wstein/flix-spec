@@ -24,11 +24,11 @@ class TreeKindExtractorTest extends AnyFunSuite with Matchers {
     }
   }
 
-  test("extractTreeKinds should return exactly 192 unique qualified kinds") {
+  test("extractTreeKinds should return exactly 191 unique qualified kinds") {
     val kinds = TreeKindExtractor.extractTreeKinds(oracleJar)
 
-    kinds.length shouldBe 192
-    kinds.map(_.name).distinct.length shouldBe 192
+    kinds.length shouldBe 191
+    kinds.map(_.name).distinct.length shouldBe 191
 
     // Check specific known kinds and their qualification
     kinds.map(_.name) should contain("Decl.Def")
@@ -38,6 +38,7 @@ class TreeKindExtractorTest extends AnyFunSuite with Matchers {
     kinds.map(_.name) should contain("Type.Tuple")
     kinds.map(_.name) should contain("Pattern.Tuple")
     kinds.map(_.name) should contain("ErrorTree")
+    kinds.map(_.name) should not contain "Decl.Law"
 
     // Check forms
     kinds.find(_.name == "ErrorTree").get.form shouldBe "case-class"
@@ -50,7 +51,7 @@ class TreeKindExtractorTest extends AnyFunSuite with Matchers {
     // ErrorTree is the only case class at this pin, but the generator must not know that by
     // name -- it must reach the same answer reflectively.
     kinds.count(_.form == "case-class") shouldBe 1
-    kinds.count(_.form == "case-object") shouldBe 191
+    kinds.count(_.form == "case-object") shouldBe 190
   }
 
   test("every declared parent is TreeKind or a real sub-trait") {

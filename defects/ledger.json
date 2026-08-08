@@ -17,11 +17,11 @@
         "presentKinds": ["Predicate.Param", "Predicate.ParamList"]
       },
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:4037",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:4040",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:4054",
-        "main/src/ca/uwaterloo/flix/language/phase/Weeder2.scala:2065",
-        "main/src/ca/uwaterloo/flix/language/phase/Weeder2.scala:2823"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:4013",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:4016",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:4030",
+        "main/src/ca/uwaterloo/flix/language/phase/Weeder2.scala:2046",
+        "main/src/ca/uwaterloo/flix/language/phase/Weeder2.scala:2804"
       ],
       "upstreamStatus": "not-filed",
       "upstreamIssue": null,

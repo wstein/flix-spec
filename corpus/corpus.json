@@ -2,16 +2,16 @@
   "schemaVersion": 1,
   "upstream": {
     "repository": "https://github.com/flix/flix",
-    "commit": "318bb51a953c58a8785251a80fad8aea005f729f",
-    "treeHash": "294b9ac53cd0d74f7d7092006009a6b6806b0f57"
+    "commit": "40949531b4d42e5eaf2e4b9997537eaf793c24e7",
+    "treeHash": "99213f0a62703908cb337537d57782c28b0ad604"
   },
   "counts": {
-    "totalFlixFiles": 873,
-    "mainFlixFiles": 688,
+    "totalFlixFiles": 874,
+    "mainFlixFiles": 689,
     "exampleFlixFiles": 185
   },
   "inclusionRules": {
-    "main": "All .flix files under main/ in upstream (688 files: 443 under main/test, 245 under main/src)",
+    "main": "All .flix files under main/ in upstream (689 files: 444 under main/test, 245 under main/src)",
     "examples": "All .flix files outside main/ in upstream (185 files, all under examples/). Named 'examples' rather than 'test' -- upstream's own test sources live under main/test and are counted in 'main'."
   },
   "generated": false,

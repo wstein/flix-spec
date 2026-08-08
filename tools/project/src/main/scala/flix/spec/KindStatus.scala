@@ -14,7 +14,7 @@ import java.nio.file.{Files, Paths}
   * remainder honestly:
   *
   *   - `reachable-covered` — the reference emits it somewhere in the corpus, and a fixture pins it. The strong case.
-  *   - `fixture-only` — a fixture pins it but 873 files of real Flix never produce it. This is the case *for* curating
+  *   - `fixture-only` — a fixture pins it but 874 files of real Flix never produce it. This is the case *for* curating
   *     fixtures at all, and it is emphatically not "dead syntax".
   *   - `corpus-only` — real Flix produces it and no fixture pins it. A genuine gap in this suite, and the only status
   *     that is a to-do item.
@@ -24,8 +24,8 @@ import java.nio.file.{Files, Paths}
   *   - `unknown` — no fixture, no corpus occurrence, no argument. Not a gap and not a sentinel: unexplained.
   *
   * The distinction matters because the honest headline is a ratio over what the reference can actually produce, not
-  * over the raw inventory. Reporting "184 of 192" invites the reader to treat eight kinds as missing when six of them
-  * are unreachable by construction and two more are pinned by fixtures the corpus happens not to contain.
+  * over the raw inventory. Reporting "185 of 191" invites the reader to treat six kinds as missing when all six are
+  * unreachable by construction; the status also shows that two attachable kinds are pinned only by curated fixtures.
   *
   * It also assigns each `TreeKind` a **role**, which answers a different question: not "does this suite reach it" but
   * "what kind of thing is it". Four roles, partitioning the inventory:

@@ -119,7 +119,7 @@ class ProjectionExtractorTest extends AnyFunSuite with Matchers {
 
   test("fixtures cover every kind the corpus proves reachable") {
     // The two artifacts are generated independently -- coverage from fixtures, reachability from
-    // the 873-file corpus -- so agreement is a real check, not a tautology. A kind that the
+    // the 874-file corpus -- so agreement is a real check, not a tautology. A kind that the
     // reference emits somewhere in the corpus but no fixture exercises is a genuine gap.
     //
     // This used to regex-scrape from the "uncovered" key to end-of-file, which silently assumed

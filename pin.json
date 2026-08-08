@@ -2,30 +2,25 @@
   "schemaVersion": 1,
   "upstream": {
     "repository": "https://github.com/flix/flix",
-    "tag": "v0.75.1",
-    "commit": "318bb51a953c58a8785251a80fad8aea005f729f",
-    "treeHash": "294b9ac53cd0d74f7d7092006009a6b6806b0f57",
+    "tag": "v0.75.2",
+    "commit": "40949531b4d42e5eaf2e4b9997537eaf793c24e7",
+    "treeHash": "99213f0a62703908cb337537d57782c28b0ad604",
     "vocabularySources": {
-      "main/src/ca/uwaterloo/flix/language/ast/SyntaxTree.scala": "32dcd76aabeb081432fe7cba91b85b0c17b6e5c5",
-      "main/src/ca/uwaterloo/flix/language/ast/TokenKind.scala": "5ebbb5dc7e3a9b5d7483391300c07729642d0e9d",
-      "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala": "90f22e4241b755658ee50aab9aebc5ed378c5fbb",
-      "main/src/ca/uwaterloo/flix/language/phase/Lexer.scala": "f8bafb4bc954ce54b1c665e9289837057b35ec2c"
+      "main/src/ca/uwaterloo/flix/language/ast/SyntaxTree.scala": "e90b106616ad8a6f59970f02f9c85051c9e9aaf4",
+      "main/src/ca/uwaterloo/flix/language/ast/TokenKind.scala": "7749491631d8b048c8b84cfe13b951c610baf7b3",
+      "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala": "5ca8746ebd3f4ee780f8aad49d244b292b405e03",
+      "main/src/ca/uwaterloo/flix/language/phase/Lexer.scala": "a87b9c58a8766823ebe970c11b070c67c959ff57"
     },
     "vocabularySourcesNote": "Blob SHAs at the pinned commit for the files that define the tree and token vocabularies and the parser's behaviour. tools/oracle/check-drift.sh compares these against upstream to detect that the oracle has moved in a way that matters -- a release-tag comparison alone reports 'current' while master has already changed these."
   },
   "oracleArtifact": {
     "kind": "release-asset",
-    "url": "https://github.com/flix/flix/releases/download/v0.75.1/flix.jar",
-    "sha256": "e3177700aead8a22a42c910e73bfb8a326fefdbab4e3eaeaf6d55c328a6bd938",
-    "sizeBytes": 33793240,
-    "jarEntries": 16776,
+    "url": "https://github.com/flix/flix/releases/download/v0.75.2/flix.jar",
+    "sha256": "a2697d875725a0dde6e793b8d54cb220e86167a6d49ec5f0ccb0832966c8c15a",
+    "sizeBytes": 33931077,
+    "jarEntries": 16848,
     "attestation": "digest-only -- release asset without provenance attestation or build commit stamp",
-    "note": "Pinned by digest, not rebuilt. A self-built jar at the same commit was NOT byte-identical to this asset (16794 vs 16776 entries) -- see docs/phase0-spike.md section 'Q2'. The digest above is the contract; nothing here re-derives it."
-  },
-  "selfBuiltArtifact": {
-    "sha256": "bfca1bac75142a67fafca163f2c97b71075f2cdb93bdd680259c75fafacfdb4b",
-    "jarEntries": 16794,
-    "note": "Measured during Phase 0 spike on a clean checkout at commit 318bb51a953c58a8785251a80fad8aea005f729f via ./mill flix.assembly. NOT the oracle -- recorded only to document that a same-commit rebuild is not byte-identical to the release asset (18 extra entries, most likely transitive-dependency drift). sizeBytes is deliberately absent: it was never measured, and a jar with 18 more entries cannot share the release asset's byte count."
+    "note": "Pinned by digest, not rebuilt. The digest above is the contract; nothing here re-derives it. Historical evidence that a same-commit rebuild need not match a release asset remains in docs/phase0-spike.md section 'Q2'."
   },
   "buildProvenance": {
     "note": "Provenance metadata only -- flix-spec's own build does not need to match this to consume the pinned artifact above (implementation plan section 3.2).",
@@ -64,8 +59,8 @@
     "requirement": "system-classpath",
     "note": "Must be loaded on the system classpath. URLClassLoader isolation hides dev.flix.runtime.Global and returns empty trees."
   },
-  "treeKindCount": 192,
-  "treeKindDigest": "ef4c5a850b5e35b60325bed40ab6fec4057a5fce40419c743fad21063e4eb08e",
-  "tokenKindCount": 160,
-  "tokenKindDigest": "e128966595f94131cbb2bcd33793d55c40e11ad40c816cb9229baf7e48d109a8"
+  "treeKindCount": 191,
+  "treeKindDigest": "10faeb18f4e5acdbd98822304a05cba09daf2f92165faaf525a32d0ac975f69b",
+  "tokenKindCount": 158,
+  "tokenKindDigest": "b88de74fc050c7f424b016921f588920e7571c42e49d08eaeeee7dd374bbc305"
 }

@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "generatedBy": "flix.spec.TreeKindExtractor",
   "toolVersion": "1.0.0",
-  "upstreamCommit": "318bb51a953c58a8785251a80fad8aea005f729f",
-  "oracleSha256": "e3177700aead8a22a42c910e73bfb8a326fefdbab4e3eaeaf6d55c328a6bd938",
-  "treeKindCount": 192,
-  "treeKindDigest": "ef4c5a850b5e35b60325bed40ab6fec4057a5fce40419c743fad21063e4eb08e",
+  "upstreamCommit": "40949531b4d42e5eaf2e4b9997537eaf793c24e7",
+  "oracleSha256": "a2697d875725a0dde6e793b8d54cb220e86167a6d49ec5f0ccb0832966c8c15a",
+  "treeKindCount": 191,
+  "treeKindDigest": "10faeb18f4e5acdbd98822304a05cba09daf2f92165faaf525a32d0ac975f69b",
   "kinds": [
     {
       "name": "AnnotationList",
@@ -79,11 +79,6 @@
     },
     {
       "name": "Decl.Instance",
-      "extends": "Decl",
-      "form": "case-object"
-    },
-    {
-      "name": "Decl.Law",
       "extends": "Decl",
       "form": "case-object"
     },

@@ -5,10 +5,10 @@ This product includes software and artifacts derived from the Flix compiler proj
 ## 1. Flix Reference Compiler
 
 - **Upstream Repository**: https://github.com/flix/flix
-- **Pinned Tag / Release**: `v0.75.1`
-- **Pinned Commit SHA**: `318bb51a953c58a8785251a80fad8aea005f729f`
-- **Git Tree Hash**: `294b9ac53cd0d74f7d7092006009a6b6806b0f57`
-- **Oracle Artifact SHA-256**: `e3177700aead8a22a42c910e73bfb8a326fefdbab4e3eaeaf6d55c328a6bd938`
+- **Pinned Tag / Release**: `v0.75.2`
+- **Pinned Commit SHA**: `40949531b4d42e5eaf2e4b9997537eaf793c24e7`
+- **Git Tree Hash**: `99213f0a62703908cb337537d57782c28b0ad604`
+- **Oracle Artifact SHA-256**: `a2697d875725a0dde6e793b8d54cb220e86167a6d49ec5f0ccb0832966c8c15a`
 - **License**: Apache License 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 - **Copyright**: Copyright (c) 2015-2026 Flix authors & University of Waterloo
 
@@ -18,9 +18,9 @@ The concrete syntax tree hierarchy inventory in `ast/treekind.json` and syntax t
 identified by SHA-256. Upstream publishes no release-building workflow, no build attestation, and
 no commit stamp inside the artifact, so the chain `tag → commit → tree` is verifiable through git
 while `jar → commit` is not verifiable from outside the project. `pin.json.oracleArtifact.attestation`
-records this as `digest-only`. A same-commit rebuild is *not* byte-identical to the published asset
-(16794 entries versus 16776), so the published artifact and a self-built one are demonstrably
-different files.
+records this as `digest-only`. At v0.75.1, a measured same-commit rebuild was *not* byte-identical
+to the published asset (16794 entries versus 16776), demonstrating why a release asset cannot be
+silently replaced by a local rebuild. The historical measurements are in `docs/phase0-spike.md`.
 
 ## 2. Test Fixtures Adapted from tree-sitter-flix
 

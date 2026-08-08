@@ -44,7 +44,9 @@ version = rootProject.version.toString() + if (isSnapshot) "-SNAPSHOT" else ""
 
 val assembled = layout.buildDirectory.dir("assembled")
 
-val assembleArtifacts = tasks.register<Copy>("assembleArtifacts") {
+// Sync, rather than Copy, so a pin bump cannot leave an obsolete FLIX-PIN-* marker or removed
+// generated artifact in an incremental build's staging directory.
+val assembleArtifacts = tasks.register<Sync>("assembleArtifacts") {
     into(assembled)
     from(rootProject.file("pin.json"))
     from(rootProject.file("LICENSE.md"))
@@ -62,6 +64,7 @@ val assembleArtifacts = tasks.register<Copy>("assembleArtifacts") {
 // assertable without parsing anything. pin.json remains the authority; this makes
 // the pin impossible to miss when looking at the artifact rather than into it.
 val flixPinMarker = tasks.register("flixPinMarker") {
+    dependsOn(assembleArtifacts)
     val out = assembled.map { it.file("FLIX-PIN-$flixTag").asFile }
     outputs.file(out)
     doLast {
@@ -74,9 +77,19 @@ val flixPinMarker = tasks.register("flixPinMarker") {
 }
 
 val artifactsJar = tasks.register<Jar>("artifactsJar") {
-    dependsOn(assembleArtifacts, flixPinMarker)
+    dependsOn(flixPinMarker)
     from(assembled)
     archiveBaseName.set("flix-spec")
+    doFirst {
+        val markers = assembled.get().asFile.listFiles()
+            .orEmpty()
+            .filter { it.name.startsWith("FLIX-PIN-") }
+            .map { it.name }
+            .sorted()
+        require(markers == listOf("FLIX-PIN-$flixTag")) {
+            "staged artifact must contain only FLIX-PIN-$flixTag; found ${markers.joinToString()}"
+        }
+    }
 }
 
 // GitHub Packages credentials. Gradle does NOT read ~/.m2/settings.xml the way
