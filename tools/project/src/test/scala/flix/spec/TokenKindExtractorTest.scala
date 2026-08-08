@@ -14,6 +14,14 @@ class TokenKindExtractorTest extends AnyFunSuite with Matchers {
   private val repoRoot: Path = Paths.get("../..").toAbsolutePath.normalize()
   private val oracleJar: Path = repoRoot.resolve(".oracle/flix.jar")
 
+  test("the v0.75.2 vocabulary contains 158 kinds and retires the law keywords") {
+    val names = TokenKindExtractor.extractTokenKinds(oracleJar).map(_.name)
+
+    names.length shouldBe 158
+    names should not contain "KeywordLaw"
+    names should not contain "KeywordLawful"
+  }
+
   test("TokenKind is a flat hierarchy with no qualification needed") {
     // Unlike TreeKind, TokenKind has no sub-traits, so simple names cannot collide. If upstream
     // ever introduces one, this fails and the extractor needs the qualification logic

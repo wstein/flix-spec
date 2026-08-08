@@ -169,7 +169,7 @@ trigger it":
 `ParseError.MisplacedDocComments`, by contrast, *is* reachable — but not through that same dead
 code. It comes from a second, independent check inside `comments()` itself: after consuming a run
 of comments, if the last one was a doc comment (`CommentDoc`) and the token now at `nth(0)` is not
-`isDocumentable` (cannot start a declaration, nor `case`/`law`), the doc comment is "dangling" and
+`isDocumentable` (cannot start a declaration or `case`), the doc comment is "dangling" and
 `comments()` raises `MisplacedDocComments` directly — no `expect()` call involved.
 `fixtures/negative/declarations__doc-comment-misplaced-before-paren.flix` exercises exactly this:
 a doc comment immediately before `(`, which is not documentable.
@@ -185,7 +185,7 @@ The exact figure is **generated**, not written here: `ast/coverage.json` carries
 `generateCoverage` whenever fixtures change.
 
 <!-- generated: wrappers -->
-At this pin that is **483 of 4228 nodes (11.4%)**, across 136 fixtures.
+At this pin that is **482 of 4243 nodes (11.4%)**, across 138 fixtures.
 Read [`ast/coverage.json`](../ast/coverage.json) for the per-kind `alwaysSingleChildWrapper`
 breakdown; this paragraph is regenerated from it rather than retyped.
 <!-- /generated: wrappers -->
@@ -300,8 +300,8 @@ the current figures, and re-measure in the consumer repository rather than trust
 ## Lexical consumers
 
 A syntax highlighter or TextMate grammar has no parse tree, so it can never consume
-`fixtures/expected/`. Its contract is [`ast/tokenkind.json`](../ast/tokenkind.json) — the 160
-`TokenKind`s the reference lexer defines, 159 case objects plus `Err`, reflected from the pinned
+`fixtures/expected/`. Its contract is [`ast/tokenkind.json`](../ast/tokenkind.json) — the 158
+`TokenKind`s the reference lexer defines, 157 case objects plus `Err`, reflected from the pinned
 jar and pinned by digest in `pin.json`.
 
 That exists so lexical consumers stop scraping `Lexer.scala` as text. Text scraping cannot be
@@ -334,8 +334,8 @@ found it; that is what the corpus is for. Narrowing the `$` exclusion to exactly
 behaviour is what closed them.
 
 <!-- generated: lossless -->
-It now holds on **all 136 fixtures and all 870
-cleanly-parsed corpus files** — 870 of the 873 corpus files parse without error, and the
+It now holds on **all 138 fixtures and all 871
+cleanly-parsed corpus files** — 871 of the 874 corpus files parse without error, and the
 remainder are excluded rather than failing (see below).
 <!-- /generated: lossless -->
 
@@ -357,12 +357,12 @@ consumer can pass today. `./gradlew :tools:project:lossless`.
 
 ## Token reachability
 
-`ReachabilityRun` measures the lexical vocabulary over the same corpus walk: **153 of 160
-TokenKinds** are emitted somewhere in the 873 files.
+`ReachabilityRun` measures the lexical vocabulary over the same corpus walk: **150 of 158
+TokenKinds** are emitted somewhere in the 874 files.
 
-Six of the seven that are not — `Bang`, `Caret`, `Dollar`, `Err`, `KeywordSealed`,
-`KeywordStaticLowercase` — *are* exercised by hand-written fixtures. That is the clearest
-justification for curating a fixture suite at all: 873 files of real Flix do not reach them, and
+Seven of the eight that are not — `Bang`, `Caret`, `Dollar`, `Err`, `KeywordForall`,
+`KeywordSealed`, `KeywordStaticLowercase` — *are* exercised by hand-written fixtures. That is the
+clearest justification for curating a fixture suite at all: 874 files of real Flix do not reach them, and
 targeted inputs do.
 
 The seventh, `Eof`, is exercised nowhere, and is **unattachable by construction**. `advance()` is

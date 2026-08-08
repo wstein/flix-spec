@@ -17,8 +17,8 @@ case class TreeKindInfo(
   * (implementation plan section 4.2).
   *
   * Enumeration comes from jar entries; every *decision* is reflective. Name-based selection is wrong here and
-  * measurably so: on the pinned jar the pattern `SyntaxTree$*` matches 213 classes and `SyntaxTree$TreeKind$*` matches
-  * 206, while the reflective filter yields exactly 192. The surplus is the six sub-traits (each as interface plus
+  * measurably so: on the pinned jar the pattern `SyntaxTree$*` matches 212 classes and `SyntaxTree$TreeKind$*` matches
+  * 205, while the reflective filter yields exactly 191. The surplus is the six sub-traits (each as interface plus
   * companion object), ErrorTree's companion, and TreeKind$ itself.
   */
 object TreeKindExtractor {
