@@ -75,7 +75,7 @@
 <p>
   A machine-readable inventory of the language's syntax tree and token kinds, a pinned corpus
   definition, and fixtures with expected tree shapes &mdash; all derived from the reference compiler at
-  <a href="https://github.com/flix/flix/releases/tag/v0.75.1"><code>v0.75.1</code></a>,
+  <a href="https://github.com/flix/flix/releases/tag/v0.75.2"><code>v0.75.2</code></a>,
   and used by independent parser implementations to check that they agree with it.
 </p>
 
@@ -88,20 +88,20 @@
 
 <h2>What's in the pin</h2>
 <div class="stat-grid">
-  <div class="stat"><span class="n">192</span><span class="l">TreeKinds</span></div>
-  <div class="stat"><span class="n">160</span><span class="l">TokenKinds</span></div>
-  <div class="stat"><span class="n">136</span><span class="l">fixtures</span></div>
-  <div class="stat"><span class="n">873</span><span class="l">corpus files</span></div>
+  <div class="stat"><span class="n">191</span><span class="l">TreeKinds</span></div>
+  <div class="stat"><span class="n">158</span><span class="l">TokenKinds</span></div>
+  <div class="stat"><span class="n">138</span><span class="l">fixtures</span></div>
+  <div class="stat"><span class="n">874</span><span class="l">corpus files</span></div>
 </div>
 <p class="note">
-  184/192 TreeKinds and
-  153/160 TokenKinds are reachable somewhere in the
-  873-file corpus (870 parse cleanly).
-  Independently, 186/192 TreeKinds are exercised by a fixture.
+  183/191 TreeKinds and
+  150/158 TokenKinds are reachable somewhere in the
+  874-file corpus (871 parse cleanly).
+  Independently, 185/191 TreeKinds are exercised by a fixture.
   The two numbers come from separate generators &mdash; coverage from the fixture suite, reachability
   from a weekly corpus walk &mdash; and are not asserted equal here: a fixture can exercise a kind the
-  873-file corpus never produces naturally.
-  870/870 cleanly-parsed
+  874-file corpus never produces naturally.
+  871/871 cleanly-parsed
   corpus files are <strong>lossless</strong> &mdash; concatenating every emitted token's text reproduces
   the source exactly, ignoring whitespace. This is the one property here that needs no oracle: it checks
   the parser against its own input, not against an expectation derived from it. Details in
@@ -111,9 +111,9 @@
 <h2>Oracle</h2>
 <table>
   <tr><th>Field</th><th>Value</th></tr>
-  <tr><td>Upstream release</td><td><code>v0.75.1</code></td></tr>
-  <tr><td>Commit</td><td><code>318bb51a953c&hellip;</code></td></tr>
-  <tr><td>Oracle jar SHA-256</td><td><code>e3177700aead8a22&hellip;</code></td></tr>
+  <tr><td>Upstream release</td><td><code>v0.75.2</code></td></tr>
+  <tr><td>Commit</td><td><code>40949531b4d4&hellip;</code></td></tr>
+  <tr><td>Oracle jar SHA-256</td><td><code>a2697d875725a0dd&hellip;</code></td></tr>
   <tr><td>Attestation</td><td>digest-only -- release asset without provenance attestation or build commit stamp</td></tr>
 </table>
 
@@ -121,6 +121,11 @@
 <div class="overflow">
 <table>
   <tr><th>Version</th><th></th><th></th></tr>
+        <tr>
+          <td><code>0.75.3-SNAPSHOT</code></td>
+          <td><span class="badge badge-snapshot">snapshot</span></td>
+          <td><a href="maven/io/github/wstein/flix-spec/0.75.3-SNAPSHOT/">browse</a></td>
+        </tr>
         <tr>
           <td><code>0.75.2-SNAPSHOT</code></td>
           <td><span class="badge badge-snapshot">snapshot</span></td>
