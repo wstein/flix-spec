@@ -247,6 +247,22 @@ tasks.matching { it.name in setOf("run", "extract", "proposeTreeKind", "generate
 
 tasks.withType<Test> {
     useJUnit()
+
+    // This suite asserts over committed data, not just over code: pin.json, the ast/ inventories and
+    // evidence files, both fixture forms, the schemas, the defect ledger. Gradle knows about none of
+    // that, so editing any of them left the test task UP-TO-DATE and reported the *previous* run's
+    // result -- a green build that never executed. Found by substituting a fork into pin.json and
+    // watching the guard "pass".
+    //
+    // A stale pass is the worst failure mode a gate has, because it is indistinguishable from a real
+    // one. Declaring the data as inputs is what makes a local run mean what a CI run means.
+    inputs.file(rootProject.file("pin.json"))
+    inputs.dir(rootProject.file("ast"))
+    inputs.dir(rootProject.file("schemas"))
+    inputs.dir(rootProject.file("fixtures"))
+    inputs.dir(rootProject.file("defects"))
+    inputs.file(rootProject.file("corpus/corpus.json"))
+
     doFirst {
         check(oracleJar.asFile.exists()) {
             "Missing ${oracleJar.asFile}. Run tools/oracle/fetch.sh first."

@@ -31,6 +31,17 @@ for arg in "$@"; do
 done
 
 REPO="$(jq -r '.upstream.repository' pin.json | sed 's#https://github.com/##')"
+
+# Derived from pin.json, so it has to be checked before it is trusted. Drift detection compares the
+# pin against "upstream" -- and if pin.json named a fork, this would dutifully compare the fork
+# against itself and report `current` forever. The one check that cannot come from the file being
+# checked is the identity of upstream itself.
+if [ "$REPO" != "flix/flix" ]; then
+  echo "FATAL: pin.json names '$REPO' as upstream; the oracle must always be flix/flix" >&2
+  echo "  Drift detection against a fork compares it with itself and reports no drift." >&2
+  exit 1
+fi
+
 PINNED_TAG="$(jq -r '.upstream.tag' pin.json)"
 PINNED_COMMIT="$(jq -r '.upstream.commit' pin.json)"
 
