@@ -420,22 +420,31 @@ Measured at pin `v0.75.1` (`318bb51a`), fixture revision `4eccee63`, tree-sitter
 | `tree-sitter-flix` | `oracle_conformance` | **pass** (baseline 61) | 103 / 136 fixtures agree · 61 divergences · 1923 nodes compared · **99% depth** · 12 unmapped |
 | `tree-sitter-flix` | `recovery_conformance` | **fail** (baseline 45) | 5 / 21 in-scope fixtures agree · 45 divergences · 182 nodes compared · **100% depth** |
 | `tree-sitter-flix` | `source_invariants` | **pass** (1 of 4 checks evaluated) | `document-shape` pass · the other three `not-applicable` |
-| `flix-jetbrains-plugin` | `oracle_conformance` | — | 133 / 136 fixtures agree · 3 divergences · 1258 nodes compared · **93% depth** · 89 unmapped |
-| `flix-jetbrains-plugin` | `recovery_conformance` | — | 19 / 21 in-scope fixtures agree · 5 divergences · **94% depth** |
+| `flix-jetbrains-plugin` | `oracle_conformance` | **pass** (baseline 3) | 133 / 136 fixtures agree · 3 divergences · 1258 nodes compared · **93% depth** · 89 unmapped |
+| `flix-jetbrains-plugin` | `recovery_conformance` | **fail** (measured here; its own port has no recovery lane) | 19 / 21 in-scope fixtures agree · 5 divergences · **94% depth** |
 | `flix-jetbrains-plugin` | `source_invariants` | **pass** (1 of 4 checks evaluated) | `document-shape` pass · the other three `not-applicable` |
 
 | `flix-antlr-grammar` | `oracle_conformance` | **pass** (baseline 75) | 76 / 136 fixtures agree · 75 divergences · 818 nodes compared · **88% depth** · 113 unmapped |
 | `flix-antlr-grammar` | `recovery_conformance` | **not-applicable** | declares no `recoveryMarkers`; ANTLR's recovery inserts nodes the parse tree does not name |
 | `flix-antlr-grammar` | `source_invariants` | **pass** (1 of 4 checks evaluated) | `document-shape` pass · the other three `not-applicable` |
 
-`flix-jetbrains-plugin`'s rows carry no verdict on purpose. They were measured by running this
-repository's comparison directly against the trees its own test suite emits, using a **migrated map
-that is not yet committed there**: that repository consumes `flix-spec` as a released Maven artifact,
-and the migration depends on `ast/transparency.json` shipping in one. Until that release, its
-committed map is correct for the artifact it actually resolves, and its own gate stays green. The
-migration is three edits — drop the seven contract-covered `elide` entries, move the seven
-now-unreachable `mappings` to `ignored`, declare its thirteen error elements in `recoveryMarkers` —
-and the numbers above are what they buy.
+`flix-jetbrains-plugin` is migrated as of `flix-spec` 0.75.2, and its Kotlin port now reports
+figures identical to this repository's comparison on identical inputs — 133/136, 3 divergences, 1258
+nodes, 93% depth. That agreement is the standing check that the port has not drifted again.
+
+**One thing nearly hid the whole migration, and it is worth recording.** Gradle had a *stale*
+`flix-spec` 0.75.2 in its module cache: a different artifact under the same coordinate, left over
+from an earlier numbering era that also produced 0.75.3 through 0.75.7, with no `fixtures/raw/` and
+no `ast/transparency.json`. Dependency resolution treats a release as immutable and never re-fetched
+it, so the run compared a correctly-migrated map against un-normalized trees and reported **1/136
+with 669 divergences** — a number that looks exactly like a catastrophic grammar regression and was
+nothing of the kind. What identified it was comparing the resolved jar's SHA-256 against the
+published one; nothing else in the chain would have.
+
+The lesson generalises past this incident: a version coordinate is only immutable if it has never
+been reused, and this project's history contains a renumbering. A consumer that resolves `flix-spec`
+by coordinate alone is trusting that history. `pin.json` travels inside the artifact precisely so
+that trust is checkable, and `flix-jetbrains-plugin` already checks it.
 
 #### A ported comparison drifts, and this one has
 
