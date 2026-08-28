@@ -111,7 +111,9 @@ object KindStatus {
     val entries = doc(field).asArray.map(_("name").asString)
     val fatal = scala.collection.mutable.ListBuffer.empty[String]
 
-    entries.diff(inventory.toList).foreach(n => fatal += s"$field entry '$n' is not in the inventory")
+    // distinct first: List.diff is a multiset difference, so a name listed twice survives it and is
+    // reported as absent from the inventory as well as duplicated. One mistake, one error.
+    entries.distinct.filterNot(inventory).foreach(n => fatal += s"$field entry '$n' is not in the inventory")
     entries.diff(entries.distinct).distinct.foreach(n => fatal += s"$field entry '$n' is listed twice")
     if (entries != entries.sorted) fatal += s"$field entries are not sorted by name"
 

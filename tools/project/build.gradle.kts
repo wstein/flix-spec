@@ -262,6 +262,10 @@ tasks.withType<Test> {
     inputs.dir(rootProject.file("fixtures"))
     inputs.dir(rootProject.file("defects"))
     inputs.file(rootProject.file("corpus/corpus.json"))
+    // README.md and docs/ carry generated blocks that generateDocs rewrites and CI diffs, and the
+    // suite asserts over them. Omitting them left exactly the doc-drift tests reporting stale passes.
+    inputs.file(rootProject.file("README.md"))
+    inputs.dir(rootProject.file("docs"))
 
     doFirst {
         check(oracleJar.asFile.exists()) {

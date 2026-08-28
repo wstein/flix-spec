@@ -66,6 +66,54 @@ class ConformanceTest extends AnyFunSuite with Matchers {
     shape(Normalizer.normalize(tree, contract.withoutRecoveryMarkers)) shouldBe "Root(ErrorTree(Ident))"
   }
 
+  test("a lane with missing consumer output cannot pass, whatever the baseline") {
+    // The failure this prevents is silent and total: a fixture the consumer never emitted produces
+    // no divergences, so an empty --actual directory is arithmetically indistinguishable from
+    // perfect agreement. No baseline can express "you did not measure this".
+    val lane = Conformance.DerivedLane(
+      claim = "c",
+      caveat = "v",
+      baseline = 99,
+      fixturesExpected = 3,
+      fixturesMissing = List("gone.json"),
+      fixturesAgreeing = 2,
+      stats = new Conformance.Stats,
+      divergences = Nil,
+      divergenceCount = 0
+    )
+    lane.verdict shouldBe "fail"
+    lane.copy(fixturesMissing = Nil).verdict shouldBe "pass"
+  }
+
+  test("divergenceCount is a count, not the truncated sample") {
+    // The list is capped so one pathological fixture cannot bury the rest; the count must not be,
+    // because the count is what the ratchet gates on and what a consumer compares across runs.
+    val stats = new Conformance.Stats
+    val lane = Conformance.DerivedLane(
+      claim = "c",
+      caveat = "v",
+      baseline = 20,
+      fixturesExpected = 1,
+      fixturesMissing = Nil,
+      fixturesAgreeing = 0,
+      stats = stats,
+      divergences = List.fill(20)("f.json" -> Conformance.Divergence("p", "a", "b", "kind")),
+      divergenceCount = 57
+    )
+    withClue("a capped sample must not soften the verdict: ")(lane.verdict shouldBe "fail")
+    lane.divergences.length should be < lane.divergenceCount
+  }
+
+  test("depth is measured against the expectation, not against where the walk stopped") {
+    // An unmapped node hides its whole subtree from the walk. With the walk as denominator, a map
+    // that skips more scores *higher* -- the exact inversion the metric exists to prevent.
+    val stats = new Conformance.Stats
+    stats.counts("compared") = 10
+    stats.counts("expected") = 40
+    val lane = Conformance.DerivedLane("c", "v", 0, 1, Nil, 1, stats, Nil, 0)
+    lane.depth shouldBe 0.25 +- 0.0001
+  }
+
   test("the recovery scope is a proper, non-empty subset of the suite") {
     // A lane scoped to everything measures the wrong question; one scoped to nothing reaches a verdict about no
     // evidence. Both would still report `pass`.

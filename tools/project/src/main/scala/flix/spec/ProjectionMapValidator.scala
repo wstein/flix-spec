@@ -13,11 +13,10 @@ import scala.jdk.CollectionConverters._
   * `flix-spec` keeps the halves that are genuinely shared: the schema, the canonical `TreeKind` vocabulary the map's
   * targets are checked against, and the comparison itself.
   *
-  * Beyond the schema, checks four things it cannot express:
+  * Beyond the schema, checks three things it cannot express:
   *
   *   - every `mappings` value and every `elide` entry must name a kind that exists in `ast/treekind.json` -- a typo or
   *     a stale kind name would otherwise silently never match and read as agreement;
-  *   - a node listed in `ignored` but never in `mappings` must actually be transparent in practice;
   *   - a node declared in `recoveryMarkers` may not also be flattened or ignored. Recovery markers are spliced out of
   *     the structural lane and kept in the recovery lane -- that asymmetry is the whole reason they are declared
   *     separately -- so removing one on both sides would leave its shape measured nowhere, silently, with the report
@@ -43,6 +42,10 @@ object ProjectionMapValidator {
     val schema = Json.parseFile(schemaPath)
     val inventory = Json.parseFile(Paths.get("ast/treekind.json"))("kinds").asArray.map(_("name").asString).toSet
     val contract = Transparency.load()
+    // Unattachable kinds are unreachable targets for the same reason elided ones are: nothing can
+    // produce them, so a mapping onto one is a mapping that can never match.
+    val unattachable =
+      Json.parseFile(Paths.get("ast/unattachable.json"))("treeKinds").asArray.map(_("name").asString).toSet
 
     val maps = args.toList.flatMap { arg =>
       val p = Paths.get(arg)
@@ -62,7 +65,7 @@ object ProjectionMapValidator {
       sys.exit(1)
     }
 
-    val errors = validate(maps, schema, inventory, contract)
+    val errors = validate(maps, schema, inventory, contract, unattachable)
 
     if (!errors.isEmpty) {
       System.err.println("FATAL: projection map validation failed")
@@ -79,7 +82,8 @@ object ProjectionMapValidator {
       maps: List[String],
       schema: Json,
       inventory: Set[String],
-      contract: Transparency.Contract
+      contract: Transparency.Contract,
+      unattachable: Set[String] = Set.empty
   ): SchemaValidator.Errors = {
     val requiredKeys = schema("required").asArray.map(_.asString)
     val allowedKeys = schema("properties").asObject.keySet
@@ -113,6 +117,11 @@ object ProjectionMapValidator {
               "contains it and this mapping can only manufacture divergences. Declare '" + native +
               "' in `ignored` instead."
           )
+        else if (unattachable.contains(canonical))
+          errors.add(
+            s"$path.mappings['$native']: '$canonical' is argued structurally-unattachable in " +
+              "ast/unattachable.json, so it appears in no tree from any input and this mapping can never match."
+          )
         else if (contract.splice.contains(canonical) && !recoveryMarkers.contains(native))
           errors.add(
             s"$path.mappings['$native']: '$canonical' is spliced out by ast/transparency.json, so this mapping is " +
@@ -132,8 +141,9 @@ object ProjectionMapValidator {
         if (!inventory.contains(kind)) errors.add(s"$path.flattenCanonical: '$kind' is not in ast/treekind.json")
       }
 
-      // Deliberately not an error: see the class comment. Elision fires only at arity <= 1, so a
-      // node can be transparent in one position and substantive in another.
+      // A node in both `ignored` and `mappings` is deliberately not an error. Elision fires only at
+      // arity <= 1, so such a node is transparent in one position and substantive in another; the
+      // class comment above explains which consumer proved that rule wrong.
 
       // A recovery marker is spliced out of the structural lane and kept in the recovery lane, which
       // is the whole reason it is declared separately. Also flattening or ignoring it removes it

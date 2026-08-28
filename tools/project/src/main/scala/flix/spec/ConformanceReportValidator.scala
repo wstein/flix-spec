@@ -65,6 +65,11 @@ object ConformanceReportValidator {
         errors.add(s"$name: more divergences listed ($listed) than counted ($divergenceCount)")
       if (divergenceCount > 0 && agreeing == compared && compared > 0)
         errors.add(s"$name: $divergenceCount divergences, yet every compared fixture is reported as agreeing")
+      // A lane that compared nothing has measured nothing, and zero divergences out of zero fixtures
+      // is the shape an empty --actual directory produces. `pass` there is the report's most
+      // dangerous possible sentence.
+      if (lane("verdict").asString == "pass" && compared == 0)
+        errors.add(s"$name: verdict 'pass' with no fixtures compared")
 
       // The list is the map author's work queue, so its order is load-bearing, not cosmetic.
       val unmapped = lane("unmapped").asArray.map(u => (u("name").asString, u("count").asInt))
@@ -89,7 +94,10 @@ object ConformanceReportValidator {
       } else {
         if (stoodDown.isDefined)
           errors.add(s"$name: carries a notApplicable reason but reports verdict '$verdict'")
-        val expectedVerdict = if (divergenceCount > baseline) "fail" else "pass"
+        // Missing output fails regardless of the ratchet: a fixture the consumer never emitted
+        // contributes no divergences, so a baseline cannot express it and silence would read as
+        // agreement.
+        val expectedVerdict = if (divergenceCount > baseline || missing > 0) "fail" else "pass"
         if (verdict != expectedVerdict)
           errors.add(
             s"$name: verdict '$verdict' does not follow from $divergenceCount divergences against baseline $baseline"

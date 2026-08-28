@@ -124,21 +124,40 @@ object Conformance {
       fixturesAgreeing: Int,
       stats: Stats,
       divergences: List[(String, Divergence)],
+      /** Every divergence found, including those past the per-fixture listing cap.
+        *
+        * `divergences` is a *sample*: [[compare]] stops recording after [[MaxDivergencesPerFixture]] so one
+        * pathological fixture cannot bury the rest. Gating on its length silently redefined the ratchet as
+        * `min(real, 20)` per fixture, which is not a count and cannot be compared across runs -- a consumer fixing 30
+        * divergences in one fixture would see the number move by ten. The report says `divergenceCount` next to
+        * `divergencesListed` precisely to distinguish these; now they mean what they say.
+        */
+      divergenceCount: Int,
       notApplicable: Option[String] = None
   ) {
     def fixturesCompared: Int = fixturesExpected - fixturesMissing.length
     def verdict: String =
       if (notApplicable.isDefined) "not-applicable"
-      else if (divergences.length > baseline) "fail"
+      // A fixture the consumer never emitted contributes no divergences, so an empty --actual
+      // directory is otherwise indistinguishable from perfect agreement. Missing output is not a
+      // mapping gap someone is partway through closing; it is the measurement not happening.
+      else if (fixturesMissing.nonEmpty) "fail"
+      else if (divergenceCount > baseline) "fail"
       else "pass"
 
-    /** The share of encountered nodes actually compared. Agreement alone is gameable -- a map that maps almost nothing
-      * compares almost nothing and so agrees with almost everything -- so depth is what makes the count mean anything.
+    /** The share of the canonical tree actually compared.
+      *
+      * Agreement alone is gameable -- a map that maps almost nothing compares almost nothing and so agrees with almost
+      * everything -- so depth is what makes the count mean anything.
+      *
+      * The denominator is every node in the expectation, not every node the walk reached. Those differ exactly where it
+      * matters: [[compare]] stops at an unmapped node, so that node's whole subtree left both terms of the old ratio
+      * and the metric read *highest* for the maps that skipped most. Counting the expectation makes an unmapped subtree
+      * cost what it actually costs.
       */
-    def depth: Double = {
-      val encountered = stats.counts("compared") + stats.counts("unmapped")
-      if (encountered == 0) 0.0 else stats.counts("compared").toDouble / encountered
-    }
+    def depth: Double =
+      if (stats.counts("expected") == 0) 0.0
+      else stats.counts("compared").toDouble / stats.counts("expected")
   }
 
   /** Removes transparent nodes from a whole tree, bottom-up, as a single fixed point.
@@ -195,6 +214,24 @@ object Conformance {
     * position. Doing the two in one pass is what let the rules interact with the walk's own recursion and hid the
     * fixed-point bug described on [[transparent]].
     */
+  /** Counts a divergence always; lists it only while the per-fixture sample is under its cap.
+    *
+    * The two were the same act until measurement showed what that cost: `divergenceCount` became `min(real, 20)` per
+    * fixture, and that was the number the ratchet gated on. A consumer fixing thirty divergences in one fixture would
+    * have watched the figure move by ten.
+    */
+  private def record(
+      out: scala.collection.mutable.Buffer[Divergence],
+      stats: Stats,
+      d: Divergence
+  ): Unit = {
+    stats.inc("divergences")
+    if (out.length < MaxDivergencesPerFixture) out += d
+  }
+
+  /** Nodes in an expectation, counted after transparency so it matches what `compare` walks. */
+  private def sizeOf(t: KTree): Int = 1 + t.children.map(sizeOf).sum
+
   private def compare(
       expected: KTree,
       actual: KTree,
@@ -203,7 +240,6 @@ object Conformance {
       out: scala.collection.mutable.Buffer[Divergence],
       stats: Stats
   ): Unit = {
-    if (out.length >= MaxDivergencesPerFixture) return
 
     val actKind = vocab.mapping match {
       case None => actual.kind
@@ -216,18 +252,19 @@ object Conformance {
         return // not a disagreement: we simply have no opinion yet
     }
 
+    // Every expectation node is counted whether or not the walk gets to compare it, so `depth` has a
+    // denominator that means "the canonical tree" rather than "wherever the walk happened to stop".
     stats.inc("compared")
     if (expected.kind != actKind) {
-      out += Divergence(path, expected.kind, actKind, "kind")
+      record(out, stats, Divergence(path, expected.kind, actKind, "kind"))
       return // subtree shape is meaningless once the kinds disagree
     }
 
     if (expected.children.length != actual.children.length)
-      out += Divergence(
-        path,
-        s"${expected.children.length} children",
-        s"${actual.children.length} children",
-        "arity"
+      record(
+        out,
+        stats,
+        Divergence(path, s"${expected.children.length} children", s"${actual.children.length} children", "arity")
       )
 
     expected.children.zip(actual.children).zipWithIndex.foreach { case ((e, a), i) =>
@@ -266,11 +303,12 @@ object Conformance {
         val found = scala.collection.mutable.Buffer.empty[Divergence]
         expUnits.foreach { case (source, expRaw) =>
           actUnits.get(source).orElse(actUnits.values.headOption) match {
-            case None => found += Divergence(source, "tree", "nothing", "missing-unit")
+            case None => record(found, stats, Divergence(source, "tree", "nothing", "missing-unit"))
             case Some(actRaw) =>
               val expTree =
                 transparentTree(expRaw, vocab.flattenCanonical, vocab.elide, stats, "flattenedCanonical", "elided")
               val actTree = transparentTree(actRaw, vocab.flatten, vocab.ignored, stats, "flattened", "ignored")
+              stats.counts("expected") += sizeOf(expTree)
               compare(expTree, actTree, vocab, source, found, stats)
           }
         }
@@ -286,7 +324,8 @@ object Conformance {
       fixturesMissing = missing.toList.sorted,
       fixturesAgreeing = agreeing,
       stats = stats,
-      divergences = divergences.toList
+      divergences = divergences.toList,
+      divergenceCount = stats.counts("divergences")
     )
   }
 
@@ -408,7 +447,7 @@ object Conformance {
       sb.append(s"$i  ],\n")
     }
     val capped = lane.divergences.take(200)
-    sb.append(s"""$i  "divergenceCount": ${lane.divergences.length},\n""")
+    sb.append(s"""$i  "divergenceCount": ${lane.divergenceCount},\n""")
     sb.append(s"""$i  "divergencesListed": ${capped.length},\n""")
     sb.append(s"""$i  "divergences": [""")
     if (capped.isEmpty) sb.append("]\n")
@@ -647,6 +686,7 @@ object Conformance {
           fixturesAgreeing = 0,
           stats = new Stats,
           divergences = Nil,
+          divergenceCount = 0,
           notApplicable = Some(
             "the projection map declares no recoveryMarkers, so this consumer models no error-recovery vocabulary " +
               "for the lane to compare"
@@ -709,11 +749,16 @@ object Conformance {
     )
 
     def report(name: String, lane: DerivedLane): Boolean = {
-      if (lane.fixturesMissing.nonEmpty)
-        System.err.println(s"  $name: ${lane.fixturesMissing.length} fixture(s) had no consumer output")
+      if (lane.fixturesMissing.nonEmpty) {
+        System.err.println(
+          s"FATAL: $name: ${lane.fixturesMissing.length} fixture(s) had no consumer output, so they were " +
+            "not measured at all"
+        )
+        lane.fixturesMissing.take(10).foreach(f => System.err.println(s"  $f"))
+      }
       val failed = lane.verdict == "fail"
-      if (failed) {
-        System.err.println(s"FATAL: $name: ${lane.divergences.length} divergences exceeds baseline ${lane.baseline}")
+      if (failed && lane.divergenceCount > lane.baseline) {
+        System.err.println(s"FATAL: $name: ${lane.divergenceCount} divergences exceeds baseline ${lane.baseline}")
         lane.divergences.take(10).foreach { case (fixture, d) =>
           System.err.println(s"  $fixture ${d.path}: expected '${d.expected}', got '${d.actual}' (${d.reason})")
         }

@@ -82,7 +82,10 @@ object Transparency {
     val out = List.newBuilder[String]
     val names = contract.entries.map(_.name)
 
-    names.diff(inventory.toList).foreach(n => out += s"entry '$n' is not in ast/treekind.json")
+    // distinct first: List.diff is a *multiset* difference, so a name listed twice leaves one copy
+    // behind even when it is perfectly valid, and the operator gets two errors for one mistake -- the
+    // second of them false, and pointing at the wrong file. Duplicate detection is the next line's job.
+    names.distinct.filterNot(inventory).foreach(n => out += s"entry '$n' is not in ast/treekind.json")
     names.diff(names.distinct).distinct.foreach(n => out += s"entry '$n' is listed twice")
     if (names != names.sorted) out += "entries are not sorted by name"
 

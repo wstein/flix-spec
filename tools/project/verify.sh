@@ -127,6 +127,7 @@ IDMAP="$WORK/canonical-identity-map.json"
 jq -n \
   --slurpfile inventory ast/treekind.json \
   --slurpfile transparency ast/transparency.json \
+  --slurpfile unattachable ast/unattachable.json \
   '{
      schemaVersion: 1,
      consumer: "canonical-identity",
@@ -135,11 +136,15 @@ jq -n \
                 | map(select(. as $k | ($transparency[0].treeKinds
                                         | map(select(.rule == "elide") | .name)
                                         | index($k)) == null))
+                | map(select(. as $k | ($unattachable[0].treeKinds
+                                        | map(.name) | index($k)) == null))
                 | map({key: ., value: .}) | from_entries),
      ignored: ($transparency[0].treeKinds | map(select(.rule == "elide") | .name)),
      recoveryMarkers: ($transparency[0].treeKinds | map(select(.recoveryMarker == true) | .name))
    }' > "$IDMAP"
-# The elided kinds are declared `ignored` and deliberately *not* mapped. Mapping a kind normalization
+# The elided kinds are declared `ignored` and deliberately *not* mapped, and the
+# structurally-unattachable ones are not mapped either -- they appear in no tree from any input, so a
+# mapping onto one could never match. Mapping a kind normalization
 # removes is unreachable by construction -- validateProjectionMap rejects it, and it rejected this map
 # first, which is the check doing its job on its own author.
 ./gradlew -q :tools:project:validateProjectionMap --args="$IDMAP"
@@ -167,11 +172,18 @@ cp -r fixtures/expected "$MUT"
 jq '.units[0].tree.children[1].kind = "Expr.Binary" | .units[0].tree.children[1].children |= .[:-1]' \
   "$MUT/hello.json" > "$MUT/hello.json.tmp"
 mv "$MUT/hello.json.tmp" "$MUT/hello.json"
-if ./gradlew -q :tools:project:conformance --args="--actual $MUT" >/dev/null 2>&1; then
+MUTREPORT="$WORK/mutated.json"
+if ./gradlew -q :tools:project:conformance --args="--actual $MUT --report $MUTREPORT" >/dev/null 2>&1; then
   echo "FATAL: conformance passed a deliberately mutated tree" >&2
   exit 1
 fi
-echo "OK: mutation detected"
+# A non-zero exit is necessary and nowhere near sufficient: a comparator that crashed, or one whose
+# inputs were missing, exits non-zero too and would satisfy the old form of this gate while proving
+# nothing. Require the report to name the disagreement it was supposed to find.
+jq -e '.lanes.oracle_conformance.verdict == "fail"
+       and .lanes.oracle_conformance.divergenceCount > 0
+       and .lanes.oracle_conformance.fixturesCompared > 0' "$MUTREPORT" > /dev/null
+echo "OK: mutation detected, and the report names it"
 
 echo "== conformance: a recovery-only mutation must be caught by the recovery lane alone =="
 # The load-bearing property of the split, and the one a passing run cannot demonstrate. Delete the
