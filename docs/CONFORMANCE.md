@@ -293,7 +293,7 @@ since superseded; they are kept because the *ordering* is the finding — each r
 by cutting divergences — not because the absolute numbers still hold.
 
 **This table is the part that genuinely needs a `tree-sitter-flix` run**, unlike the wrapper figure
-above, which is intrinsic to the canonical trees and recomputable from `fixtures/expected` alone. It
+above, which is intrinsic to the reference's own trees and recomputable from `fixtures/raw` alone. It
 is therefore stale by construction whenever fixtures are added. See "Measured baselines" below for
 the current figures, and re-measure in the consumer repository rather than trusting any row here.
 
@@ -365,7 +365,7 @@ Seven of the eight that are not — `Bang`, `Caret`, `Dollar`, `Err`, `KeywordFo
 clearest justification for curating a fixture suite at all: 874 files of real Flix do not reach them, and
 targeted inputs do.
 
-The seventh, `Eof`, is exercised nowhere, and is **unattachable by construction**. `advance()` is
+The eighth, `Eof`, is exercised nowhere, and is **unattachable by construction**. `advance()` is
 the only path that attaches a token to a tree, and it returns before doing so when at end of input:
 
 ```scala
@@ -411,135 +411,28 @@ gated against so a passing verdict cannot hide the threshold that produced it.
 
 ## Measured baselines
 
-Measured at pin `v0.75.1` (`318bb51a`), fixture revision `4eccee63`, tree-sitter CLI 0.26.11,
-`tree-sitter-flix` at `45fd604`. **Reproducible**: `npm run conformance` in that repository, with
-`FLIX_SPEC` pointing here, adapts all 136 fixtures and runs this comparison.
+> **These rows were measured at pin `v0.75.1` (`318bb51a`), fixture revision `4eccee63`, against
+> flix-spec 0.75.2 — the last release before the pin moved to Flix v0.75.2.** They are kept because
+> the *relationships* they establish are the finding, not the absolute numbers: how agreement and
+> depth trade against each other, and what splitting the recovery lane cost. Every consumer must
+> re-measure against the current release before quoting a figure here; a number carried across a pin
+> is a number about a different compiler. `docs/PIN-BUMP.md` step 8 requires exactly that.
 
 | Consumer | Lane | Verdict | Detail |
 | --- | --- | --- | --- |
 | `tree-sitter-flix` | `oracle_conformance` | **pass** (baseline 61) | 103 / 136 fixtures agree · 61 divergences · 1923 nodes compared · **99% depth** · 12 unmapped |
-| `tree-sitter-flix` | `recovery_conformance` | **fail** (baseline 45) | 5 / 21 in-scope fixtures agree · 45 divergences · 182 nodes compared · **100% depth** |
+| `tree-sitter-flix` | `recovery_conformance` | **fail** (baseline 45) | 5 / 21 in-scope fixtures agree · 45 divergences · **100% depth** |
 | `tree-sitter-flix` | `source_invariants` | **pass** (1 of 4 checks evaluated) | `document-shape` pass · the other three `not-applicable` |
 | `flix-jetbrains-plugin` | `oracle_conformance` | **pass** (baseline 3) | 133 / 136 fixtures agree · 3 divergences · 1258 nodes compared · **93% depth** · 89 unmapped |
 | `flix-jetbrains-plugin` | `recovery_conformance` | **fail** (measured here; its own port has no recovery lane) | 19 / 21 in-scope fixtures agree · 5 divergences · **94% depth** |
 | `flix-jetbrains-plugin` | `source_invariants` | **pass** (1 of 4 checks evaluated) | `document-shape` pass · the other three `not-applicable` |
-
 | `flix-antlr-grammar` | `oracle_conformance` | **pass** (baseline 75) | 76 / 136 fixtures agree · 75 divergences · 818 nodes compared · **88% depth** · 113 unmapped |
 | `flix-antlr-grammar` | `recovery_conformance` | **not-applicable** | declares no `recoveryMarkers`; ANTLR's recovery inserts nodes the parse tree does not name |
 | `flix-antlr-grammar` | `source_invariants` | **pass** (1 of 4 checks evaluated) | `document-shape` pass · the other three `not-applicable` |
 
-`flix-jetbrains-plugin` is migrated as of `flix-spec` 0.75.2, and its Kotlin port now reports
-figures identical to this repository's comparison on identical inputs — 133/136, 3 divergences, 1258
-nodes, 93% depth. That agreement is the standing check that the port has not drifted again.
-
-**One thing nearly hid the whole migration, and it is worth recording.** Gradle had a *stale*
-`flix-spec` 0.75.2 in its module cache: a different artifact under the same coordinate, left over
-from an earlier numbering era that also produced 0.75.3 through 0.75.7, with no `fixtures/raw/` and
-no `ast/transparency.json`. Dependency resolution treats a release as immutable and never re-fetched
-it, so the run compared a correctly-migrated map against un-normalized trees and reported **1/136
-with 669 divergences** — a number that looks exactly like a catastrophic grammar regression and was
-nothing of the kind. What identified it was comparing the resolved jar's SHA-256 against the
-published one; nothing else in the chain would have.
-
-The lesson generalises past this incident: a version coordinate is only immutable if it has never
-been reused, and this project's history contains a renumbering. A consumer that resolves `flix-spec`
-by coordinate alone is trusting that history. `pin.json` travels inside the artifact precisely so
-that trust is checkable, and `flix-jetbrains-plugin` already checks it.
-
-#### A ported comparison drifts, and this one has
-
-`flix-jetbrains-plugin` cannot shell out to the comparison the way `tree-sitter-flix` does: the
-published Maven artifact is **data only** — `pin.json`, `ast/`, `schemas/`, `fixtures/` — so a JVM
-consumer that wants a verdict has to re-implement the algorithm. That repository carries a Kotlin
-port of it.
-
-Running the *same* trees through the *same* map gives two different answers:
-
-| | agreement | divergences |
-| --- | ---: | ---: |
-| this repository's comparison | 133 / 136 | 3 |
-| the Kotlin port | 119 / 136 | 30 |
-
-The port is behind in two ways that both change results: it does not know `recoveryMarkers`, so a
-consumer's error elements are never spliced out of the structural lane, and it applies transparency
-level-wise rather than as a bottom-up fixed point — the same defect this repository had until
-`fixtures/raw` was fed back through its own comparison and exposed it.
-
-Neither number is wrong about the grammar; the port is measuring a different question. But "the
-comparison lives here so four repositories do not re-derive it four times" is this project's stated
-reason to exist, and a data-only artifact is what forces the fourth re-derivation. **Publishing the
-comparison itself, not just its inputs, is the obvious fix** and is not done yet.
-
-`flix-antlr-grammar` was wired from nothing in one sitting, and what it cost is the useful part of
-the record. It began at **0/136 with 316 divergences**, and two findings account for almost all of
-the distance to 76/136:
-
-- **Symmetric transparency for wrappers ANTLR omits.** The reference emits
-  `UsesOrImports.UseOrImportList`, `AnnotationList` and `ModifierList` on every file, empty or not;
-  ANTLR omits an optional rule that matched nothing. Declaring those transparent on both sides →
-  2/136.
-- **Name rules are wrappers, not names.** The reference's `Ident` holds its token directly, so
-  mapping both `definitionName` and `nameLowercase` onto `Ident` produced `Ident` inside `Ident` on
-  every declaration. That one class was **126 of the divergences** → 76/136.
-
-It also declined a mapping, which matters more than the ones it took. Mapping `expr`'s branching
-case to `Expr.Binary` raises depth 88% → 94% and drops agreement 76 → 40 — the signature of a guess
-that is often wrong, and precisely what "leave it unmapped rather than guess" is for.
-
-The consumers are worth reading against each other rather than separately. `tree-sitter-flix`
-reaches 99% depth and 103/136; `flix-jetbrains-plugin` reaches 133/136 at 93% depth. Neither is
-simply "better" — the first compares more of each tree and therefore finds more to disagree about,
-which is the trade the depth column exists to make visible. Their recovery lanes separate them much
-more sharply than their structural ones do: 5/21 against 19/21.
-
-### What the recovery lane found, and why it is not map surgery
-
-The lane's first measurement was diagnosed rather than merely recorded, and the answer is worth
-keeping because two plausible cheap fixes were tried and both were wrong.
-
-`tree-sitter-flix`'s 45 divergences concentrate in `lexical__numeric-literal-errors` (10) and
-`declarations__trait-and-instance-with-an-operator-signature` (7). The dominant shapes are
-`expected 'ErrorTree' got 'Expr.Literal'` and `expected 'ErrorTree' got 'Ident'` — which reads like
-the grammar accepting input the reference rejects. It does not. Both parsers reject `1_`; they
-disagree about **where the error is**:
-
-```
-reference          Expr.Expr > ErrorTree > Err '1_'        one token, one marker
-tree-sitter        body: (integer '1')  +  (ERROR (wildcard '_'))
-```
-
-The reference's lexer takes a maximal number-ish run and emits a single `Err`; tree-sitter's takes
-the valid prefix as an `integer` and leaves `_` to generic recovery, which lands the `ERROR` node in
-a different part of the tree entirely. That is a genuine error-boundary disagreement, and it is
-exactly the sort of thing that must not be folded into a structural score: it says nothing about
-whether the two agree on valid Flix.
-
-Two map-level hypotheses were tested and rejected by measurement:
-
-- declaring `unterminated_literal`/`unterminated_string` transparent instead of recovery markers —
-  **worse**, 5/21 to 1/21, because the reference genuinely does wrap those in an `ErrorTree`;
-- removing the unreachable mappings — real, but worth 1 fixture, and already applied.
-
-The remaining fix is a lexer rule in the consumer, and the shape it must take is now settled by
-elimination rather than guessed.
-
-The rule to mirror is not an approximation: `Lexer.acceptNumber` and `acceptHexNumber` recover from
-every malformed-number error identically, with `advanceWhile(isNumberLikeChar)` over
-`digit | letter | '.' | '_'`, so the reference's error token is exactly the maximal such run and
-`Parser2` wraps precisely that in one `ErrorTree`.
-
-**Expressing it as a tree-sitter regex token does not work, and that is measured.** Three attempts —
-a nested repetition, the flat `/[0-9][0-9a-zA-Z._]*/` that states the reference's rule exactly, and
-a narrowed `/[0-9][0-9a-zA-Z_]*/` without the dot — each made `tree-sitter generate` fail to
-terminate, the last still running at a 200-second timeout. A digit-started maximal munch overlaps
-`integer`, `float` and every identifier-shaped continuation, and the lexer generator has to split
-states across that whole product.
-
-That leaves the **external scanner**, which is how the same repository already solved the same class
-of problem for `unterminated_string`: a hand-written C scanner is not subject to the DFA
-construction that explodes here. It is real work in `scanner.c` and it belongs to whoever owns that
-grammar. Recorded at this level of detail so the next attempt starts from the scanner, and does not
-spend another afternoon proving the regex route closed.
+Two figures in these rows also predate a correctness fix and would not reproduce even at that pin:
+`divergenceCount` was truncated at twenty per fixture, and `depth` used the walk rather than the
+expectation as its denominator. Both were repaired after this table was written.
 
 ### What splitting the lanes cost, and what it did not
 
@@ -663,7 +556,7 @@ breaks a strict parser. The three affected files were exactly the three negative
 only ones that produce an `ERROR`. Nothing was wrong with the grammar; the adapter had to truncate
 at the closing tag. A consumer-side adapter that silently drops the inputs it cannot read will
 always flatter its own parser, so count what was skipped and why. The current measurement adapts
-136 of 136 fixtures with zero skips, and reports its skip count either way.
+every fixture with zero skips, and reports its skip count either way.
 
 ### On the adapter
 
