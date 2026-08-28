@@ -80,6 +80,18 @@ object DefectLedger {
       sys.exit(1)
     }
 
+    // The same gate ast/unattachable.json and ast/transparency.json carry, and for the same reason:
+    // every entry cites upstream source *by line*, and a line number does not survive a pin bump on
+    // trust. Without this the citations drift silently -- which is exactly what happened to the other
+    // two evidence files at the v0.75.2 bump, and was caught only by a review reading them.
+    val pinCommit = Json.parseFile(Paths.get("pin.json"))("upstream")("commit").asString
+    val stamped = doc("upstreamCommit").asString
+    if (stamped != pinCommit) {
+      System.err.println(s"FATAL: defects/ledger.json is at upstreamCommit $stamped, but pin.json is at $pinCommit.")
+      System.err.println("  Re-read every entry's citations against the new source before restamping it.")
+      sys.exit(1)
+    }
+
     val entries = read(doc)
     val fatal = scala.collection.mutable.ListBuffer.empty[String]
 

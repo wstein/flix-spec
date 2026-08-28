@@ -1,5 +1,6 @@
 {
   "schemaVersion": 1,
+  "upstreamCommit": "40949531b4d42e5eaf2e4b9997537eaf793c24e7",
   "note": "HAND-MAINTAINED. Defects in the *reference compiler* that this suite has observed and cannot itself falsify. An oracle-derived suite inherits the reference's bugs by construction, so the only honest response to finding one is to record it where consumers can read it -- not to normalise it away into an expectation that quietly makes the bug the specification. Every entry carries a runnable reproducer and a declarative assertion, so `validateDefects` re-checks at the current pin whether the defect still manifests. An entry that stops reproducing fails the build: that is upstream fixing it, and the entry must then be closed rather than left to rot. Entries also expire; see docs/DEFECTS.md for why that gate is time-based and what it costs.",
   "entries": [
     {
@@ -13,8 +14,13 @@
       "reproducer": "defects/reproducers/predicate-param-untyped.flix",
       "assert": {
         "parsesCleanly": true,
-        "absentKinds": ["Predicate.ParamUntyped"],
-        "presentKinds": ["Predicate.Param", "Predicate.ParamList"]
+        "absentKinds": [
+          "Predicate.ParamUntyped"
+        ],
+        "presentKinds": [
+          "Predicate.Param",
+          "Predicate.ParamList"
+        ]
       },
       "citations": [
         "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:4013",
