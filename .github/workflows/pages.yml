@@ -162,6 +162,20 @@ jobs:
             echo "Releases are immutable -- bump gradle.properties' version or the pin, don't republish." >&2
             exit 1
           fi
+
+          # The tree above is the accumulator of what is published *now*, not a history of what has
+          # ever been published, and the two differ here: an earlier numbering scheme released
+          # 0.75.1 through 0.75.7 and this branch was later rebuilt, taking the record with it. So
+          # this check alone would wave through precisely the coordinates most likely to still sit in
+          # somebody's dependency cache -- resolved in preference to the network, because a release
+          # is assumed immutable. retired-versions.json is the record that survives a rebuild.
+          if jq -e --arg v "$FULL_VERSION" '.retired[] | select(.version == $v)' retired-versions.json >/dev/null; then
+            echo "FATAL: ${FULL_VERSION} is a retired coordinate -- it was published once already." >&2
+            jq -r --arg v "$FULL_VERSION" '.retired[] | select(.version == $v) | "  " + .reason' \
+              retired-versions.json >&2
+            echo "Reusing it means a consumer can resolve the *other* artifact of that name from cache." >&2
+            exit 1
+          fi
           echo "Publishing new release version: ${FULL_VERSION}"
 
       - name: Publish

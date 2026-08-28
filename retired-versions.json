@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "note": "HAND-MAINTAINED. Maven coordinates of io.github.wstein:flix-spec that were published once and must never be published again. A version coordinate is immutable only if it has never been reused, and this repository's history contains a renumbering: an earlier scheme published 0.75.1 through 0.75.7 before the current major.minor-tracks-upstream scheme was adopted, and the gh-pages branch that recorded them was later rebuilt, taking the evidence with it. The `Refuse to Republish an Existing Release Version` gate tests the gh-pages tree, so it cannot see a coordinate whose record it no longer holds -- it would wave through a republish of exactly the versions most likely to be sitting in someone's Gradle cache. This file is the record that survives, and it is checked by VersionTest on every push as well as by pages.yml before it publishes.",
+  "incident": "Adopting flix-spec 0.75.2 in flix-jetbrains-plugin resolved a *different* artifact of the same name out of the local Gradle cache -- no fixtures/raw, no ast/transparency.json, different SHA-256 -- because dependency resolution treats a release as immutable and never re-fetches. The run reported 1/136 fixtures agreeing with 669 divergences, which is indistinguishable from a catastrophic grammar regression and was nothing of the kind. Comparing the resolved jar's digest against the published one is what identified it. See docs/CONFORMANCE.md.",
+  "retired": [
+    {
+      "version": "0.75.3",
+      "reason": "Published under the earlier numbering scheme; a jar carrying this coordinate with no fixtures/raw and no ast/transparency.json is still present in local Gradle caches."
+    },
+    {
+      "version": "0.75.4",
+      "reason": "Published under the earlier numbering scheme."
+    },
+    {
+      "version": "0.75.5",
+      "reason": "Published under the earlier numbering scheme."
+    },
+    {
+      "version": "0.75.6",
+      "reason": "Published under the earlier numbering scheme."
+    },
+    {
+      "version": "0.75.7",
+      "reason": "Published under the earlier numbering scheme."
+    }
+  ]
+}
