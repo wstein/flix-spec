@@ -266,6 +266,8 @@ tasks.withType<Test> {
     // suite asserts over them. Omitting them left exactly the doc-drift tests reporting stale passes.
     inputs.file(rootProject.file("README.md"))
     inputs.dir(rootProject.file("docs"))
+    inputs.file(rootProject.file("gradle.properties"))
+    inputs.file(rootProject.file("retired-versions.json"))
 
     doFirst {
         check(oracleJar.asFile.exists()) {

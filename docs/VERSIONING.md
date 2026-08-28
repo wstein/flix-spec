@@ -10,7 +10,7 @@
 <flixMajor>.<flixMinor>.<revision>[-SNAPSHOT]
 ```
 
-Current: `0.75.3`, derived from `flix/flix` v0.75.2.
+Current: `0.75.8`, derived from `flix/flix` v0.75.2.
 
 - **`flixMajor.flixMinor`** track the upstream Flix line. `0.75.x` is derived from Flix 0.75.x.
 - **`revision`** is this repository's own counter within that line. It advances on every published
@@ -58,13 +58,36 @@ A consumer that cares about schema compatibility should assert `schemaVersion`, 
 | --- | --- |
 | Pinned to Flix v0.75.1 | `0.75.1` |
 | Fixtures regenerated, pin unchanged | `0.75.2` |
-| Pin moves to Flix v0.75.2 | `0.75.3` |
+| Pin moves to Flix v0.75.2 | `0.75.3` — but see "Retired coordinates": this release is `0.75.8` |
 | Pin moves to Flix v0.76.0 | `0.76.0` |
 | Build from `main` between releases | `0.76.0-SNAPSHOT` |
 
 The base version does not identify which upstream *patch* a build came from — `0.75.1` and `0.75.2`
 may share a pin or not. Read `pin.json`, or the POM properties, or the marker file. That is the
 trade for a version that orders cleanly.
+
+## Retired coordinates
+
+**`0.75.3` through `0.75.7` must never be published.** An earlier numbering scheme released them, and
+the `gh-pages` branch that recorded them was later rebuilt — so the `Refuse to Republish an Existing
+Release Version` gate, which tests that branch, cannot see them. It would wave through exactly the
+coordinates most likely to still be sitting in a consumer's dependency cache.
+
+That is not a hypothetical. Adopting `0.75.2` in `flix-jetbrains-plugin` resolved a *different*
+artifact of the same name out of the local Gradle cache — no `fixtures/raw/`, no
+`ast/transparency.json`, different SHA-256 — because dependency resolution treats a release as
+immutable and never re-fetches. The run reported 1/136 fixtures agreeing with 669 divergences, a
+number indistinguishable from a catastrophic grammar regression and nothing of the kind. Comparing
+the resolved jar's digest against the published one is what found it.
+
+So the scheme has one exception to "increment the revision": **skip a coordinate that has ever been
+published.** [`retired-versions.json`](../retired-versions.json) is the list, it lives in the
+repository where a branch rebuild cannot take it, and both `VersionTest` and `pages.yml` refuse a
+build that names one. This is why the release after `0.75.2` is `0.75.8` rather than `0.75.3`.
+
+A version coordinate is immutable only if it has never been reused. `pin.json` travels inside the
+artifact so that a consumer can check *which* artifact it actually resolved, rather than trusting the
+coordinate to be honest about it.
 
 ## Bumping
 
