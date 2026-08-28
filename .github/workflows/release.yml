@@ -56,9 +56,13 @@ jobs:
         run: ./tools/project/verify.sh
 
       - name: Refuse to Publish Stale Artifacts
-        # verify.sh regenerates ast/treekind.json. If regeneration moved it, the
-        # tag points at artifacts that do not match their own oracle.
-        run: git diff --exit-code ast/treekind.json
+        # verify.sh regenerates far more than ast/treekind.json -- both fixture forms, every ast/
+        # inventory, and the generated doc blocks -- and the next step bundles the working tree it
+        # just rewrote. Diffing one file let a tag publish artifacts that do not match their own
+        # oracle, silently, in every other file. This is the same path set verify.yml gates on.
+        run: |
+          git diff --exit-code \
+            ast/ fixtures/raw/ fixtures/expected/ README.md docs/CONFORMANCE.md docs/DEFECTS.md
 
       - name: Assemble Release Bundle
         id: bundle

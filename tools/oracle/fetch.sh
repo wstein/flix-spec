@@ -21,37 +21,39 @@ EXPECT_SHA256="$(jq -r '.oracleArtifact.sha256' "$PIN")"
 # gate downstream -- the fixtures would simply describe a different compiler, and nothing in this
 # repository would contradict them. Assert the source, not just the bytes.
 #
-# This has a precedent worth remembering: a committed lexicon in this ecosystem was once provenanced
-# to a fork rather than to the pin, and text-scraping is not what let that happen -- the absence of
-# this check is.
-UPSTREAM="https://github.com/flix/flix/releases/download/"
-if [ "${URL#"$UPSTREAM"}" = "$URL" ]; then
-  echo "FATAL: pin.json names an oracle artifact that is not an upstream flix/flix release" >&2
-  echo "  url:      $URL" >&2
-  echo "  required: ${UPSTREAM}<tag>/flix.jar" >&2
-  echo "" >&2
-  echo "The oracle must always be flix/flix. A fork may be a fine thing to test against, but it is" >&2
-  echo "not what this repository derives its fixtures from, and a digest check cannot tell them apart." >&2
-  exit 1
-fi
-
-# ...and it must be the release the pin actually names, not merely some upstream release. Bumping
-# `upstream.tag` while leaving the artifact URL behind would download the previous compiler and
-# verify it against the previous digest, reporting success the whole way.
+# Constructed and compared for equality, never pattern-matched. A prefix test is not a URL test:
+# curl applies RFC 3986 remove_dot_segments before it resolves, so
+# `https://github.com/flix/flix/releases/download/../../elsewhere/x.jar` passes a `${URL#prefix}`
+# check and fetches from `elsewhere`. Deriving the only URL this pin can legitimately name removes
+# the whole class -- there is nothing left to smuggle past, and it subsumes the tag check too, since
+# a tag bumped without the URL no longer produces a value that can match.
 PIN_TAG="$(jq -r '.upstream.tag' "$PIN")"
-URL_TAG="${URL#"$UPSTREAM"}"
-URL_TAG="${URL_TAG%%/*}"
-if [ "$URL_TAG" != "$PIN_TAG" ]; then
-  echo "FATAL: the oracle artifact URL and the pinned tag disagree" >&2
-  echo "  upstream.tag:       $PIN_TAG" >&2
-  echo "  url names release:  $URL_TAG" >&2
+EXPECT_URL="https://github.com/flix/flix/releases/download/${PIN_TAG}/flix.jar"
+
+if [ "$URL" != "$EXPECT_URL" ]; then
+  echo "FATAL: pin.json's oracle artifact is not the upstream release the pin names" >&2
+  echo "  pin.json names: $URL" >&2
+  echo "  required:       $EXPECT_URL" >&2
+  echo "" >&2
+  echo "The oracle must always be flix/flix, at exactly upstream.tag. A fork may be a fine thing to" >&2
+  echo "test against, but it is not what this repository derives its fixtures from, and neither a" >&2
+  echo "digest check nor a prefix match can tell them apart." >&2
   exit 1
 fi
 
 mkdir -p "$DEST_DIR"
 
 echo "Fetching $URL"
-curl -sL -o "$DEST" "$URL"
+# -f: without it curl exits 0 on 4xx/5xx and writes the error body to flix.jar, so the digest check
+# below reports "digest mismatch" for what is actually a 404 -- precisely the wrong diagnosis for the
+# most likely mistake, bumping the pin before the release asset exists.
+# --path-as-is: belt and braces. The URL is already exact, but this guarantees curl resolves the
+# path this script vetted rather than a normalisation of it.
+if ! curl -fsSL --path-as-is -o "$DEST" "$URL"; then
+  echo "FATAL: could not download the oracle artifact from $URL" >&2
+  rm -f "$DEST"
+  exit 1
+fi
 
 ACTUAL_SHA256="$(shasum -a 256 "$DEST" | cut -d' ' -f1)"
 
