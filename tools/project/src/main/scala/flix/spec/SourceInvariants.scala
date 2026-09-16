@@ -74,22 +74,45 @@ object SourceInvariants {
       actualFiles: List[String],
       mapped: Boolean,
       treeInventory: Set[String],
-      tokenInventory: Set[String]
+      tokenInventory: Set[String],
+      projectionSchema: Json = Json.parseFile(Paths.get("schemas/projection.schema.json"))
   ): Lane = {
     val docs = actualFiles.map(f => f -> Json.parseFile(Paths.get(f)))
-    val units = docs.flatMap { case (f, d) => d.get("units").map(_.asArray).getOrElse(Nil).map(f -> _) }
-    val anyTokens = units.exists(u => u._2.get("tree").exists(TokenAccounting.carriesTokens))
-
     // --------------------------------------------------------------- shape
     val shapeErrors = new SchemaValidator.Errors
+    val units = docs.flatMap { case (f, d) =>
+      d.get("units") match {
+        case Some(Json.JArray(items)) => items.map(f -> _)
+        case _ =>
+          shapeErrors.add(s"$f: missing or non-array 'units'")
+          Nil
+      }
+    }
+    val validUnits = scala.collection.mutable.ListBuffer.empty[(String, Json)]
     val kindsSeen = scala.collection.mutable.Set.empty[String]
     val tokensSeen = scala.collection.mutable.Set.empty[String]
     units.zipWithIndex.foreach { case ((f, unit), i) =>
-      if (unit.get("source").isEmpty) shapeErrors.add(s"$f.units[$i]: missing 'source'")
+      val validSource = unit.get("source").exists {
+        case Json.JString(source) => source.nonEmpty
+        case _                    => false
+      }
+      if (!validSource) shapeErrors.add(s"$f.units[$i]: missing, empty or non-string 'source'")
       unit.get("tree") match {
         case None => shapeErrors.add(s"$f.units[$i]: missing 'tree'")
         case Some(tree) =>
-          ProjectionSchemaValidator.walk(tree, s"$f.units[$i].tree", None, None, kindsSeen, tokensSeen, shapeErrors)
+          val treeErrors = new SchemaValidator.Errors
+          SchemaValidator.check(
+            tree,
+            projectionSchema("definitions")("Node"),
+            projectionSchema,
+            s"$f.units[$i].tree",
+            treeErrors
+          )
+          treeErrors.toList.foreach(shapeErrors.add)
+          if (treeErrors.isEmpty) {
+            ProjectionSchemaValidator.walk(tree, s"$f.units[$i].tree", None, None, kindsSeen, tokensSeen, shapeErrors)
+            if (validSource) validUnits += ((f, unit))
+          }
       }
     }
     val shape = check(
@@ -99,6 +122,7 @@ object SourceInvariants {
       shapeErrors.toList,
       None
     )
+    val anyTokens = validUnits.exists(u => u._2.get("tree").exists(TokenAccounting.carriesTokens))
 
     // -------------------------------------------------------- vocabularies
     val vocabularySkip =
@@ -135,7 +159,7 @@ object SourceInvariants {
     val accountingFailures =
       if (accountingSkip.isDefined) Nil
       else
-        units.flatMap { case (f, unit) =>
+        validUnits.toList.flatMap { case (f, unit) =>
           val sourceName = unit.get("source").map(_.asString).getOrElse("")
           val source = Paths.get(sourceName)
           if (sourceName.isEmpty) Some(s"$f: unit has no 'source', so its tree cannot be checked against one")
@@ -155,7 +179,7 @@ object SourceInvariants {
     val accounting = check(
       "token-accounting",
       "concatenating every token's text reproduces the source, ignoring whitespace and the $ escape marker",
-      if (accountingSkip.isDefined) 0 else units.length,
+      if (accountingSkip.isDefined) 0 else validUnits.length,
       accountingFailures,
       accountingSkip
     )
