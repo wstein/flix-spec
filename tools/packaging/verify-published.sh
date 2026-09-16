@@ -83,7 +83,7 @@ tasks.register("resolveProbe") {
 EOF
 
 # --no-daemon and the isolated home together keep this honest across repeated runs.
-( cd "$WORK/probe" && gradle --no-daemon --quiet resolveProbe 2>&1 ) || {
+( cd "$WORK/probe" && "$ROOT/gradlew" --no-daemon --quiet resolveProbe 2>&1 ) || {
   echo "FATAL: $GROUP:$ARTIFACT:$VERSION is not resolvable from $REPO_URL" >&2
   echo "       The publish reported success, so the failure is in serving, not in building." >&2
   exit 1
