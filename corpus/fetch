@@ -21,6 +21,28 @@ if [ ! -d "$DEST_DIR/.git" ]; then
   git clone --quiet https://github.com/flix/flix.git "$DEST_DIR"
 fi
 
+# HEAD's tree hash says nothing about modified working-tree files. Refuse local
+# edits rather than report a verified corpus that the parser will read differently.
+if ! git -C "$DEST_DIR" diff --quiet HEAD --; then
+  echo "FATAL: corpus checkout has tracked local changes: $DEST_DIR" >&2
+  echo "Preserve or revert those changes before fetching the pinned corpus." >&2
+  exit 1
+fi
+
+# Reachability walks the working tree, including files ignored by Git. An extra
+# source must not become part of the measured corpus just because counts match.
+if [ -n "$(git -C "$DEST_DIR" ls-files --others -- '*.flix')" ]; then
+  echo "FATAL: corpus checkout has untracked .flix files: $DEST_DIR" >&2
+  echo "Move those files out of the corpus before fetching the pin." >&2
+  exit 1
+fi
+
+# An existing corpus clone may predate this pin bump. Fetch only when the pinned
+# commit is missing so verified local checkouts remain usable offline.
+if ! git -C "$DEST_DIR" cat-file -e "${COMMIT}^{commit}" 2>/dev/null; then
+  git -C "$DEST_DIR" fetch --quiet https://github.com/flix/flix.git "$COMMIT"
+fi
+
 echo "Checking out $COMMIT in $DEST_DIR..."
 git -C "$DEST_DIR" checkout --quiet "$COMMIT"
 
@@ -40,8 +62,8 @@ if [ "$ACTUAL_TREE_HASH" != "$TREE_HASH" ]; then
   exit 1
 fi
 
-ACTUAL_TOTAL="$(find "$DEST_DIR" -name '*.flix' | wc -l | tr -d ' ')"
-ACTUAL_MAIN="$(find "$DEST_DIR/main" -name '*.flix' | wc -l | tr -d ' ')"
+ACTUAL_TOTAL="$(find "$DEST_DIR" -type f -name '*.flix' | wc -l | tr -d ' ')"
+ACTUAL_MAIN="$(find "$DEST_DIR/main" -type f -name '*.flix' | wc -l | tr -d ' ')"
 
 if [ "$ACTUAL_TOTAL" -ne "$EXPECT_TOTAL" ]; then
   echo "FATAL: total .flix file count mismatch" >&2
