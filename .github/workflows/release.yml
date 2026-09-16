@@ -61,6 +61,8 @@ jobs:
         # just rewrote. Diffing one file let a tag publish artifacts that do not match their own
         # oracle, silently, in every other file. This is the same path set verify.yml gates on.
         run: |
+          git add --intent-to-add --all \
+            ast/ fixtures/raw/ fixtures/expected/ README.md docs/CONFORMANCE.md docs/DEFECTS.md
           git diff --exit-code \
             ast/ fixtures/raw/ fixtures/expected/ README.md docs/CONFORMANCE.md docs/DEFECTS.md
 

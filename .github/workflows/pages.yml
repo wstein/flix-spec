@@ -88,9 +88,12 @@ jobs:
         run: ./tools/project/verify.sh
 
       - name: Refuse to Publish Stale Artifacts
-        # verify.sh regenerates ast/treekind.json. If regeneration moved it, we
-        # would be publishing artifacts that do not match their own oracle.
-        run: git diff --exit-code ast/treekind.json
+        # Gate every regenerated artifact, including newly created files, before packaging.
+        run: |
+          git add --intent-to-add --all \
+            ast/ fixtures/raw/ fixtures/expected/ README.md docs/CONFORMANCE.md docs/DEFECTS.md
+          git diff --exit-code \
+            ast/ fixtures/raw/ fixtures/expected/ README.md docs/CONFORMANCE.md docs/DEFECTS.md
 
       - name: Determine Publish Mode
         id: mode
