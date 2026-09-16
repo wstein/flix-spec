@@ -117,6 +117,10 @@ object ReachabilityRun {
     val pin = Json.parseFile(PinFile)
     val upstreamCommit = pin("upstream")("commit").asString
     val oracleSha256 = TreeKindExtractor.fileDigest(OracleJar)
+    require(
+      oracleSha256 == pin("oracleArtifact")("sha256").asString,
+      "FATAL: oracle jar digest mismatch -- run tools/oracle/fetch.sh"
+    )
 
     val files = Files
       .walk(corpusRoot)
