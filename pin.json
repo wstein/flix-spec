@@ -2,23 +2,23 @@
   "schemaVersion": 1,
   "upstream": {
     "repository": "https://github.com/flix/flix",
-    "tag": "v0.75.2",
-    "commit": "40949531b4d42e5eaf2e4b9997537eaf793c24e7",
-    "treeHash": "99213f0a62703908cb337537d57782c28b0ad604",
+    "tag": "v0.76.0",
+    "commit": "f2d4678c20bff1242f4cad5e23144db91027b762",
+    "treeHash": "0cd0f96df983025ee5a5117f04e732e188cb97c8",
     "vocabularySources": {
       "main/src/ca/uwaterloo/flix/language/ast/SyntaxTree.scala": "e90b106616ad8a6f59970f02f9c85051c9e9aaf4",
       "main/src/ca/uwaterloo/flix/language/ast/TokenKind.scala": "7749491631d8b048c8b84cfe13b951c610baf7b3",
-      "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala": "5ca8746ebd3f4ee780f8aad49d244b292b405e03",
-      "main/src/ca/uwaterloo/flix/language/phase/Lexer.scala": "a87b9c58a8766823ebe970c11b070c67c959ff57"
+      "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala": "aa41acec39e81dd7c2e1ae7367f5e93f51dcd8de",
+      "main/src/ca/uwaterloo/flix/language/phase/Lexer.scala": "8d2d1c44152c5a0dec9a7a98830ee3777fd3978a"
     },
     "vocabularySourcesNote": "Blob SHAs at the pinned commit for the files that define the tree and token vocabularies and the parser's behaviour. tools/oracle/check-drift.sh compares these against upstream to detect that the oracle has moved in a way that matters -- a release-tag comparison alone reports 'current' while master has already changed these."
   },
   "oracleArtifact": {
     "kind": "release-asset",
-    "url": "https://github.com/flix/flix/releases/download/v0.75.2/flix.jar",
-    "sha256": "a2697d875725a0dde6e793b8d54cb220e86167a6d49ec5f0ccb0832966c8c15a",
-    "sizeBytes": 33931077,
-    "jarEntries": 16848,
+    "url": "https://github.com/flix/flix/releases/download/v0.76.0/flix.jar",
+    "sha256": "d8d9a3870e199c03ed6364ea9430f56f67bfd38c332c411628a6a7cb88b2b0b4",
+    "sizeBytes": 39149212,
+    "jarEntries": 20138,
     "attestation": "digest-only -- release asset without provenance attestation or build commit stamp",
     "note": "Pinned by digest, not rebuilt. The digest above is the contract; nothing here re-derives it. Historical evidence that a same-commit rebuild need not match a release asset remains in docs/phase0-spike.md section 'Q2'."
   },

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "upstreamCommit": "40949531b4d42e5eaf2e4b9997537eaf793c24e7",
+  "upstreamCommit": "f2d4678c20bff1242f4cad5e23144db91027b762",
   "note": "HAND-MAINTAINED. Defects in the *reference compiler* that this suite has observed and cannot itself falsify. An oracle-derived suite inherits the reference's bugs by construction, so the only honest response to finding one is to record it where consumers can read it -- not to normalise it away into an expectation that quietly makes the bug the specification. Every entry carries a runnable reproducer and a declarative assertion, so `validateDefects` re-checks at the current pin whether the defect still manifests. An entry that stops reproducing fails the build: that is upstream fixing it, and the entry must then be closed rather than left to rot. Entries also expire; see docs/DEFECTS.md for why that gate is time-based and what it costs.",
   "entries": [
     {
@@ -8,7 +8,7 @@
       "title": "Predicate.ParamUntyped is dead by assignment in Parser2.param()",
       "component": "Parser2",
       "disposition": "accepted-upstream-defect",
-      "summary": "Parser2.param() initialises `var kind` to TreeKind.Predicate.ParamUntyped, then overwrites it with TreeKind.Predicate.Param on the next line with no branch in between. close(mark, kind) therefore always receives Predicate.Param, and Predicate.ParamUntyped can never appear in any tree from any input. Weeder2 still pattern-matches on ParamUntyped in two places, so the producer and the consumer of this kind disagree about whether it can occur -- which is what makes this a defect rather than a retired kind.",
+      "summary": "Parser2.param() initialises `var kind` to TreeKind.Predicate.ParamUntyped, then overwrites it with TreeKind.Predicate.Param three lines later with no branch in between. close(mark, kind) therefore always receives Predicate.Param, and Predicate.ParamUntyped can never appear in any tree from any input. Weeder2 still pattern-matches on ParamUntyped in two places, so the producer and the consumer of this kind disagree about whether it can occur -- which is what makes this a defect rather than a retired kind.",
       "impact": "A parser that reproduces the reference's intent rather than its behaviour would emit Predicate.ParamUntyped for an untyped predicate parameter and be reported as divergent. The reference is the oracle here, so agreeing with the bug is what conformance requires; this entry exists so that requirement is visible rather than silently inherited.",
       "firstObservedAtPin": "318bb51a953c58a8785251a80fad8aea005f729f",
       "reproducer": "defects/reproducers/predicate-param-untyped.flix",
@@ -23,11 +23,11 @@
         ]
       },
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:4013",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:4016",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:4030",
-        "main/src/ca/uwaterloo/flix/language/phase/Weeder2.scala:2046",
-        "main/src/ca/uwaterloo/flix/language/phase/Weeder2.scala:2804"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3993",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3996",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:4010",
+        "main/src/ca/uwaterloo/flix/language/phase/Weeder2.scala:2061",
+        "main/src/ca/uwaterloo/flix/language/phase/Weeder2.scala:2819"
       ],
       "upstreamStatus": "not-filed",
       "upstreamIssue": null,

@@ -10,7 +10,7 @@
 <flixMajor>.<flixMinor>.<revision>[-SNAPSHOT]
 ```
 
-Current: `0.75.8`, derived from `flix/flix` v0.75.2.
+Current: `0.76.0`, derived from `flix/flix` v0.76.0.
 
 - **`flixMajor.flixMinor`** track the upstream Flix line. `0.75.x` is derived from Flix 0.75.x.
 - **`revision`** is this repository's own counter within that line. It advances on every published
@@ -58,7 +58,7 @@ A consumer that cares about schema compatibility should assert `schemaVersion`, 
 | --- | --- |
 | Pinned to Flix v0.75.1 | `0.75.1` |
 | Fixtures regenerated, pin unchanged | `0.75.2` |
-| Pin moves to Flix v0.75.2 | `0.75.3` — but see "Retired coordinates": this release is `0.75.8` |
+| Pin moves to Flix v0.75.2 | `0.75.3` — but see "Retired coordinates": that release used `0.75.8` |
 | Pin moves to Flix v0.76.0 | `0.76.0` |
 | Build from `main` between releases | `0.76.0-SNAPSHOT` |
 

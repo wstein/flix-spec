@@ -124,29 +124,31 @@ object ProjectionExtractor {
     val inputs = List(Input.RealFile(absolute, SecurityContext.Plain))
 
     implicit val flix: Flix = new Flix()
-    // Flix.check() would call the private initForkJoinPool(); driving phases directly means
+    // Flix.check() would call the private initThreadPool(); driving phases directly means
     // doing it here, or Lexer.run's parallel map throws NullPointerException.
-    flix.threadPool = new java.util.concurrent.ForkJoinPool(1)
+    flix.threadPool = new ca.uwaterloo.flix.util.ThreadPool(1)
+    try {
 
-    val (afterReader, readerErrors) = Reader.run(inputs, AvailableClasses.empty)
-    require(readerErrors.isEmpty, s"FATAL: reader errors for $file: $readerErrors")
+      val (afterReader, readerErrors) = Reader.run(inputs, AvailableClasses.empty)
+      require(readerErrors.isEmpty, s"FATAL: reader errors for $file: $readerErrors")
 
-    val (afterLexer, lexerErrors) = Lexer.run(afterReader, Map.empty, ChangeSet.Everything)
-    val (afterParser, parserErrors) = Parser2.run(afterLexer, SyntaxTree.empty, ChangeSet.Everything)
+      val (afterLexer, lexerErrors) = Lexer.run(afterReader, Map.empty, ChangeSet.Everything)
+      val (afterParser, parserErrors) = Parser2.run(afterLexer, SyntaxTree.empty, ChangeSet.Everything)
 
-    val units = afterParser.units.toList
-    require(units.length == 1, s"FATAL: expected exactly one compilation unit, got ${units.length}")
-    val (_, tree) = units.head
+      val units = afterParser.units.toList
+      require(units.length == 1, s"FATAL: expected exactly one compilation unit, got ${units.length}")
+      val (_, tree) = units.head
 
-    // Repo-relative, forward-slashed: an absolute path would make committed expectations
-    // machine-specific and the diff gate would fail on every checkout.
-    val source = repoRoot.relativize(absolute).toString.replace('\\', '/')
+      // Repo-relative, forward-slashed: an absolute path would make committed expectations
+      // machine-specific and the diff gate would fail on every checkout.
+      val source = repoRoot.relativize(absolute).toString.replace('\\', '/')
 
-    val diagnostics = (lexerErrors.toList ++ parserErrors.toList)
-      .map(toDiagnostic(_, repoRoot))
-      .sortBy(d => (d.line, d.col, d.kind))
+      val diagnostics = (lexerErrors.toList ++ parserErrors.toList)
+        .map(toDiagnostic(_, repoRoot))
+        .sortBy(d => (d.line, d.col, d.kind))
 
-    Projection(source, printTree(tree), diagnostics)
+      Projection(source, printTree(tree), diagnostics)
+    } finally flix.threadPool.shutdown()
   }
 
   /** Renders one projection as a document of the given `form`.
