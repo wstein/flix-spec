@@ -92,6 +92,10 @@ val artifactsJar = tasks.register<Jar>("artifactsJar") {
     }
 }
 
+tasks.named("assemble") {
+    dependsOn(artifactsJar)
+}
+
 // GitHub Packages credentials. Gradle does NOT read ~/.m2/settings.xml the way
 // `mvn` does -- that file is a Maven-CLI concept, not a Gradle one -- so this
 // resolves credentials from whichever of the two conventional sources is
