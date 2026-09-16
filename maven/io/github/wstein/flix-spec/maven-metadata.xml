@@ -3,7 +3,7 @@
   <groupId>io.github.wstein</groupId>
   <artifactId>flix-spec</artifactId>
   <versioning>
-    <latest>0.76.0</latest>
+    <latest>0.76.0-SNAPSHOT</latest>
     <release>0.76.0</release>
     <versions>
       <version>0.75.1-SNAPSHOT</version>
@@ -14,7 +14,8 @@
       <version>0.75.8-SNAPSHOT</version>
       <version>0.75.8</version>
       <version>0.76.0</version>
+      <version>0.76.0-SNAPSHOT</version>
     </versions>
-    <lastUpdated>20260916105419</lastUpdated>
+    <lastUpdated>20260916105657</lastUpdated>
   </versioning>
 </metadata>
