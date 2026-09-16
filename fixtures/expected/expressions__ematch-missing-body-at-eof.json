@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 2,
+  "generatedBy": "flix.spec.ProjectionExtractor",
+  "toolVersion": "2.0.0",
+  "form": "normalized",
+  "upstreamCommit": "f2d4678c20bff1242f4cad5e23144db91027b762",
+  "oracleSha256": "d8d9a3870e199c03ed6364ea9430f56f67bfd38c332c411628a6a7cb88b2b0b4",
+  "units": [
+    {
+      "source": "fixtures/negative/expressions__ematch-missing-body-at-eof.flix",
+      "diagnostics": [
+      {"kind":"UnexpectedToken","line":2,"col":1,"message":"UnexpectedToken(FromKinds(Set(CurlyL)),Some(Eof),MatchBody,None,fixtures/negative/expressions__ematch-missing-body-at-eof.flix:2:1)"}
+    ],
+      "tree": {"kind":"Root","span":{"start":{"line":1,"col":1},"end":{"line":2,"col":1}},"children":[{"kind":"UsesOrImports.UseOrImportList","span":{"start":{"line":1,"col":1},"end":{"line":1,"col":1}},"children":[]},{"kind":"Decl.Def","span":{"start":{"line":1,"col":1},"end":{"line":1,"col":26}},"children":[{"kind":"AnnotationList","span":{"start":{"line":1,"col":1},"end":{"line":1,"col":1}},"children":[]},{"kind":"ModifierList","span":{"start":{"line":1,"col":1},"end":{"line":1,"col":1}},"children":[]},{"token":"KeywordDef","text":"def","start":{"line":1,"col":1},"end":{"line":1,"col":4}},{"kind":"Ident","span":{"start":{"line":1,"col":5},"end":{"line":1,"col":6}},"children":[{"token":"NameLowercase","text":"f","start":{"line":1,"col":5},"end":{"line":1,"col":6}}]},{"kind":"ParameterList","span":{"start":{"line":1,"col":6},"end":{"line":1,"col":8}},"children":[{"token":"ParenL","text":"(","start":{"line":1,"col":6},"end":{"line":1,"col":7}},{"token":"ParenR","text":")","start":{"line":1,"col":7},"end":{"line":1,"col":8}}]},{"token":"Colon","text":":","start":{"line":1,"col":8},"end":{"line":1,"col":9}},{"kind":"QName","span":{"start":{"line":1,"col":10},"end":{"line":1,"col":15}},"children":[{"kind":"Ident","span":{"start":{"line":1,"col":10},"end":{"line":1,"col":15}},"children":[{"token":"NameUppercase","text":"Int32","start":{"line":1,"col":10},"end":{"line":1,"col":15}}]}]},{"token":"Equal","text":"=","start":{"line":1,"col":16},"end":{"line":1,"col":17}},{"kind":"Expr.Expr","span":{"start":{"line":1,"col":18},"end":{"line":1,"col":26}},"children":[{"kind":"Expr.ExtMatch","span":{"start":{"line":1,"col":18},"end":{"line":1,"col":26}},"children":[{"token":"KeywordEMatch","text":"ematch","start":{"line":1,"col":18},"end":{"line":1,"col":24}},{"kind":"Expr.Expr","span":{"start":{"line":1,"col":25},"end":{"line":1,"col":26}},"children":[{"kind":"QName","span":{"start":{"line":1,"col":25},"end":{"line":1,"col":26}},"children":[{"kind":"Ident","span":{"start":{"line":1,"col":25},"end":{"line":1,"col":26}},"children":[{"token":"NameLowercase","text":"x","start":{"line":1,"col":25},"end":{"line":1,"col":26}}]}]}]}]}]}]}]}
+    }
+  ]
+}

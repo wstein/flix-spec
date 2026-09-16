@@ -62,27 +62,29 @@ object ReachabilityRun {
 
   private def parseOne(file: Path, t: Tally): FileResult = {
     implicit val flix: Flix = new Flix()
-    flix.threadPool = new java.util.concurrent.ForkJoinPool(1)
+    flix.threadPool = new ca.uwaterloo.flix.util.ThreadPool(1)
+    try {
 
-    val inputs = List(Input.RealFile(file, SecurityContext.Plain))
-    val (afterReader, readerErrors) = Reader.run(inputs, AvailableClasses.empty)
-    if (readerErrors.nonEmpty) return FileResult(readable = false, cleanParse = false, lossless = false)
+      val inputs = List(Input.RealFile(file, SecurityContext.Plain))
+      val (afterReader, readerErrors) = Reader.run(inputs, AvailableClasses.empty)
+      if (readerErrors.nonEmpty) return FileResult(readable = false, cleanParse = false, lossless = false)
 
-    val (afterLexer, _) = Lexer.run(afterReader, Map.empty, ChangeSet.Everything)
-    val (afterParser, parserErrors) = Parser2.run(afterLexer, SyntaxTree.empty, ChangeSet.Everything)
+      val (afterLexer, lexerErrors) = Lexer.run(afterReader, Map.empty, ChangeSet.Everything)
+      val (afterParser, parserErrors) = Parser2.run(afterLexer, SyntaxTree.empty, ChangeSet.Everything)
 
-    val local = new Tally
-    afterParser.units.foreach { case (_, tree) => collect(tree, local) }
+      val local = new Tally
+      afterParser.units.foreach { case (_, tree) => collect(tree, local) }
 
-    local.kinds.foreach { case (k, n) => t.kinds.update(k, t.kinds.getOrElse(k, 0L) + n) }
-    local.tokens.foreach { case (k, n) => t.tokens.update(k, t.tokens.getOrElse(k, 0L) + n) }
+      local.kinds.foreach { case (k, n) => t.kinds.update(k, t.kinds.getOrElse(k, 0L) + n) }
+      local.tokens.foreach { case (k, n) => t.tokens.update(k, t.tokens.getOrElse(k, 0L) + n) }
 
-    val onDisk = TokenAccounting.squeeze(Files.readString(file, StandardCharsets.UTF_8))
-    FileResult(
-      readable = true,
-      cleanParse = parserErrors.isEmpty,
-      lossless = TokenAccounting.squeeze(local.text.toString) == onDisk
-    )
+      val onDisk = TokenAccounting.squeeze(Files.readString(file, StandardCharsets.UTF_8))
+      FileResult(
+        readable = true,
+        cleanParse = lexerErrors.isEmpty && parserErrors.isEmpty,
+        lossless = TokenAccounting.squeeze(local.text.toString) == onDisk
+      )
+    } finally flix.threadPool.shutdown()
   }
 
   private def obj(sb: StringBuilder, label: String, entries: List[(String, Long)]): Unit = {

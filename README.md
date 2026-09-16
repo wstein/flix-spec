@@ -41,21 +41,21 @@ a rebuild), and [`docs/PIN-BUMP.md`](docs/PIN-BUMP.md) (how the pin moves).
 **Phase 1 (pin, contracts, AST inventory, corpus) and Phase 2 (projected fixtures, coverage, reachability) complete.**
 
 Key components established:
-- **Oracle pin contract ([`pin.json`](pin.json))**: pinned to upstream release `v0.75.2` (`40949531…`, tree `99213f0a…`), the release asset's SHA-256 (`a2697d87…`), the entry point actually used, the required library level, and the classpath requirement. The `attestation` field records that the jar is **attested by digest, not by provenance** — upstream publishes no release workflow, no build attestation, and no commit stamp inside the artifact.
+- **Oracle pin contract ([`pin.json`](pin.json))**: pinned to upstream release `v0.76.0` (`f2d4678c…`, tree `0cd0f96d…`), the release asset's SHA-256 (`d8d9a387…`), the entry point actually used, the required library level, and the classpath requirement. The `attestation` field records that the jar is **verified by digest, not by build provenance**.
 - **Projection contract ([`docs/PROJECTION.md`](docs/PROJECTION.md))**: canonical projected tree format, load-bearing versus advisory elements, normalisation rules, and consumer projection maps.
 - **JSON schemas ([`schemas/`](schemas/))**: draft-07 definitions for `ast/treekind.json` and canonical projected trees, enforced in CI by [`TreeKindSchemaValidator`](tools/project/src/main/scala/flix/spec/TreeKindSchemaValidator.scala).
 - **Committed AST inventory ([`ast/treekind.json`](ast/treekind.json))**: 191 `TreeKind` nodes with qualified names, parent traits and forms, name-set digest `10faeb18…`, and a provenance header naming the generator, tool version, upstream commit and the exact oracle jar it was derived from.
 - **Token inventory ([`ast/tokenkind.json`](ast/tokenkind.json))**: 158 `TokenKind`s (157 case objects plus `Err`), digest-pinned in `pin.json`. This is the contract for **lexical** consumers such as `flix-textmate`, which have no parse tree and cannot consume `fixtures/expected/`. Every `token` in a projected tree is validated against it — previously the projection schema declared `token` as an unconstrained string, so 134 distinct names were committed and checked against nothing. Fixture coverage of the lexical vocabulary is now measured exactly as tree-kind coverage is, and reported in [Kind status](#kind-status); `Eof` is the single exception, and it is structurally rather than incidentally uncovered: the lexer always appends it as a virtual sentinel, but the parser only ever tests `at(TokenKind.Eof)` to decide when to stop — it is never pushed onto the tree as a node's child, so no fixture, however constructed, can make it appear in a projected tree.
-- **Corpus definition ([`corpus/`](corpus/))**: 874 pinned `.flix` files (689 under `main/`, 185 under `examples/`), inclusion rules, and a tree-hash-verified fetch script.
+- **Corpus definition ([`corpus/`](corpus/))**: 900 pinned `.flix` files (712 under `main/`, 188 under `examples/`), inclusion rules, and a tree-hash-verified fetch script.
 - **Projected fixtures ([`fixtures/`](fixtures/))**: **two committed forms of every parse**, both generated from the pinned oracle and both held under a diff gate. `fixtures/raw/` is the reference's own tree, node for node — the provenance record, the input to every measurement of the reference's own vocabulary, and the authority the recovery conformance lane compares against. `fixtures/expected/` is that tree **normalized**: 724 of 4243 nodes (17.1%) removed by [`ast/transparency.json`](ast/transparency.json), which elides wrapper nodes that carry no information beyond their child and splices out the error-recovery vocabulary. Doing that once here, with a reason argued from the reference's own structure and citations a reader can check, is neutral in a way that asking each consumer to re-derive it never was — with one instrumented consumer, no measurement could have told a neutral rule from one shaped by that consumer's grammar. Every document declares which form it is, in `form`. Kind names are sub-trait qualified, sources are repository-relative, and diagnostics record `kind`/`line` as gated with `col`/`message` advisory. **23 of the 24 diagnostic kinds `Reader`/`Lexer`/`Parser2` can actually produce are now exercised** — 15 of 15 `LexerError` variants and 8 of 9 `Parser2`-raised `ParseError` variants. The ninth, `MisplacedComments`, is not just unreproduced but **unreachable by construction**: `expect()` calls `open()`, which unconditionally consumes any leading comment before `expect()` ever inspects it, so the match arm mapping a comment to `MisplacedComments` can never fire — see `docs/CONFORMANCE.md` for the full trace. Three further `ParseError` variants (`MissingRegion`, `NeedAtleastOne`, `MissingBinaryOperator`) are raised only by `Weeder2`, a phase this repository's pipeline never runs, and are excluded from that count as structurally out of scope rather than silently missing.
 - **Coverage, reachability and status ([`ast/coverage.json`](ast/coverage.json), [`ast/reachability.json`](ast/reachability.json), [`ast/status.json`](ast/status.json))**: what the fixtures exercise, what the reference emits across the whole corpus, and the joined per-kind verdict — see [Kind status](#kind-status) below.
 - **Conformance checking ([`docs/CONFORMANCE.md`](docs/CONFORMANCE.md))**: consumers emit canonical projected trees; [`Conformance`](tools/project/src/main/scala/flix/spec/Conformance.scala) does the comparison once, here, rather than four times across four repositories. Its report has **three lanes that are never summed**: `oracle_conformance` measures structure *modulo* error recovery against the normalized canonical tree; `recovery_conformance` measures error-recovery shape alone, against `fixtures/raw/`, scoped to the fixtures that recover from something; `source_invariants` checks the consumer's output against its own input and inherits nothing. A consumer can pass any one and fail another, and CI asserts two such cases rather than asserting them in prose. Splitting recovery out is not forgiveness — recovery is a strategy, not a language feature, and two parsers can agree completely about valid programs while sharing nothing about how they resurface from a malformed one. Each consumer's projection map — its vocabulary, its own wrappers, and which of its own nodes are recovery markers — encodes facts about that consumer's grammar rather than about the reference, so it lives in that consumer's repository; `flix-spec` owns the schema ([`schemas/projection-map.schema.json`](schemas/projection-map.schema.json)), the canonical vocabulary its targets are checked against, and the comparison.
 - **CI and verification**: actions pinned by commit SHA, runner pinned to `ubuntu-24.04`, and Dependabot for actions and Gradle.
 
-Flix v0.75.2 removes the `Decl.Law` TreeKind and the `KeywordLaw` and `KeywordLawful`
-TokenKinds. This is a breaking vocabulary change for structural and lexical consumers even though
-the artifact remains on the Flix 0.75 line. The fixture suite now records the retired trait syntax
-as invalid and verifies that `law` and `lawful` are ordinary lowercase names.
+Flix v0.76.0 preserves the v0.75.2 TreeKind and TokenKind vocabularies. It accepts effect type
+parameters, reports `IllegalOperationTypeParams` for generic operations, and changes recovery for
+malformed `match`/`ematch` expressions. Six fixtures cover these changes. See the
+[migration and review notes](docs/MIGRATION-v0.76.0.md) for compatibility and validation details.
 
   | Workflow | Trigger | Does |
   | --- | --- | --- |
@@ -82,7 +82,7 @@ construction* — is what turns a bare ratio into a status.
 | `structurally-unattachable` — cannot appear in any tree, argued in `ast/unattachable.json` | 6 | 1 |
 | `unknown` — neither exercised nor explained | 0 | 0 |
 
-Measured over 138 fixtures and 874 corpus files at pin `v0.75.2` (`40949531`).
+Measured over 144 fixtures and 900 corpus files at pin `v0.76.0` (`f2d4678c`).
 `corpus-only` is the only row that is a to-do list. Machine-readable form:
 [`ast/status.json`](ast/status.json).
 <!-- /generated: status -->
@@ -134,7 +134,7 @@ children for it to hide, so the wrapper/error-marker distinction has no content 
 
 ```mermaid
 flowchart TD
-    REL["flix.jar<br/>release asset<br/><code>a2697d87…</code>"]
+    REL["flix.jar<br/>release asset<br/><code>d8d9a387…</code>"]
     PIN["<code>pin.json</code><br/>execution contract"]
     TK["<code>ast/treekind.json</code><br/>191 kinds"]
     PROJ["projected trees<br/><code>fixtures/expected/</code>"]
@@ -225,8 +225,8 @@ moved to the consumers that own them, nothing here could enumerate them without 
 Everything in `ast/`, `schemas/`, `fixtures/` and `corpus/corpus.json`, plus `pin.json`, is also
 published as `io.github.wstein:flix-spec` — for a consumer that would rather add a dependency than
 vendor files by hand. Versioning is documented in [`docs/VERSIONING.md`](docs/VERSIONING.md); in
-short it is plain semver, `<flixMajor>.<flixMinor>.<revision>` — currently `0.75.8`, derived from
-Flix v0.75.2.
+short it is plain semver, `<flixMajor>.<flixMinor>.<revision>` — currently `0.76.0`, derived from
+Flix v0.76.0.
 
 The pin is deliberately **not** encoded in the version. A version can advertise a pin but never
 enforce one, and this project has already seen a consumer depend on fixtures from one Flix while
@@ -252,7 +252,7 @@ repositories {
 }
 
 dependencies {
-    implementation("io.github.wstein:flix-spec:0.75.8")
+    implementation("io.github.wstein:flix-spec:0.76.0")
 }
 ```
 

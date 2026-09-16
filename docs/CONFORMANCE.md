@@ -185,7 +185,7 @@ The exact figure is **generated**, not written here: `ast/coverage.json` carries
 `generateCoverage` whenever fixtures change.
 
 <!-- generated: wrappers -->
-At this pin that is **482 of 4243 nodes (11.4%)**, across 138 fixtures.
+At this pin that is **493 of 4398 nodes (11.2%)**, across 144 fixtures.
 Read [`ast/coverage.json`](../ast/coverage.json) for the per-kind `alwaysSingleChildWrapper`
 breakdown; this paragraph is regenerated from it rather than retyped.
 <!-- /generated: wrappers -->
@@ -334,8 +334,8 @@ found it; that is what the corpus is for. Narrowing the `$` exclusion to exactly
 behaviour is what closed them.
 
 <!-- generated: lossless -->
-It now holds on **all 138 fixtures and all 871
-cleanly-parsed corpus files** — 871 of the 874 corpus files parse without error, and the
+It now holds on **all 144 fixtures and all 897
+cleanly-parsed corpus files** — 897 of the 900 corpus files parse without error, and the
 remainder are excluded rather than failing (see below).
 <!-- /generated: lossless -->
 
@@ -358,11 +358,11 @@ consumer can pass today. `./gradlew :tools:project:lossless`.
 ## Token reachability
 
 `ReachabilityRun` measures the lexical vocabulary over the same corpus walk: **150 of 158
-TokenKinds** are emitted somewhere in the 874 files.
+TokenKinds** are emitted somewhere in the 900 files.
 
 Seven of the eight that are not — `Bang`, `Caret`, `Dollar`, `Err`, `KeywordForall`,
 `KeywordSealed`, `KeywordStaticLowercase` — *are* exercised by hand-written fixtures. That is the
-clearest justification for curating a fixture suite at all: 874 files of real Flix do not reach them, and
+clearest justification for curating a fixture suite at all: 900 files of real Flix do not reach them, and
 targeted inputs do.
 
 The eighth, `Eof`, is exercised nowhere, and is **unattachable by construction**. `advance()` is

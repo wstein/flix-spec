@@ -5,18 +5,18 @@ This product includes software and artifacts derived from the Flix compiler proj
 ## 1. Flix Reference Compiler
 
 - **Upstream Repository**: https://github.com/flix/flix
-- **Pinned Tag / Release**: `v0.75.2`
-- **Pinned Commit SHA**: `40949531b4d42e5eaf2e4b9997537eaf793c24e7`
-- **Git Tree Hash**: `99213f0a62703908cb337537d57782c28b0ad604`
-- **Oracle Artifact SHA-256**: `a2697d875725a0dde6e793b8d54cb220e86167a6d49ec5f0ccb0832966c8c15a`
+- **Pinned Tag / Release**: `v0.76.0`
+- **Pinned Commit SHA**: `f2d4678c20bff1242f4cad5e23144db91027b762`
+- **Git Tree Hash**: `0cd0f96df983025ee5a5117f04e732e188cb97c8`
+- **Oracle Artifact SHA-256**: `d8d9a3870e199c03ed6364ea9430f56f67bfd38c332c411628a6a7cb88b2b0b4`
 - **License**: Apache License 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 - **Copyright**: Copyright (c) 2015-2026 Flix authors & University of Waterloo
 
 The concrete syntax tree hierarchy inventory in `ast/treekind.json` and syntax tree projections are extracted directly from the compiled Flix reference compiler jar at the pinned release.
 
 **Provenance of the oracle artifact.** The pinned `flix.jar` is the upstream release asset,
-identified by SHA-256. Upstream publishes no release-building workflow, no build attestation, and
-no commit stamp inside the artifact, so the chain `tag → commit → tree` is verifiable through git
+identified by SHA-256, matching the digest in the official release metadata. This pin records
+no build attestation or commit stamp inside the artifact, so the chain `tag → commit → tree` is verifiable through git
 while `jar → commit` is not verifiable from outside the project. `pin.json.oracleArtifact.attestation`
 records this as `digest-only`. At v0.75.1, a measured same-commit rebuild was *not* byte-identical
 to the published asset (16794 entries versus 16776), demonstrating why a release asset cannot be
