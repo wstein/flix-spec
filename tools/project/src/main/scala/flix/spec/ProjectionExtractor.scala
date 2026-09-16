@@ -234,6 +234,10 @@ object ProjectionExtractor {
     val upstreamCommit =
       """"commit"\s*:\s*"([^"]*)"""".r.findFirstMatchIn(pin).map(_.group(1)).get
     val oracleSha256 = TreeKindExtractor.fileDigest(OracleJar)
+    require(
+      oracleSha256 == Json.parse(pin)("oracleArtifact")("sha256").asString,
+      "FATAL: oracle jar digest mismatch -- run tools/oracle/fetch.sh"
+    )
 
     // Loaded once, and loaded strictly: it schema-checks itself and refuses to normalise against citations that were
     // read at a commit other than the one being extracted.
