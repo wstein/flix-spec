@@ -19,9 +19,8 @@ import scala.jdk.CollectionConverters._
   *   - `source` must be repository-relative, and diagnostic messages must not embed an absolute path. Either would make
   *     a committed expectation machine-specific and fail the diff gate on any other checkout.
   *
-  * `Node.children` uses `oneOf` between `Node` and `TokenNode`, which [[SchemaValidator]] deliberately does not walk
-  * generically -- the actual shape of a child (does it have `kind`?) decides which alternative applies, and that
-  * discrimination happens here.
+  * [[SchemaValidator]] checks recursive node and token shapes, including `oneOf`; this object's tree walk additionally
+  * collects and checks their vocabularies.
   */
 object ProjectionSchemaValidator {
 
