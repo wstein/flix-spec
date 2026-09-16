@@ -43,26 +43,36 @@ fi
 
 mkdir -p "$DEST_DIR"
 
+# A cached jar is usable only after checking it against the current pin.
+if [ -f "$DEST" ] && [ "$(shasum -a 256 "$DEST" | cut -d' ' -f1)" = "$EXPECT_SHA256" ]; then
+  echo "Verified cached $DEST -- sha256 $EXPECT_SHA256"
+  exit 0
+fi
+
+# Publish only a complete, verified download. A failed fetch must not destroy a
+# previously installed oracle or expose a partial jar to another Gradle process.
+DOWNLOAD="$(mktemp "$DEST_DIR/flix.jar.download.XXXXXX")"
+trap 'rm -f "$DOWNLOAD"' EXIT
+
 echo "Fetching $URL"
 # -f: without it curl exits 0 on 4xx/5xx and writes the error body to flix.jar, so the digest check
 # below reports "digest mismatch" for what is actually a 404 -- precisely the wrong diagnosis for the
 # most likely mistake, bumping the pin before the release asset exists.
 # --path-as-is: belt and braces. The URL is already exact, but this guarantees curl resolves the
 # path this script vetted rather than a normalisation of it.
-if ! curl -fsSL --path-as-is -o "$DEST" "$URL"; then
+if ! curl -fsSL --path-as-is -o "$DOWNLOAD" "$URL"; then
   echo "FATAL: could not download the oracle artifact from $URL" >&2
-  rm -f "$DEST"
   exit 1
 fi
 
-ACTUAL_SHA256="$(shasum -a 256 "$DEST" | cut -d' ' -f1)"
+ACTUAL_SHA256="$(shasum -a 256 "$DOWNLOAD" | cut -d' ' -f1)"
 
 if [ "$ACTUAL_SHA256" != "$EXPECT_SHA256" ]; then
   echo "FATAL: oracle artifact digest mismatch" >&2
   echo "  expected: $EXPECT_SHA256" >&2
   echo "  actual:   $ACTUAL_SHA256" >&2
-  rm -f "$DEST"
   exit 1
 fi
 
+mv "$DOWNLOAD" "$DEST"
 echo "Verified $DEST -- sha256 $ACTUAL_SHA256"
