@@ -19,6 +19,28 @@ class SourceInvariantsTest extends AnyFunSuite with Matchers {
   private val treeInventory = Set("Root", "Decl.Def")
   private val tokenInventory = Set("KeywordDef", "Ident", "ParenL")
 
+  private def run(files: List[String], mapped: Boolean): SourceInvariants.Lane =
+    SourceInvariants.run(
+      files,
+      mapped,
+      treeInventory,
+      tokenInventory,
+      Json.parseFile(java.nio.file.Paths.get("../../schemas/projection.schema.json"))
+    )
+
+  test("malformed nested nodes fail shape validation without throwing") {
+    List(
+      """{"kind":"Root","children":[{"kind":"Decl.Def"}]}""",
+      """{"kind":"Root","children":42}""",
+      WellFormed.replace("\"text\":\"f\"", "\"text\":42"),
+      WellFormed.replace("\"line\":1", "\"line\":1.5")
+    ).foreach { tree =>
+      withOutput("def f", tree) { files =>
+        verdictOf(run(files, mapped = false), "document-shape") shouldBe "fail"
+      }
+    }
+  }
+
   /** Writes one consumer document whose single unit points at a source file written alongside it. */
   private def withOutput(source: String, tree: String)(body: List[String] => Unit): Unit = {
     val dir = Files.createTempDirectory("source-invariants-test")
@@ -51,7 +73,7 @@ class SourceInvariantsTest extends AnyFunSuite with Matchers {
 
   test("output that accounts for its source passes every applicable check") {
     withOutput("def f", WellFormed) { files =>
-      val lane = SourceInvariants.run(files, mapped = false, treeInventory, tokenInventory)
+      val lane = run(files, mapped = false)
       lane.verdict shouldBe "pass"
       lane.checks.map(_.verdict).distinct shouldBe List("pass")
     }
@@ -61,7 +83,7 @@ class SourceInvariantsTest extends AnyFunSuite with Matchers {
     // The case the first lane structurally cannot see: kinds, child order and nesting are all
     // identical to the reference, and a token's text is simply gone.
     withOutput("def f", WellFormed.replace("\"text\":\"f\"", "\"text\":\"\"")) { files =>
-      val lane = SourceInvariants.run(files, mapped = false, treeInventory, tokenInventory)
+      val lane = run(files, mapped = false)
       lane.verdict shouldBe "fail"
       verdictOf(lane, "token-accounting") shouldBe "fail"
       verdictOf(lane, "document-shape") shouldBe "pass"
@@ -70,14 +92,14 @@ class SourceInvariantsTest extends AnyFunSuite with Matchers {
 
   test("a duplicated token is caught too") {
     withOutput("def f", WellFormed.replace("\"text\":\"def\"", "\"text\":\"defdef\"")) { files =>
-      verdictOf(SourceInvariants.run(files, mapped = false, treeInventory, tokenInventory), "token-accounting") shouldBe
+      verdictOf(run(files, mapped = false), "token-accounting") shouldBe
         "fail"
     }
   }
 
   test("whitespace differences never fail the accounting check") {
     withOutput("def    f\n", WellFormed) { files =>
-      verdictOf(SourceInvariants.run(files, mapped = false, treeInventory, tokenInventory), "token-accounting") shouldBe
+      verdictOf(run(files, mapped = false), "token-accounting") shouldBe
         "pass"
     }
   }
@@ -86,7 +108,7 @@ class SourceInvariantsTest extends AnyFunSuite with Matchers {
     // docs/PROJECTION.md leaves tokens uncompared, so emitting none is a permitted choice. Failing
     // it would penalise that choice; passing it would claim a property nothing established.
     withOutput("def f", """{"kind":"Root","children":[{"kind":"Decl.Def","children":[]}]}""") { files =>
-      val lane = SourceInvariants.run(files, mapped = false, treeInventory, tokenInventory)
+      val lane = run(files, mapped = false)
       verdictOf(lane, "token-accounting") shouldBe "not-applicable"
       verdictOf(lane, "token-vocabulary") shouldBe "not-applicable"
       lane.checks.find(_.id == "token-accounting").get.detail should include("no token text")
@@ -99,19 +121,19 @@ class SourceInvariantsTest extends AnyFunSuite with Matchers {
     // With a map the consumer emits its own native names by design. Reporting them here would
     // double-count as defects the very thing the map exists to translate.
     withOutput("def f", WellFormed.replace("\"kind\":\"Root\"", "\"kind\":\"source_file\"")) { files =>
-      val mappedLane = SourceInvariants.run(files, mapped = true, treeInventory, tokenInventory)
+      val mappedLane = run(files, mapped = true)
       verdictOf(mappedLane, "kind-vocabulary") shouldBe "not-applicable"
       mappedLane.verdict shouldBe "pass"
 
       // Without a map the consumer is claiming canonical output, so the same file is a failure.
-      val unmappedLane = SourceInvariants.run(files, mapped = false, treeInventory, tokenInventory)
+      val unmappedLane = run(files, mapped = false)
       verdictOf(unmappedLane, "kind-vocabulary") shouldBe "fail"
     }
   }
 
   test("a malformed token leaf is a shape failure") {
     withOutput("def f", """{"kind":"Root","children":[{"token":"Ident","text":"deff"}]}""") { files =>
-      val lane = SourceInvariants.run(files, mapped = false, treeInventory, tokenInventory)
+      val lane = run(files, mapped = false)
       verdictOf(lane, "document-shape") shouldBe "fail"
       lane.checks.find(_.id == "document-shape").get.failures.mkString should include("start")
     }
@@ -127,7 +149,7 @@ class SourceInvariantsTest extends AnyFunSuite with Matchers {
         s"""{"units": [{"source": "does/not/exist.flix", "diagnostics": [], "tree": $WellFormed}]}""",
         StandardCharsets.UTF_8
       )
-      val lane = SourceInvariants.run(List(doc.toString), mapped = false, treeInventory, tokenInventory)
+      val lane = run(List(doc.toString), mapped = false)
       verdictOf(lane, "token-accounting") shouldBe "fail"
       lane.checks.find(_.id == "token-accounting").get.failures.mkString should include("does not exist")
     } finally deleteRecursively(dir)
