@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>io.github.wstein</groupId>
+  <artifactId>flix-spec</artifactId>
+  <version>0.76.0-SNAPSHOT</version>
+  <name>flix-spec</name>
+  <description>Shared test infrastructure for parsers of Flix: a TreeKind inventory, a pinned corpus definition, and projected-tree fixtures, all derived from the reference compiler at flix/flix v0.76.0.</description>
+  <url>https://github.com/wstein/flix-spec</url>
+  <licenses>
+    <license>
+      <name>Apache-2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
+  <scm>
+    <url>https://github.com/wstein/flix-spec</url>
+  </scm>
+  <properties>
+    <flix.oracleSha256>d8d9a3870e199c03ed6364ea9430f56f67bfd38c332c411628a6a7cb88b2b0b4</flix.oracleSha256>
+    <flix.treeHash>0cd0f96df983025ee5a5117f04e732e188cb97c8</flix.treeHash>
+    <flix.tag>v0.76.0</flix.tag>
+    <flix.commit>f2d4678c20bff1242f4cad5e23144db91027b762</flix.commit>
+  </properties>
+</project>
