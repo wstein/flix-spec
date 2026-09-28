@@ -203,7 +203,9 @@ class ProjectionExtractorTest extends AnyFunSuite with Matchers {
 
     def named(role: String): Set[String] = roles.filter(_._2.asString == role).keySet
 
-    named("wrapper") shouldBe contract.elide
+    // Both elision rules produce a wrapper role: the difference between them is how much of the node
+    // normalisation dares remove, not what the node is. `ast/status.json` describes the vocabulary.
+    named("wrapper") shouldBe (contract.elide ++ contract.elideEmpty)
     named("error-marker") shouldBe contract.recoveryMarkers
     named("unattachable") shouldBe unattachable
   }

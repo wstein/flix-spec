@@ -150,7 +150,7 @@ object KindStatus {
     inventory.map { k =>
       val role =
         if (contract.recoveryMarkers(k)) ErrorMarker
-        else if (contract.elide(k)) Wrapper
+        else if (contract.elide(k) || contract.elideEmpty(k)) Wrapper
         else if (unattachable(k)) UnattachableRole
         else Syntax
       k -> role

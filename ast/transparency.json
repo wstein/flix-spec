@@ -1,8 +1,17 @@
 {
   "schemaVersion": 1,
   "upstreamCommit": "f2d4678c20bff1242f4cad5e23144db91027b762",
-  "note": "HAND-MAINTAINED. The curated input to fixture normalisation: every entry names a canonical TreeKind that ProjectionExtractor removes when it writes fixtures/expected/, and that fixtures/raw/ still carries verbatim. Two rules exist. `elide` is for nodes that contribute exactly one edge and no leaf content -- across the whole suite they never hold more than one child and never hold a token, so their name can never be what groups siblings or what gives a token its role. `splice` is for the error vocabulary, which is not syntax at all; splicing it out is what makes the main conformance lane measure structure *modulo* recovery, and the recovery lane is where its shape is measured instead. Every reason below is an argument about the reference's own structure. A reason of the form 'consumer X does not produce one' is inadmissible and must be rejected in review: this repository instruments a single consumer, so no automated check can distinguish a neutral rule from one shaped by that consumer, and the reasons are the only thing that can. Line numbers refer to upstreamCommit, so a pin bump fails until every citation has been re-read against the new source. Deliberately absent: UnclosedMark. It is a placeholder the parser overwrites and can appear in no tree from any input, so it is argued in ast/unattachable.json instead -- a normalisation rule for a node that never occurs would be unfalsifiable, and claiming it is 'measured in the recovery lane' would be false.",
+  "note": "HAND-MAINTAINED. The curated input to fixture normalisation: every entry names a canonical TreeKind that ProjectionExtractor removes when it writes fixtures/expected/, and that fixtures/raw/ still carries verbatim. Three rules exist. `elide` is for nodes that contribute no leaf content of their own, and it fires per occurrence: the node is dropped where it is empty, replaced by its child where it holds exactly one, and kept where it holds two or more, because splicing a branching node would discard real structure rather than a wrapper. An entry therefore does not have to show that the kind is always a wrapper -- only that where it holds one child, that child is the whole content, and that it never holds a token directly at that arity, which would splice a bare token into the parent and give it a role no position can express. `elide-empty` is weaker still and is the only rule admissible for a node that holds its tokens directly: it drops the node where it is empty and leaves every other occurrence exactly as it stands, because replacing such a node by its single child would splice a bare token into the parent and strip the role the node's name was carrying. `splice` is for the error vocabulary, which is not syntax at all; splicing it out is what makes the main conformance lane measure structure *modulo* recovery, and the recovery lane is where its shape is measured instead. Every reason below is an argument about the reference's own structure. A reason of the form 'consumer X does not produce one' is inadmissible and must be rejected in review: this repository instruments a single consumer, so no automated check can distinguish a neutral rule from one shaped by that consumer, and the reasons are the only thing that can. Line numbers refer to upstreamCommit, so a pin bump fails until every citation has been re-read against the new source. Deliberately absent: UnclosedMark. It is a placeholder the parser overwrites and can appear in no tree from any input, so it is argued in ast/unattachable.json instead -- a normalisation rule for a node that never occurs would be unfalsifiable, and claiming it is 'measured in the recovery lane' would be false.",
   "treeKinds": [
+    {
+      "name": "AnnotationList",
+      "rule": "elide-empty",
+      "reason": "annotations() opens a mark and advances over each Annotation token in turn, so the list holds those tokens directly rather than any sub-node. Where a declaration carries no annotation the loop never runs and the node closes empty, carrying nothing. It cannot be elided at arity one: its single child is a token, and replacing the list with that bare token would hand the declaration a leaf whose role only the list's name states.",
+      "citations": [
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1375",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1380"
+      ]
+    },
     {
       "name": "Argument",
       "rule": "elide",
@@ -39,6 +48,15 @@
       ]
     },
     {
+      "name": "Expr.Expr",
+      "rule": "elide",
+      "reason": "Every site that closes Expr.Expr does so as close(openBefore(x), TreeKind.Expr.Expr) -- a mark opened immediately before an already-closed node -- so the wrapper's content is exactly that one node. It is the statement-and-precedence climb's bookkeeping: it records that a sub-expression was re-wrapped while climbing, not that anything is grouped. The child already carries the expression's own kind, so the wrapper's name adds no distinction the position does not.",
+      "citations": [
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1479",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1507"
+      ]
+    },
+    {
       "name": "Expr.HoleVariable",
       "rule": "elide",
       "reason": "The hole-variable production closes around a single name node; the `?` marker is lexed into the name token itself rather than kept as a separate child, so the node adds an edge and nothing else.",
@@ -64,12 +82,30 @@
       ]
     },
     {
+      "name": "ModifierList",
+      "rule": "elide-empty",
+      "reason": "modifiers() opens a mark and advances over each modifier token in turn, so the list holds those tokens directly rather than any sub-node. Where a declaration carries no modifier the loop never runs and the node closes empty, carrying nothing. It cannot be elided at arity one: `pub` spliced into Decl.Def is indistinguishable from any other token there, and it is the list's name that makes it a modifier.",
+      "citations": [
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1367",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1372"
+      ]
+    },
+    {
       "name": "OperatorError",
       "rule": "splice",
       "recoveryMarker": true,
       "reason": "Not syntax, and not even text. It is closed over a zero-width mark opened and closed at the same position when a binary operator is missing, so it holds no children and no tokens at all; it exists to give Weeder2 a place to raise MissingBinaryOperator later.",
       "citations": [
         "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1475"
+      ]
+    },
+    {
+      "name": "Pattern.Pattern",
+      "rule": "elide",
+      "reason": "pattern() dispatches on the first token to a function that closes the pattern's own kind, then closes Pattern.Pattern around that single closed node -- once at the end of the dispatch and once on the FCons branch via openBefore(lhs). The dispatch is what decides what the pattern is, and that decision is already the child's kind; Pattern.Pattern records only that a pattern was parsed here, which its position in the parent states.",
+      "citations": [
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3303",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3307"
       ]
     },
     {
@@ -99,6 +135,14 @@
         "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3878",
         "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3895",
         "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:4006"
+      ]
+    },
+    {
+      "name": "QName",
+      "rule": "elide",
+      "reason": "nameAllowQualified() closes QName as close(openBefore(first), TreeKind.QName), wrapping the run that starts at the first already-closed name. Where the name is unqualified that run is exactly one Ident and QName's name duplicates it; where it is qualified the run holds the dotted sequence, the node holds two or more children, and it is kept -- so eliding removes precisely the case in which the wrapper distinguishes nothing.",
+      "citations": [
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:809"
       ]
     },
     {
@@ -137,6 +181,15 @@
         "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3436",
         "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3445",
         "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3610"
+      ]
+    },
+    {
+      "name": "UsesOrImports.UseOrImportList",
+      "rule": "elide",
+      "reason": "usesOrImports() opens one mark, consumes `use` and `import` declarations until neither follows, and closes UseOrImportList over whatever it collected -- including nothing at all, which is what a compilation unit with no uses produces. At zero or one child the node states only how many declarations were collected, which the parent's own child count already states; at two or more it is the thing that groups them and is kept.",
+      "citations": [
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:862",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:877"
       ]
     }
   ]

@@ -24,8 +24,8 @@
   },
   "treeKindRoleTally": {
     "total": 191,
-    "syntax": 170,
-    "wrapper": 12,
+    "syntax": 164,
+    "wrapper": 18,
     "error-marker": 3,
     "unattachable": 6
   },
@@ -223,7 +223,7 @@
     "UsesOrImports.UseOrImportList": "reachable-covered"
   },
   "treeKindRole": {
-    "AnnotationList": "syntax",
+    "AnnotationList": "wrapper",
     "Argument": "wrapper",
     "ArgumentList": "syntax",
     "ArgumentNamed": "syntax",
@@ -256,7 +256,7 @@
     "Expr.CheckedEffectCast": "syntax",
     "Expr.CheckedTypeCast": "syntax",
     "Expr.DebugInterpolator": "wrapper",
-    "Expr.Expr": "syntax",
+    "Expr.Expr": "wrapper",
     "Expr.ExtMatch": "syntax",
     "Expr.ExtMatchRuleFragment": "syntax",
     "Expr.ExtTag": "syntax",
@@ -348,7 +348,7 @@
     "Expr.Use": "syntax",
     "Ident": "syntax",
     "Kind": "syntax",
-    "ModifierList": "syntax",
+    "ModifierList": "wrapper",
     "Operator": "syntax",
     "OperatorError": "error-marker",
     "Parameter": "syntax",
@@ -356,7 +356,7 @@
     "Pattern.ExtTag": "unattachable",
     "Pattern.FCons": "syntax",
     "Pattern.Literal": "syntax",
-    "Pattern.Pattern": "syntax",
+    "Pattern.Pattern": "wrapper",
     "Pattern.Record": "syntax",
     "Pattern.RecordFieldFragment": "syntax",
     "Pattern.Tag": "syntax",
@@ -376,7 +376,7 @@
     "Predicate.PatternList": "syntax",
     "Predicate.TermList": "syntax",
     "PredicateAndArity": "syntax",
-    "QName": "syntax",
+    "QName": "wrapper",
     "Root": "syntax",
     "StructField": "syntax",
     "TrailingDot": "error-marker",
@@ -413,7 +413,7 @@
     "UsesOrImports.ImportMany": "syntax",
     "UsesOrImports.Use": "syntax",
     "UsesOrImports.UseMany": "syntax",
-    "UsesOrImports.UseOrImportList": "syntax"
+    "UsesOrImports.UseOrImportList": "wrapper"
   },
   "tokenKindStatus": {
     "Ampersand": "reachable-covered",

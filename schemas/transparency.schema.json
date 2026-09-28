@@ -35,8 +35,8 @@
         },
         "rule": {
           "type": "string",
-          "enum": ["elide", "splice"],
-          "description": "`elide` removes the node when it has no children and replaces it with its single child when it has one; a node with two or more children is kept, because splicing it would discard real structure. `splice` lifts the node's children into its parent at any arity, which is stronger and is reserved for nodes that are not syntax at all."
+          "enum": ["elide", "elide-empty", "splice"],
+          "description": "`elide` removes the node when it has no children and replaces it with its single child when it has one; a node with two or more children is kept, because splicing it would discard real structure. `elide-empty` removes it only when it has no children and leaves every other occurrence untouched -- the rule for a node that holds its tokens directly, where replacing it by its single child would splice a bare token into the parent and strip the role its name was carrying. `splice` lifts the node's children into its parent at any arity, which is stronger and is reserved for nodes that are not syntax at all."
         },
         "recoveryMarker": {
           "type": "boolean",

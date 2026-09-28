@@ -15,6 +15,8 @@ import java.nio.file.{Path, Paths}
   *   - `elide` — the node contributes exactly one edge and no leaf content. Dropped when empty, replaced by its child
   *     when it has one, and **kept** at two or more children, because splicing a branching node would discard real
   *     structure rather than a wrapper.
+  *   - `elide-empty` — the node is dropped where it is empty and left untouched otherwise. The rule for a node that
+  *     holds its tokens directly, where replacing it by its child would splice a bare leaf into the parent.
   *   - `splice` — the node's children are lifted into its parent at any arity. Stronger, and reserved for the error
   *     vocabulary, which is not syntax: keeping it in the canonical tree would make every conformance comparison a
   *     comparison of error-recovery strategies, which no two parsers share.
@@ -38,6 +40,15 @@ object Transparency {
     /** Kinds removed when empty and replaced by their child when singular. */
     val elide: Set[String] = entries.filter(_.rule == "elide").map(_.name).toSet
 
+    /** Kinds dropped only where they are empty, and otherwise left exactly as they are.
+      *
+      * The weakest of the three rules, and the only one admissible for a node that holds its tokens directly. Eliding
+      * such a node at arity one would replace it with a bare token, handing the parent a leaf whose role the node's
+      * name was carrying -- `pub` spliced into `Decl.Def` is no longer recognisable as a modifier. Dropping the empty
+      * case takes away nothing at all, because an empty node has no content to lose.
+      */
+    val elideEmpty: Set[String] = entries.filter(_.rule == "elide-empty").map(_.name).toSet
+
     /** Kinds whose children are lifted into the parent at any arity. */
     val splice: Set[String] = entries.filter(_.rule == "splice").map(_.name).toSet
 
@@ -45,7 +56,7 @@ object Transparency {
     val recoveryMarkers: Set[String] = entries.filter(_.recoveryMarker).map(_.name).toSet
 
     /** Every kind this contract removes. */
-    val all: Set[String] = elide ++ splice
+    val all: Set[String] = elide ++ elideEmpty ++ splice
 
     /** The contract restricted to the rules that are *not* about error recovery.
       *
@@ -99,6 +110,9 @@ object Transparency {
     contract.entries.foreach { e =>
       if (e.recoveryMarker && e.rule != "splice")
         out += s"entry '${e.name}' is a recovery marker but its rule is '${e.rule}'; recovery markers are spliced"
+      if (e.recoveryMarker && e.rule == "elide-empty")
+        out += s"entry '${e.name}' is a recovery marker but only drops when empty; a recovery marker's shape is " +
+          "measured in the recovery lane, which requires it to be spliced out of the structural one"
       if (e.rule == "splice" && !e.recoveryMarker)
         out += s"entry '${e.name}' splices but is not marked a recovery marker; splicing is reserved for the " +
           "error vocabulary, because it discards a node that may carry real structure"

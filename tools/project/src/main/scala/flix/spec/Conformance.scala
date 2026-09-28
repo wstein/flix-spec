@@ -49,14 +49,24 @@ object Conformance {
   private val RawDir = ProjectionExtractor.RawDir
   private val MaxDivergencesPerFixture = 20
 
-  final case class KTree(kind: String, children: List[KTree])
+  /** A projected tree with its token leaves dropped -- kinds, order and arity are what the contract gates.
+    *
+    * `tokens` is the one fact about those leaves that survives: how many this node holds directly. It is here because
+    * the transparency rules are defined over the whole tree and this one is not. [[Normalizer]] elides a node when it
+    * has at most one child *counting tokens*, so `QName` over `Ident .` is a two-child node and stays. Drop the tokens
+    * first and the same node looks singular and would be elided, and the two sides would disagree about a node neither
+    * was wrong about. `dropWhenEmpty` needs it for the same reason: an empty `ModifierList` and a `ModifierList` over
+    * `pub` are the same childless node once tokens are gone, and only one of them may be dropped. Nothing compares it,
+    * so the comparison itself stays token-blind.
+    */
+  final case class KTree(kind: String, children: List[KTree], tokens: Int = 0)
 
   private def kindTree(node: Json): Option[KTree] =
     node.get("kind") match {
       case None => None // token leaf
       case Some(k) =>
-        val children = node.get("children").map(_.asArray).getOrElse(Nil).flatMap(kindTree)
-        Some(KTree(k.asString, children))
+        val raw = node.get("children").map(_.asArray).getOrElse(Nil)
+        Some(KTree(k.asString, raw.flatMap(kindTree), raw.count(_.get("kind").isEmpty)))
     }
 
   /** Loads a projected document's units as kind-only trees, optionally normalising first.
@@ -96,6 +106,7 @@ object Conformance {
   final case class Vocabulary(
       mapping: Option[Map[String, String]] = None,
       ignored: Set[String] = Set.empty,
+      dropWhenEmpty: Set[String] = Set.empty,
       elide: Set[String] = Set.empty,
       flatten: Set[String] = Set.empty,
       flattenCanonical: Set[String] = Set.empty,
@@ -171,7 +182,17 @@ object Conformance {
     *     modifiers, while the reference makes those direct children of `Decl.Def`; without splicing, its whole subtree
     *     is never compared, which is why comparison depth was once 51%.
     *   - `elide` -- the node is dropped when it has no children and replaced by its child when it has exactly one. At
-    *     two or more it is kept, since splicing a branching node would discard real structure rather than a wrapper.
+    *     two or more it is kept, since splicing a branching node would discard real structure rather than a wrapper. A
+    *     node holding a token directly is kept too, and that clause is what keeps this rule the same rule
+    *     [[Normalizer]] applies. Normalisation counts arity over the *whole* tree, tokens included; this comparison has
+    *     already dropped them. Without the clause a `QName` over `Ident .` -- arity two canonically, arity one here --
+    *     would be elided on the consumer's side and kept on the canonical one, and the two sides would disagree about a
+    *     node neither of them was wrong about.
+    *   - `dropWhenEmpty` -- the node is dropped only when it has no children, and left alone otherwise. The
+    *     consumer-side counterpart of the contract's `elide-empty`, and the only rule available for a node that holds
+    *     its tokens directly: eliding such a node at arity one would hand the parent a bare token and strip the role
+    *     its name was carrying. The canonical side needs no counterpart here, because normalisation has already applied
+    *     it.
     *
     * **Bottom-up, and that is not a detail.** An earlier revision applied the two rules once per level, in sequence,
     * and a node promoted into a level from below never met the other rule. The canonical trees contain exactly that
@@ -180,22 +201,40 @@ object Conformance {
     * it writes `fixtures/expected`, and the two must agree exactly or the canonical trees would not survive their own
     * comparison. `verify.sh` asserts that by feeding `fixtures/raw` back in as a consumer.
     */
+  /** How many tokens this node holds once its spliced children have handed their contents up.
+    *
+    * Splicing is defined on the whole tree, so on the canonical side it promotes a marker's tokens into the parent --
+    * `TrailingDot` carries the `.` of a trailing-dot error, and splicing it leaves that `.` a direct child of `QName`,
+    * which is then a two-child node and is kept. This comparison dropped the tokens before the rules ran, so the same
+    * splice would leave `QName` looking singular and elide it. Counting them forward is what keeps both sides applying
+    * the same rule to the same arity.
+    */
+  private def promotedTokens(node: KTree, splice: Set[String]): Int =
+    node.tokens + node.children.filter(c => splice.contains(c.kind)).map(promotedTokens(_, splice)).sum
+
   private def transparent(
       node: KTree,
       splice: Set[String],
       elide: Set[String],
+      dropEmpty: Set[String],
       stats: Stats,
       spliceCounter: String,
       elideCounter: String
   ): List[KTree] = {
-    val kids = node.children.flatMap(transparent(_, splice, elide, stats, spliceCounter, elideCounter))
+    val kids = node.children.flatMap(transparent(_, splice, elide, dropEmpty, stats, spliceCounter, elideCounter))
+    // Arity as normalisation counts it: node children plus the tokens this node holds once its spliced
+    // children have handed theirs up. Elided tokens leave no KTree behind, so `kids` alone understates it.
+    val tokens = promotedTokens(node, splice)
     if (splice.contains(node.kind)) {
       stats.inc(spliceCounter)
       kids
-    } else if (elide.contains(node.kind) && kids.length <= 1) {
+    } else if (elide.contains(node.kind) && kids.length + tokens <= 1) {
       stats.inc(elideCounter)
       kids
-    } else List(KTree(node.kind, kids))
+    } else if (dropEmpty.contains(node.kind) && kids.isEmpty && tokens == 0) {
+      stats.inc("droppedEmpty")
+      Nil
+    } else List(KTree(node.kind, kids, tokens))
   }
 
   /** Applies transparency to a tree while leaving its root alone: the root has no parent to be spliced into. */
@@ -203,11 +242,16 @@ object Conformance {
       root: KTree,
       splice: Set[String],
       elide: Set[String],
+      dropEmpty: Set[String],
       stats: Stats,
       spliceCounter: String,
       elideCounter: String
   ): KTree =
-    KTree(root.kind, root.children.flatMap(transparent(_, splice, elide, stats, spliceCounter, elideCounter)))
+    KTree(
+      root.kind,
+      root.children.flatMap(transparent(_, splice, elide, dropEmpty, stats, spliceCounter, elideCounter)),
+      root.tokens
+    )
 
   /** Walks both trees in lockstep, appending divergences to `out`.
     *
@@ -307,8 +351,28 @@ object Conformance {
             case None => record(found, stats, Divergence(source, "tree", "nothing", "missing-unit"))
             case Some(actRaw) =>
               val expTree =
-                transparentTree(expRaw, vocab.flattenCanonical, vocab.elide, stats, "flattenedCanonical", "elided")
-              val actTree = transparentTree(actRaw, vocab.flatten, vocab.ignored, stats, "flattened", "ignored")
+                // The canonical side takes no `dropWhenEmpty`: in the structural lane it is read from
+                // fixtures/expected, where normalisation already dropped those nodes, and in the recovery lane
+                // `normalizeWith` has just done the same. Applying it twice could only remove something else.
+                transparentTree(
+                  expRaw,
+                  vocab.flattenCanonical,
+                  vocab.elide,
+                  Set.empty,
+                  stats,
+                  "flattenedCanonical",
+                  "elided"
+                )
+              val actTree =
+                transparentTree(
+                  actRaw,
+                  vocab.flatten,
+                  vocab.ignored,
+                  vocab.dropWhenEmpty,
+                  stats,
+                  "flattened",
+                  "ignored"
+                )
               stats.counts("expected") += sizeOf(expTree)
               compare(expTree, actTree, vocab, source, found, stats)
           }
@@ -436,6 +500,7 @@ object Conformance {
     sb.append(s"""$i  "depthPercent": ${math.round(lane.depth * 100)},\n""")
     sb.append(s"""$i  "nodesMapped": ${lane.stats.counts("mapped")},\n""")
     sb.append(s"""$i  "nodesIgnored": ${lane.stats.counts("ignored")},\n""")
+    sb.append(s"""$i  "nodesDroppedEmpty": ${lane.stats.counts("droppedEmpty")},\n""")
     sb.append(s"""$i  "nodesElided": ${lane.stats.counts("elided")},\n""")
     sb.append(s"""$i  "nodesFlattened": ${lane.stats.counts("flattened")},\n""")
     sb.append(s"""$i  "nodesFlattenedCanonical": ${lane.stats.counts("flattenedCanonical")},\n""")
@@ -621,6 +686,7 @@ object Conformance {
       vocab = Vocabulary(
         mapping = Some(mappings),
         ignored = names("ignored"),
+        dropWhenEmpty = names("dropWhenEmpty"),
         elide = names("elide"),
         flatten = names("flatten"),
         flattenCanonical = names("flattenCanonical"),

@@ -54,6 +54,10 @@ object Normalizer {
     child.get("kind").map(_.asString) match {
       case Some(kind) if contract.splice.contains(kind) =>
         childrenOf(child).flatMap(rewrite(_, contract))
+      // Dropped only where there is nothing to drop. A node holding its tokens directly cannot be
+      // replaced by its child without handing the parent a bare leaf, so this rule never substitutes.
+      case Some(kind) if contract.elideEmpty.contains(kind) =>
+        if (childrenOf(child).isEmpty) Nil else List(child)
       case Some(kind) if contract.elide.contains(kind) =>
         val kids = childrenOf(child)
         // Two or more children is the case that must be left alone: splicing a branching node into its parent would

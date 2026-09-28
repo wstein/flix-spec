@@ -38,6 +38,14 @@
         "minLength": 1
       }
     },
+    "dropWhenEmpty": {
+      "type": "array",
+      "description": "Native nodes that are dropped only when they have no children, and left exactly as they are otherwise. The consumer-side counterpart of the contract's `elide-empty` rule, and the only rule available for a node that holds its tokens directly: listing such a node in `ignored` would replace it by its lone token at arity one, splicing a bare leaf into the parent and stripping the role the node's name was carrying. `ModifierList` and `AnnotationList` are the canonical cases -- both consume their tokens directly, and both are routinely empty.",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
     "notes": {
       "type": "object",
       "description": "Free-form per-node rationale, keyed by native node name.",

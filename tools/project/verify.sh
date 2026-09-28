@@ -140,6 +140,7 @@ jq -n \
                                         | map(.name) | index($k)) == null))
                 | map({key: ., value: .}) | from_entries),
      ignored: ($transparency[0].treeKinds | map(select(.rule == "elide") | .name)),
+     dropWhenEmpty: ($transparency[0].treeKinds | map(select(.rule == "elide-empty") | .name)),
      recoveryMarkers: ($transparency[0].treeKinds | map(select(.recoveryMarker == true) | .name))
    }' > "$IDMAP"
 # The elided kinds are declared `ignored` and deliberately *not* mapped, and the

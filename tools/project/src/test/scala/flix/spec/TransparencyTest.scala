@@ -69,24 +69,41 @@ class TransparencyTest extends AnyFunSuite with Matchers {
     withClue(s"entries appealing to a consumer: ${offenders.map(_.name)} ")(offenders shouldBe empty)
   }
 
-  test("every elided kind really is a one-edge, no-leaf wrapper in the fixtures") {
-    // The falsification check. An `elide` entry claims the node contributes exactly one edge and no leaf content; an
-    // occurrence with two children, or with a token child, is a direct counter-example and the entry is wrong.
-    val maxChildren = scala.collection.mutable.Map.empty[String, Int].withDefaultValue(0)
-    val maxTokens = scala.collection.mutable.Map.empty[String, Int].withDefaultValue(0)
+  test("no elided kind ever substitutes a bare token, and elide-empty is used only where it must be") {
+    // The falsification check, stated the way the rules actually fire -- per occurrence.
+    //
+    // An `elide` entry does not claim the kind is always a wrapper; a branching occurrence is kept, so it is no
+    // counter-example. What it does claim is that wherever the node stands in for its single child, that child is
+    // the whole content. An occurrence holding exactly one child that is a *token* falsifies exactly that: eliding
+    // it would splice a bare leaf into the parent and strip the role the node's name was carrying.
+    //
+    // `elide-empty` exists only for the kinds that fail that condition. So it carries the opposite obligation: a
+    // kind that never holds a token directly does not need the weaker rule, and using it there would leave wrapper
+    // occurrences standing for no reason. Each rule must therefore be the weakest one that is safe, and no weaker.
+    val singleTokenChild = scala.collection.mutable.Map.empty[String, Int].withDefaultValue(0)
+    val directTokens = scala.collection.mutable.Map.empty[String, Int].withDefaultValue(0)
 
     def walk(node: Json): Unit = node.get("kind").foreach { k =>
       val kind = k.asString
       val children = node.get("children").map(_.asArray).getOrElse(Nil)
-      maxChildren(kind) = math.max(maxChildren(kind), children.length)
-      maxTokens(kind) = math.max(maxTokens(kind), children.count(_.get("kind").isEmpty))
+      if (children.length == 1 && children.head.get("kind").isEmpty) singleTokenChild(kind) += 1
+      directTokens(kind) += children.count(_.get("kind").isEmpty)
       children.foreach(walk)
     }
     rawTrees.foreach(f => Json.parseFile(f)("units").asArray.foreach(u => walk(u("tree"))))
 
     contract.entries.filter(_.rule == "elide").foreach { e =>
-      withClue(s"${e.name} holds up to ${maxChildren(e.name)} child(ren): ")(maxChildren(e.name) should be <= 1)
-      withClue(s"${e.name} holds a token child, so it gives that token a role: ")(maxTokens(e.name) shouldBe 0)
+      withClue(
+        s"${e.name} stands over a lone token in ${singleTokenChild(e.name)} occurrence(s), so eliding it would " +
+          "splice that token into the parent; the rule must be elide-empty: "
+      )(singleTokenChild(e.name) shouldBe 0)
+    }
+
+    contract.entries.filter(_.rule == "elide-empty").foreach { e =>
+      withClue(
+        s"${e.name} never holds a token directly, so the stronger `elide` rule is safe for it and this entry " +
+          "leaves wrapper occurrences standing for no reason: "
+      )(directTokens(e.name) should be > 0)
     }
   }
 

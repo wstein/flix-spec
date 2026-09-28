@@ -74,6 +74,7 @@
         "depthPercent",
         "nodesMapped",
         "nodesIgnored",
+        "nodesDroppedEmpty",
         "nodesElided",
         "nodesFlattened",
         "nodesFlattenedCanonical",
@@ -128,6 +129,11 @@
         },
         "nodesMapped": { "type": "integer", "minimum": 0 },
         "nodesIgnored": { "type": "integer", "minimum": 0 },
+        "nodesDroppedEmpty": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Consumer nodes removed by `dropWhenEmpty`: empty occurrences of a node that holds its tokens directly, which `ignored` cannot express without splicing a bare token into the parent."
+        },
         "nodesElided": { "type": "integer", "minimum": 0 },
         "nodesFlattened": { "type": "integer", "minimum": 0 },
         "nodesFlattenedCanonical": {

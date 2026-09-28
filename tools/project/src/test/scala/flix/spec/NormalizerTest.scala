@@ -38,6 +38,15 @@ class NormalizerTest extends AnyFunSuite with Matchers {
       case Some(_) => node.get("children").map(_.asArray).getOrElse(Nil).flatMap(tokens)
     }
 
+  /** Every node as (kind, child count), which is what a per-occurrence rule is stated in terms of. */
+  private def occurrences(node: Json): List[(String, Int)] =
+    node.get("kind") match {
+      case None => Nil
+      case Some(k) =>
+        val kids = node.get("children").map(_.asArray).getOrElse(Nil)
+        (k.asString, kids.length) :: kids.flatMap(occurrences)
+    }
+
   private def kinds(node: Json): List[String] =
     node.get("kind") match {
       case None    => Nil
@@ -135,20 +144,43 @@ class NormalizerTest extends AnyFunSuite with Matchers {
     }
   }
 
-  test("the normalized trees contain no kind the contract removes, and the raw trees still do") {
-    val removed = contract.all
-
+  test("what each rule leaves behind in the normalized trees is exactly what that rule permits") {
+    // The three rules fire per occurrence, so "the kind is gone" is the wrong property for two of them
+    // and would be satisfied only by the stricter contract this repository used to carry. What must hold
+    // is that no *occurrence* survives that its own rule was supposed to remove:
+    //
+    //   - `splice`      removes the node at every arity, so none may remain;
+    //   - `elide`       removes it at arity zero and one, so a survivor must be branching;
+    //   - `elide-empty` removes it only where it is empty, so no survivor may be empty.
     trees("fixtures/expected").foreach { f =>
       Json.parseFile(f)("units").asArray.foreach { unit =>
-        withClue(s"${f.getFileName}: ")(kinds(unit("tree")).toSet.intersect(removed) shouldBe empty)
+        withClue(s"${f.getFileName}: ") {
+          occurrences(unit("tree")).foreach { case (kind, arity) =>
+            if (contract.splice(kind)) fail(s"spliced kind '$kind' survived normalisation")
+            if (contract.elide(kind) && arity <= 1)
+              fail(s"elided kind '$kind' survived at arity $arity; only branching occurrences may remain")
+            if (contract.elideEmpty(kind) && arity == 0)
+              fail(s"'$kind' is dropped when empty, but an empty occurrence survived")
+          }
+        }
       }
     }
 
-    val rawKinds = trees("fixtures/raw")
-      .flatMap(f => Json.parseFile(f)("units").asArray.flatMap(u => kinds(u("tree"))))
-      .toSet
-    withClue("a rule whose kind the suite never exercises cannot be falsified by it: ") {
-      removed.diff(rawKinds) shouldBe empty
+    // The other half of the same property: every rule must still *fire* somewhere, or it is a claim the
+    // suite cannot falsify. An `elide` rule that only ever met branching occurrences would remove nothing
+    // while reading as though it did.
+    val rawOccurrences = trees("fixtures/raw")
+      .flatMap(f => Json.parseFile(f)("units").asArray.flatMap(u => occurrences(u("tree"))))
+    contract.entries.foreach { e =>
+      val seen = rawOccurrences.filter(_._1 == e.name).map(_._2)
+      withClue(s"rule '${e.rule}' on '${e.name}' never fires in fixtures/raw: ") {
+        e.rule match {
+          case "splice"      => seen should not be empty
+          case "elide"       => seen.count(_ <= 1) should be > 0
+          case "elide-empty" => seen.count(_ == 0) should be > 0
+          case other         => fail(s"unknown rule '$other'")
+        }
+      }
     }
   }
 

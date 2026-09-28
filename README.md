@@ -111,8 +111,8 @@ is it* — and the two are independent: a `wrapper` can be `reachable-covered`, 
 <!-- generated: roles -->
 | Role | `TreeKind` |
 | --- | ---: |
-| `syntax` — the vocabulary a consumer is asked to agree with | 170 |
-| `wrapper` — carries no information beyond its child; elided when normalising | 12 |
+| `syntax` — the vocabulary a consumer is asked to agree with | 164 |
+| `wrapper` — carries no information beyond its child; elided when normalising | 18 |
 | `error-marker` — marks recovery rather than syntax; spliced out, measured in the recovery lane | 3 |
 | `unattachable` — cannot appear in any tree from any input | 6 |
 
