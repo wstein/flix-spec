@@ -1,8 +1,6 @@
 package flix.spec
 
 import java.nio.file.{Files, Path, Paths}
-import java.time.LocalDate
-import java.time.format.DateTimeParseException
 
 /** Validates `defects/ledger.json`: defects in the *reference compiler* that this suite inherits.
   *
@@ -17,13 +15,14 @@ import java.time.format.DateTimeParseException
   *   - **Every entry is falsifiable.** Each carries a minimized reproducer and a declarative assertion, re-checked
   *     against the pinned oracle on every run. When upstream fixes the defect the assertion stops holding and the build
   *     fails, saying so -- the entry is then closed deliberately rather than left to rot into folklore.
-  *   - **Every entry expires.** Past its `review` date the build fails until a human re-triages it. A ledger without
-  *     expiry accumulates entries nobody has looked at in a year, which is indistinguishable from having no ledger.
+  *   - **Every entry expires when the oracle moves.** An entry records the pin it was last triaged against, and the
+  *     build fails once `pin.json` names a different one. A ledger nobody revisits is indistinguishable from having no
+  *     ledger, and a pin bump is exactly the moment a defect may have been fixed.
   *
-  * The expiry gate is time-based, and that has a real cost worth stating rather than discovering: re-running CI on an
-  * old commit or tag after one of its entries has expired will fail, even though nothing about that commit changed.
-  * That is the intended direction of the ratchet -- staleness should be loud -- but it means a historical rebuild may
-  * need the ledger's `review` dates advanced first. `docs/DEFECTS.md` says so where a maintainer will read it.
+  * This used to be a wall-clock `review` date, and that was wrong in a way worth recording. It made every *tag* carry a
+  * fuse: re-running CI on an old commit after its entries expired would fail, though nothing about that commit had
+  * changed, and the artifacts it published were still exactly what it published. Time passing is not evidence about a
+  * defect. The oracle changing is, and it is the only thing that can make one of these entries stop being true.
   */
 object DefectLedger {
 
@@ -32,12 +31,12 @@ object DefectLedger {
       title: String,
       reproducer: String,
       parsesCleanly: Boolean,
+      reviewedAtPin: String,
       absentKinds: List[String],
       weedOutcome: Option[String],
       presentKinds: List[String],
       upstreamStatus: String,
-      upstreamIssue: Option[String],
-      review: String
+      upstreamIssue: Option[String]
   )
 
   private def read(doc: Json): List[Entry] =
@@ -53,7 +52,7 @@ object DefectLedger {
         presentKinds = a.get("presentKinds").map(_.asArray.map(_.asString)).getOrElse(Nil),
         upstreamStatus = e("upstreamStatus").asString,
         upstreamIssue = e.get("upstreamIssue").filterNot(_.isNull).map(_.asString),
-        review = e("review").asString
+        reviewedAtPin = e("reviewedAtPin").asString
       )
     }
 
@@ -113,15 +112,10 @@ object DefectLedger {
       }
     }
 
-    val today = LocalDate.now()
     entries.foreach { e =>
-      try {
-        val due = LocalDate.parse(e.review)
-        if (due.isBefore(today))
-          fatal += s"${e.id}: review date ${e.review} has passed -- re-triage it and set a new date, or close it"
-      } catch {
-        case _: DateTimeParseException => fatal += s"${e.id}: review '${e.review}' is not a valid date"
-      }
+      if (e.reviewedAtPin != pinCommit)
+        fatal += s"${e.id}: last triaged at ${e.reviewedAtPin}, but pin.json is at $pinCommit -- " +
+          "re-read it against the new oracle, then restamp reviewedAtPin or close the entry"
     }
 
     entries.foreach { e =>

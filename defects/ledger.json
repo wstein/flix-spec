@@ -32,7 +32,7 @@
       "upstreamStatus": "not-filed",
       "upstreamIssue": null,
       "owner": "wstein",
-      "review": "2026-11-01"
+      "reviewedAtPin": "4a5b60a31ac03bb762f68b554a0fc2b6f4d982b9"
     },
     {
       "id": "FLIX-0002",
@@ -60,7 +60,7 @@
       "upstreamStatus": "not-filed",
       "upstreamIssue": null,
       "owner": "wstein",
-      "review": "2026-11-01"
+      "reviewedAtPin": "4a5b60a31ac03bb762f68b554a0fc2b6f4d982b9"
     }
   ]
 }

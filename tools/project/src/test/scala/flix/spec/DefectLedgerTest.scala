@@ -6,7 +6,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.junit.JUnitRunner
 
 import java.nio.file.{Files, Path, Paths}
-import java.time.LocalDate
 
 /** Structural guards on `defects/ledger.json`.
   *
@@ -70,13 +69,19 @@ class DefectLedgerTest extends AnyFunSuite with Matchers {
     }
   }
 
-  test("no entry has already expired") {
+  test("every entry was triaged against the pin currently in force") {
     // The same gate validateDefects applies, asserted here so the failure names the ledger rather
     // than surfacing partway through the end-to-end suite.
-    val today = LocalDate.now()
+    //
+    // Deliberately not a date. A wall-clock gate put a fuse in every tag: re-running CI on an old
+    // commit after its entries expired would fail, though nothing about that commit had changed and
+    // the artifacts it published were still exactly what it published. Time passing is not evidence
+    // about a defect; the oracle moving is, and it is the only thing that can make one stop holding.
+    val pinCommit = Json.parseFile(repoRoot.resolve("pin.json"))("upstream")("commit").asString
     entries.foreach { e =>
-      val due = LocalDate.parse(e("review").asString)
-      withClue(s"${e("id").asString} was due for re-triage on $due: ")(due.isBefore(today) shouldBe false)
+      withClue(s"${e("id").asString} was last triaged at a different pin: ") {
+        e("reviewedAtPin").asString shouldBe pinCommit
+      }
     }
   }
 

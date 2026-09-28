@@ -2,6 +2,7 @@ package flix.spec
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths}
+import scala.jdk.CollectionConverters._
 
 /** Rewrites the marker-delimited blocks in `README.md` and `docs/CONFORMANCE.md` from `ast&#47;*.json` and `pin.json`.
   *
@@ -112,6 +113,33 @@ object DocMetrics {
          |The four partition the ${roleTally("total").asInt} `TreeKind`s exactly. Machine-readable form:
          |`treeKindRole` in [`ast/status.json`](ast/status.json).""".stripMargin
 
+    // The normalisation figure has gone stale in README prose three times: at the contract change, at the
+    // v0.77.0 bump, and again at 0.77.1. It moves whenever a rule or a fixture changes, which is often, and
+    // the diff gate only compares generated regions -- prose restating their numbers is invisible to it.
+    // So the sentence becomes the artifact, like the others here.
+    def nodesIn(dir: String): Int = {
+      var n = 0
+      def walk(x: Json): Unit = x.get("kind").foreach { _ =>
+        n += 1
+        x.get("children").map(_.asArray).getOrElse(Nil).foreach(walk)
+      }
+      Files
+        .list(Paths.get(dir))
+        .iterator()
+        .asScala
+        .filter(_.toString.endsWith(".json"))
+        .foreach(f => Json.parseFile(f).get("units").map(_.asArray).getOrElse(Nil).foreach(_.get("tree").foreach(walk)))
+      n
+    }
+    val rawNodes = nodesIn(ProjectionExtractor.RawDir)
+    val normalizedNodes = nodesIn(ProjectionExtractor.NormalizedDir)
+    val removedNodes = rawNodes - normalizedNodes
+    val removedPct = f"${100.0 * removedNodes / rawNodes}%.1f"
+    val normalisationBlock =
+      s"**$removedNodes of $rawNodes nodes ($removedPct%)** removed by " +
+        "[`ast/transparency.json`](ast/transparency.json), which elides wrapper nodes that carry no " +
+        "information beyond their child and splices out the error-recovery vocabulary."
+
     val nodeCount = coverage("nodeCount").asInt
     val wrapperNodes = coverage("singleChildWrapperNodes").asInt
     val wrapPct = f"${100.0 * wrapperNodes / nodeCount}%.1f"
@@ -132,14 +160,14 @@ object DocMetrics {
       if (ledger.isEmpty) "_No open entries at this pin._"
       else {
         val header = List(
-          "| Id | Defect | Component | Disposition | Upstream | Review by |",
+          "| Id | Defect | Component | Disposition | Upstream | Triaged at pin |",
           "| --- | --- | --- | --- | --- | --- |"
         )
         val rows = ledger.map { e =>
           val upstream =
             e.get("upstreamIssue").filterNot(_.isNull).map(u => s"[reported](${u.asString})").getOrElse("not filed")
           s"| `${e("id").asString}` | ${e("title").asString} | `${e("component").asString}` | " +
-            s"${e("disposition").asString} | $upstream | ${e("review").asString} |"
+            s"${e("disposition").asString} | $upstream | `${e("reviewedAtPin").asString.take(12)}` |"
         }
         val plural = if (ledger.length == 1) "entry" else "entries"
         (header ++ rows).mkString("\n") +
@@ -150,6 +178,7 @@ object DocMetrics {
 
     val edits = List(
       (Paths.get("README.md"), "status", statusBlock),
+      (Paths.get("README.md"), "normalisation", normalisationBlock),
       (Paths.get("README.md"), "roles", rolesBlock),
       (Paths.get("docs/CONFORMANCE.md"), "wrappers", wrapperBlock),
       (Paths.get("docs/CONFORMANCE.md"), "lossless", losslessBlock),

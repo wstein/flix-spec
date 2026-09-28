@@ -18,10 +18,10 @@ So "zero drift" remains the goal for compatibility, and it is not a claim of cor
 two come apart, the ledger is where that is recorded rather than normalised away.
 
 <!-- generated: defects -->
-| Id | Defect | Component | Disposition | Upstream | Review by |
+| Id | Defect | Component | Disposition | Upstream | Triaged at pin |
 | --- | --- | --- | --- | --- | --- |
-| `FLIX-0001` | Predicate.ParamUntyped is dead by assignment in Parser2.param() | `Parser2` | accepted-upstream-defect | not filed | 2026-11-01 |
-| `FLIX-0002` | Weeder2 crashes on a math-name operator used infix | `Weeder2` | accepted-upstream-defect | not filed | 2026-11-01 |
+| `FLIX-0001` | Predicate.ParamUntyped is dead by assignment in Parser2.param() | `Parser2` | accepted-upstream-defect | not filed | `4a5b60a31ac0` |
+| `FLIX-0002` | Weeder2 crashes on a math-name operator used infix | `Weeder2` | accepted-upstream-defect | not filed | `4a5b60a31ac0` |
 
 2 entries, each re-checked against the pinned oracle on every run. See [`defects/ledger.json`](../defects/ledger.json) for each reproducer, its citations and the full impact note.
 <!-- /generated: defects -->
@@ -29,7 +29,7 @@ two come apart, the ledger is where that is recorded rather than normalised away
 ## What makes an entry
 
 Every entry carries an owner, a disposition, a minimized reproducer, source citations, an explicit
-upstream-report status, and a review date. `defects/ledger.json` is the data;
+upstream-report status, and the pin it was last triaged against. `defects/ledger.json` is the data;
 `schemas/defect-ledger.schema.json` is the contract; `./gradlew :tools:project:validateDefects`
 enforces both, and runs inside `verify.sh`.
 
@@ -58,17 +58,23 @@ It cuts the other way too: if a reproducer stops demonstrating what it claims �
 used was reworked upstream — the build says the reproducer needs minimizing again, rather than
 letting a vacuous entry sit there looking like evidence.
 
-## Entries expire
+## Entries expire when the oracle moves
 
-Past its `review` date an entry fails the build until a human re-triages it. A ledger without expiry
-accumulates entries nobody has read in a year, which is indistinguishable from having no ledger.
+Each entry records the upstream commit it was last triaged against, in `reviewedAtPin`. Once
+`pin.json` names a different one, the build fails until a human re-reads the entry and either
+restamps it or closes it. A ledger nobody revisits is indistinguishable from having no ledger, and a
+pin bump is exactly the moment a defect may have been fixed.
 
-**The cost of that gate, stated plainly:** it is time-based, so re-running CI on an old commit or tag
-after one of its entries has expired will fail even though nothing about that commit changed. That is
-the intended direction of the ratchet — staleness should be loud — but it means a historical rebuild
-may first need the ledger's `review` dates advanced. This is the one place in the repository where a
-check depends on the wall clock rather than on the pinned inputs, and it is a deliberate exception
-rather than an oversight.
+**This was a wall-clock `review` date until 0.77.2, and that was wrong.** It put a fuse in every
+tag: re-running CI on an old commit after its entries expired would fail, although nothing about
+that commit had changed and the artifacts it published were still exactly what it published. At the
+time of the change both entries were 34 days from doing precisely that to `v0.77.0` and `v0.77.1`.
+
+The reasoning that replaced it is simpler than the cost it removed. Time passing is not evidence
+about a defect. The oracle changing is — it is the only thing that can make one of these entries
+stop being true — and `docs/PIN-BUMP.md` already requires every curated file to be re-read at a
+bump, so the ledger now expires on the same trigger as `ast/transparency.json` and
+`ast/unattachable.json` rather than on a clock of its own.
 
 ## Relationship to `ast/unattachable.json`
 

@@ -48,7 +48,7 @@
         "upstreamStatus",
         "upstreamIssue",
         "owner",
-        "review"
+        "reviewedAtPin"
       ],
       "properties": {
         "id": {
@@ -132,10 +132,10 @@
           "minLength": 1,
           "description": "Who re-triages this at the review date."
         },
-        "review": {
+        "reviewedAtPin": {
           "type": "string",
-          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
-          "description": "Date by which the entry must be re-triaged. Past this date the build fails."
+          "pattern": "^[0-9a-f]{40}$",
+          "description": "The upstream commit this entry was last triaged against. The build fails once pin.json names a different one, because a pin bump is the moment a defect may have been fixed. Deliberately not a date: time passing is not evidence about a defect, and a wall-clock gate put a fuse in every tag -- re-running CI on an old commit would fail though nothing about it had changed."
         }
       },
       "additionalProperties": false
@@ -159,11 +159,15 @@
           "description": "Kinds that must NOT appear -- typically the kind the reference intends but cannot emit."
         },
         "weedOutcome": {
-   "type": "string",
-   "enum": ["clean", "rejected", "crashes"],
-   "description": "What Weeder2 does with the reproducer, run with xnodeprecated=true. `crashes` records an InternalCompilerException -- the reference failing to handle input its own parser accepted, which no parse-level assertion can express. Optional, and checked only when present; omit it for a defect that is purely about the tree."
-  },
-  "presentKinds": {
+          "type": "string",
+          "enum": [
+            "clean",
+            "rejected",
+            "crashes"
+          ],
+          "description": "What Weeder2 does with the reproducer, run with xnodeprecated=true. `crashes` records an InternalCompilerException -- the reference failing to handle input its own parser accepted, which no parse-level assertion can express. Optional, and checked only when present; omit it for a defect that is purely about the tree."
+        },
+        "presentKinds": {
           "type": "array",
           "items": {
             "type": "string"
