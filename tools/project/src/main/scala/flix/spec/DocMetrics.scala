@@ -131,6 +131,23 @@ object DocMetrics {
         .foreach(f => Json.parseFile(f).get("units").map(_.asArray).getOrElse(Nil).foreach(_.get("tree").foreach(walk)))
       n
     }
+    // Published provenance, generated from pin.json. NOTICE.md ships inside both the release bundle and
+    // the Maven jar, so a stale tag or digest here is wrong in every consumer's copy -- and it was: it named
+    // v0.76.0 and that release's digest for two pins after the oracle had moved. Attribution is the last
+    // thing that should be hand-copied.
+    val up = pin("upstream")
+    val provenanceBlock =
+      s"""|- **Upstream Repository**: https://github.com/flix/flix
+          |- **Pinned Tag / Release**: `${up("tag").asString}`
+          |- **Pinned Commit SHA**: `${up("commit").asString}`
+          |- **Git Tree Hash**: `${up("treeHash").asString}`
+          |- **Oracle Artifact SHA-256**: `${pin("oracleArtifact")("sha256").asString}`""".stripMargin
+
+    val pinSummaryBlock =
+      s"""pinned to upstream release `${up("tag").asString}` (`${up("commit").asString.take(8)}…`, tree """ +
+        s"`${up("treeHash").asString.take(8)}…`), the release asset's SHA-256 " +
+        s"(`${pin("oracleArtifact")("sha256").asString.take(8)}…`)"
+
     val rawNodes = nodesIn(ProjectionExtractor.RawDir)
     val normalizedNodes = nodesIn(ProjectionExtractor.NormalizedDir)
     val removedNodes = rawNodes - normalizedNodes
@@ -179,6 +196,8 @@ object DocMetrics {
     val edits = List(
       (Paths.get("README.md"), "status", statusBlock),
       (Paths.get("README.md"), "normalisation", normalisationBlock),
+      (Paths.get("NOTICE.md"), "provenance", provenanceBlock),
+      (Paths.get("README.md"), "pin-summary", pinSummaryBlock),
       (Paths.get("README.md"), "roles", rolesBlock),
       (Paths.get("docs/CONFORMANCE.md"), "wrappers", wrapperBlock),
       (Paths.get("docs/CONFORMANCE.md"), "lossless", losslessBlock),

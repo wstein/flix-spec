@@ -61,11 +61,15 @@ jobs:
           # outside this gate is exactly how the fixture count reached 136 on
           # disk while the README still advertised 134.
           #
+          # NOTICE.md is in scope because its provenance block is generated from pin.json and it ships
+          # inside both the release bundle and the Maven jar. It named v0.76.0 and that release's digest
+          # for two pins after the oracle had moved, in every consumer's copy, because nothing compared it.
+          #
           # fixtures/raw/ is in scope for the same reason fixtures/expected/ is:
           # it is a committed, published artifact, and it is the authority the
           # recovery lane compares against. Gating only the normalized form
           # would let the reference's own tree drift silently.
           git add --intent-to-add --all \
-            ast/ fixtures/raw/ fixtures/expected/ README.md docs/CONFORMANCE.md docs/DEFECTS.md
+            ast/ fixtures/raw/ fixtures/expected/ README.md docs/CONFORMANCE.md docs/DEFECTS.md NOTICE.md
           git diff --exit-code \
-            ast/ fixtures/raw/ fixtures/expected/ README.md docs/CONFORMANCE.md docs/DEFECTS.md
+            ast/ fixtures/raw/ fixtures/expected/ README.md docs/CONFORMANCE.md docs/DEFECTS.md NOTICE.md

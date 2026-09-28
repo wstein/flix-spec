@@ -4,11 +4,13 @@ This product includes software and artifacts derived from the Flix compiler proj
 
 ## 1. Flix Reference Compiler
 
+<!-- generated: provenance -->
 - **Upstream Repository**: https://github.com/flix/flix
-- **Pinned Tag / Release**: `v0.76.0`
-- **Pinned Commit SHA**: `f2d4678c20bff1242f4cad5e23144db91027b762`
-- **Git Tree Hash**: `0cd0f96df983025ee5a5117f04e732e188cb97c8`
-- **Oracle Artifact SHA-256**: `d8d9a3870e199c03ed6364ea9430f56f67bfd38c332c411628a6a7cb88b2b0b4`
+- **Pinned Tag / Release**: `v0.77.0`
+- **Pinned Commit SHA**: `4a5b60a31ac03bb762f68b554a0fc2b6f4d982b9`
+- **Git Tree Hash**: `6a7f542f0ec2c290c56c340c2366f136517483a5`
+- **Oracle Artifact SHA-256**: `20007d79f97b696ba388113e2a4235227691d33a00bfa669f2316b37a7b14201`
+<!-- /generated: provenance -->
 - **License**: Apache License 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
 - **Copyright**: Copyright (c) 2015-2026 Flix authors & University of Waterloo
 

@@ -41,7 +41,9 @@ a rebuild), and [`docs/PIN-BUMP.md`](docs/PIN-BUMP.md) (how the pin moves).
 **Phase 1 (pin, contracts, AST inventory, corpus) and Phase 2 (projected fixtures, coverage, reachability) complete.**
 
 Key components established:
-- **Oracle pin contract ([`pin.json`](pin.json))**: pinned to upstream release `v0.76.0` (`f2d4678c…`, tree `0cd0f96d…`), the release asset's SHA-256 (`d8d9a387…`), the entry point actually used, the required library level, and the classpath requirement. The `attestation` field records that the jar is **verified by digest, not by build provenance**.
+- **Oracle pin contract ([`pin.json`](pin.json))**: <!-- generated: pin-summary -->
+pinned to upstream release `v0.77.0` (`4a5b60a3…`, tree `6a7f542f…`), the release asset's SHA-256 (`20007d79…`)
+<!-- /generated: pin-summary -->, the entry point actually used, the required library level, and the classpath requirement. The `attestation` field records that the jar is **verified by digest, not by build provenance**.
 - **Projection contract ([`docs/PROJECTION.md`](docs/PROJECTION.md))**: canonical projected tree format, load-bearing versus advisory elements, normalisation rules, and consumer projection maps.
 - **JSON schemas ([`schemas/`](schemas/))**: draft-07 definitions for `ast/treekind.json` and canonical projected trees, enforced in CI by [`TreeKindSchemaValidator`](tools/project/src/main/scala/flix/spec/TreeKindSchemaValidator.scala).
 - **Committed AST inventory ([`ast/treekind.json`](ast/treekind.json))**: 192 `TreeKind` nodes with qualified names, parent traits and forms, name-set digest `30802218…`, and a provenance header naming the generator, tool version, upstream commit and the exact oracle jar it was derived from.
@@ -57,7 +59,8 @@ Key components established:
 - **Conformance checking ([`docs/CONFORMANCE.md`](docs/CONFORMANCE.md))**: consumers emit canonical projected trees; [`Conformance`](tools/project/src/main/scala/flix/spec/Conformance.scala) does the comparison once, here, rather than four times across four repositories. Its report has **four lanes that are never summed**: `oracle_conformance` measures structure *modulo* error recovery against the normalized canonical tree; `recovery_conformance` measures error-recovery shape alone, against `fixtures/raw/`, scoped to the fixtures that recover from something; `diagnostic_conformance` measures whether the same units are rejected and carry the same gated `kind`/`line`, needing no tree and no projection map at all; `source_invariants` checks the consumer's output against its own input and inherits nothing. A consumer can pass any one and fail another, and CI asserts two such cases rather than asserting them in prose. Splitting recovery out is not forgiveness — recovery is a strategy, not a language feature, and two parsers can agree completely about valid programs while sharing nothing about how they resurface from a malformed one. Each consumer's projection map — its vocabulary, its own wrappers, and which of its own nodes are recovery markers — encodes facts about that consumer's grammar rather than about the reference, so it lives in that consumer's repository; `flix-spec` owns the schema ([`schemas/projection-map.schema.json`](schemas/projection-map.schema.json)), the canonical vocabulary its targets are checked against, and the comparison.
 - **CI and verification**: actions pinned by commit SHA, runner pinned to `ubuntu-24.04`, and Dependabot for actions and Gradle.
 
-Flix v0.76.0 preserves the v0.75.2 TreeKind and TokenKind vocabularies. It accepts effect type
+Flix v0.77.0 adds `UsesOrImports.Package` and `ColonColonTight`, and removes nothing. Flix v0.76.0
+preserved the v0.75.2 vocabularies and accepts effect type
 parameters, reports `IllegalOperationTypeParams` for generic operations, and changes recovery for
 malformed `match`/`ematch` expressions. Six fixtures cover these changes. See the
 [migration and review notes](docs/MIGRATION-v0.76.0.md) for compatibility and validation details.
@@ -139,7 +142,7 @@ children for it to hide, so the wrapper/error-marker distinction has no content 
 
 ```mermaid
 flowchart TD
-    REL["flix.jar<br/>release asset<br/><code>d8d9a387…</code>"]
+    REL["flix.jar<br/>release asset<br/>digest pinned in <code>pin.json</code>"]
     PIN["<code>pin.json</code><br/>execution contract"]
     TK["<code>ast/treekind.json</code><br/>192 kinds"]
     PROJ["projected trees<br/><code>fixtures/expected/</code>"]
