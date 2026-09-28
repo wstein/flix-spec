@@ -67,13 +67,14 @@ flowchart TD
    ```
    Fails loudly unless the download matches `oracleArtifact.sha256`.
 
-3. **Discover the new TreeKind and TokenKind values:**
+3. **Discover the new TreeKind, TokenKind and annotation values:**
    ```sh
    ./gradlew -q :tools:project:proposeTreeKind
    ./gradlew -q :tools:project:proposeTokenKind
+   ./gradlew -q :tools:project:proposeAnnotation
    ```
-   Reports `treeKindCount`/`treeKindDigest` and `tokenKindCount`/`tokenKindDigest` for the new jar
-   without asserting or writing. This step exists because asserting here would be circular — the
+   Reports `treeKindCount`/`treeKindDigest`, `tokenKindCount`/`tokenKindDigest` and
+   `annotationCount`/`annotationDigest` for the new jar without asserting or writing. This step exists because asserting here would be circular — the
    new values cannot be known until the new jar has been read.
 
    **When a kind is added, ask what it took from.** A new name in either inventory is the only reliable
@@ -90,16 +91,22 @@ flowchart TD
    fixture that exercises both sides of the decision. That is what makes the split visible to every
    consumer afterwards.
 
-4. **Paste all four values into `pin.json`.** This is the point of the two-pass design: the numbers
+4. **Paste all six values into `pin.json`.** This is the point of the two-pass design: the numbers
    enter the repository through a human, in the same commit as the bump.
 
 5. **Regenerate under assertion:**
    ```sh
    ./gradlew :tools:project:generateTreeKind
    ./gradlew :tools:project:generateTokenKind
+   ./gradlew :tools:project:generateAnnotation
    ```
    Now that `pin.json` carries the new values, this must succeed. If it does not, the jar and the
    pin disagree and the bump is wrong.
+
+   If a name left any of the three vocabularies, add it to `ast/retired.json` with the tag it went at
+   and why. That file is the only record a removal leaves behind: an added kind appears in the
+   inventory under a name a reader can look up, while a removed one leaves nothing but a digest that
+   no longer matches. `RetiredVocabularyTest` asserts every entry really is absent.
 
 6. **Re-verify both curated evidence files.** `ast/unattachable.json` and `ast/transparency.json`
    are the only hand-maintained inputs in this repository, and every entry in each cites upstream

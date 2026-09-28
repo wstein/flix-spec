@@ -133,7 +133,7 @@ To enable meaningful cross-parser comparison, projected trees distinguish betwee
 ## 4. Consumer Projection Maps
 
 External parsers use different naming conventions — `tree-sitter-flix`, for example, has 190 named
-`snake_case` node types. Its near-match to the 191 `TreeKind`s is a coincidence, not a
+`snake_case` node types. Its near-match to the 192 `TreeKind`s is a coincidence, not a
 correspondence, so expect a genuine mapping effort rather than a rename table.
 
 Each consumer maintains a projection map **in its own repository** — conventionally

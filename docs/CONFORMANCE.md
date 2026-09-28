@@ -318,8 +318,8 @@ the current figures, and re-measure in the consumer repository rather than trust
 ## Lexical consumers
 
 A syntax highlighter or TextMate grammar has no parse tree, so it can never consume
-`fixtures/expected/`. Its contract is [`ast/tokenkind.json`](../ast/tokenkind.json) — the 158
-`TokenKind`s the reference lexer defines, 157 case objects plus `Err`, reflected from the pinned
+`fixtures/expected/`. Its contract is [`ast/tokenkind.json`](../ast/tokenkind.json) — the 159
+`TokenKind`s the reference lexer defines, 158 case objects plus `Err`, reflected from the pinned
 jar and pinned by digest in `pin.json`.
 
 That exists so lexical consumers stop scraping `Lexer.scala` as text. Text scraping cannot be
@@ -382,8 +382,8 @@ consumer can pass today. `./gradlew :tools:project:lossless`.
 
 ## Token reachability
 
-`ReachabilityRun` measures the lexical vocabulary over the same corpus walk: **150 of 158
-TokenKinds** are emitted somewhere in the 900 files.
+`ReachabilityRun` measures the lexical vocabulary over the same corpus walk: **151 of 159
+TokenKinds** are emitted somewhere in the 893 files.
 
 Seven of the eight that are not — `Bang`, `Caret`, `Dollar`, `Err`, `KeywordForall`,
 `KeywordSealed`, `KeywordStaticLowercase` — *are* exercised by hand-written fixtures. That is the
