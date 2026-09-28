@@ -169,7 +169,10 @@ echo "== conformance: a mutated tree must be detected =="
 # non-zero exit -- otherwise a silently no-op comparator would report every consumer as conforming.
 MUT="$WORK/mutated"
 cp -r fixtures/expected "$MUT"
-jq '.units[0].tree.children[1].kind = "Expr.Binary" | .units[0].tree.children[1].children |= .[:-1]' \
+# children[0], not a fixed deeper index: normalisation decides how many children Root keeps, and a
+# contract change once left this pointing at a node that no longer existed, which made jq emit a
+# malformed tree and the comparator exit before writing the report the next assertion reads.
+jq '.units[0].tree.children[0].kind = "Expr.Binary" | .units[0].tree.children[0].children |= .[:-1]' \
   "$MUT/hello.json" > "$MUT/hello.json.tmp"
 mv "$MUT/hello.json.tmp" "$MUT/hello.json"
 MUTREPORT="$WORK/mutated.json"
