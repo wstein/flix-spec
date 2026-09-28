@@ -70,6 +70,8 @@
         "fixturesMissing",
         "fixturesAgreeing",
         "nodesCompared",
+        "nodesExpected",
+        "depthPercent",
         "nodesMapped",
         "nodesIgnored",
         "nodesElided",
@@ -113,6 +115,17 @@
         "fixturesMissing": { "type": "array", "items": { "type": "string" } },
         "fixturesAgreeing": { "type": "integer", "minimum": 0 },
         "nodesCompared": { "type": "integer", "minimum": 0 },
+        "nodesExpected": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Every node in the canonical expectation: the denominator of depth. Travels with nodesCompared so a consumer can recompute depth from its own report rather than trusting a number computed elsewhere -- comparing against the walk instead of the expectation reads highest for the maps that skip most."
+        },
+        "depthPercent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "nodesCompared / nodesExpected, rounded. Read together with fixturesAgreeing: agreement alone is gameable, because a map that maps almost nothing compares almost nothing and so agrees with almost everything."
+        },
         "nodesMapped": { "type": "integer", "minimum": 0 },
         "nodesIgnored": { "type": "integer", "minimum": 0 },
         "nodesElided": { "type": "integer", "minimum": 0 },

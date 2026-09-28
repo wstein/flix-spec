@@ -37,10 +37,11 @@ import scala.jdk.CollectionConverters._
   * nothing about how they resurface from a malformed one -- so a single score that mixed it with structure would mean
   * neither. The lane keeps its own verdict and its own baseline, and both gate.
   *
-  * Usage: `conformance --actual <dir> [--map <file>] [--report <file>] [--baseline <n>] [--recovery-baseline <n>]`.
-  * Exit status is non-zero when either derived lane exceeds its own baseline **or** the source-invariants lane fails. A
-  * baseline is a ratchet for mapping coverage, which is closed incrementally; it does not apply to the third lane,
-  * because losing a token is not a gap someone is partway through closing. Run from the repository root.
+  * Usage: `conformance --actual <dir> [--map <file>] [--report <file>] [--baseline <n>] [--recovery-baseline <n>]
+  * [--depth-floor <pct>] [--recovery-depth-floor <pct>]`. Exit status is non-zero when either derived lane exceeds its
+  * own baseline **or** the source-invariants lane fails. A baseline is a ratchet for mapping coverage, which is closed
+  * incrementally; it does not apply to the third lane, because losing a token is not a gap someone is partway through
+  * closing. Run from the repository root.
   */
 object Conformance {
 
@@ -428,6 +429,11 @@ object Conformance {
     sb.append(s"""$i  "fixturesMissing": ${jsonStringArray(lane.fixturesMissing, s"$i  ")},\n""")
     sb.append(s"""$i  "fixturesAgreeing": ${lane.fixturesAgreeing},\n""")
     sb.append(s"""$i  "nodesCompared": ${lane.stats.counts("compared")},\n""")
+    // The denominator travels with the numerator, and the ratio with both. Without `nodesExpected` a
+    // consumer cannot recompute depth from its own report, which is how a port came to publish a
+    // number computed against the walk -- the very denominator this metric was changed to stop using.
+    sb.append(s"""$i  "nodesExpected": ${lane.stats.counts("expected")},\n""")
+    sb.append(s"""$i  "depthPercent": ${math.round(lane.depth * 100)},\n""")
     sb.append(s"""$i  "nodesMapped": ${lane.stats.counts("mapped")},\n""")
     sb.append(s"""$i  "nodesIgnored": ${lane.stats.counts("ignored")},\n""")
     sb.append(s"""$i  "nodesElided": ${lane.stats.counts("elided")},\n""")
@@ -534,14 +540,17 @@ object Conformance {
   }
 
   private val Usage =
-    "usage: Conformance --actual <dir> [--map <file>] [--report <file>] [--baseline <n>] [--recovery-baseline <n>]"
+    "usage: Conformance --actual <dir> [--map <file>] [--report <file>] [--baseline <n>] " +
+      "[--recovery-baseline <n>] [--depth-floor <pct>] [--recovery-depth-floor <pct>]"
 
   final case class Args(
       actual: String,
       map: Option[String],
       report: Option[String],
       baseline: Int,
-      recoveryBaseline: Int
+      recoveryBaseline: Int,
+      depthFloor: Int,
+      recoveryDepthFloor: Int
   )
 
   private def parseArgs(argv: Array[String]): Args = {
@@ -550,14 +559,18 @@ object Conformance {
     var report: Option[String] = None
     var baseline = 0
     var recoveryBaseline = 0
+    var depthFloor = 0
+    var recoveryDepthFloor = 0
     var i = 0
     while (i < argv.length) {
       argv(i) match {
-        case "--actual"            => actual = Some(argv(i + 1)); i += 2
-        case "--map"               => map = Some(argv(i + 1)); i += 2
-        case "--report"            => report = Some(argv(i + 1)); i += 2
-        case "--baseline"          => baseline = argv(i + 1).toInt; i += 2
-        case "--recovery-baseline" => recoveryBaseline = argv(i + 1).toInt; i += 2
+        case "--actual"               => actual = Some(argv(i + 1)); i += 2
+        case "--map"                  => map = Some(argv(i + 1)); i += 2
+        case "--report"               => report = Some(argv(i + 1)); i += 2
+        case "--baseline"             => baseline = argv(i + 1).toInt; i += 2
+        case "--recovery-baseline"    => recoveryBaseline = argv(i + 1).toInt; i += 2
+        case "--depth-floor"          => depthFloor = argv(i + 1).toInt; i += 2
+        case "--recovery-depth-floor" => recoveryDepthFloor = argv(i + 1).toInt; i += 2
         case other =>
           System.err.println(s"unknown argument: $other")
           sys.exit(2)
@@ -571,7 +584,9 @@ object Conformance {
       map,
       report,
       baseline,
-      recoveryBaseline
+      recoveryBaseline,
+      depthFloor,
+      recoveryDepthFloor
     )
   }
 
@@ -738,7 +753,7 @@ object Conformance {
         val unmapped = lane.stats.counts("unmapped")
         val suffix = if (unmapped > 0) s", $unmapped unmapped" else ""
         s"$consumer: $name ${lane.fixturesAgreeing}/${lane.fixturesCompared} fixtures agree, " +
-          s"${lane.divergences.length} divergences, ${lane.stats.counts("compared")} nodes compared" +
+          s"${lane.divergenceCount} divergences, ${lane.stats.counts("compared")} nodes compared" +
           f" (depth ${lane.depth * 100}%.0f%%)$suffix"
     }
     println(summarise("oracle_conformance", oracle))
@@ -747,6 +762,25 @@ object Conformance {
       s"$consumer: source_invariants ${invariants.verdict} — " +
         invariants.checks.map(c => s"${c.id} ${c.verdict}").mkString(", ")
     )
+
+    // The depth floor is the other half of the divergence ratchet, and it only makes sense as a pair.
+    // Both existing ratchets -- `divergenceCount` down, `fixturesAgreeing` up -- move the *right* way when
+    // mappings are deleted, because an unmapped node is never compared and so never disagrees. Depth is the
+    // only number that moves the wrong way, so it is the only one that can catch a map being hollowed out.
+    def reportDepth(name: String, lane: DerivedLane, floor: Int): Boolean = {
+      if (floor <= 0 || lane.notApplicable.isDefined) false
+      else {
+        val pct = math.round(lane.depth * 100).toInt
+        if (pct >= floor) false
+        else {
+          System.err.println(
+            s"FATAL: $name: depth $pct% is below the floor of $floor% " +
+              s"(${lane.stats.counts("compared")} of ${lane.stats.counts("expected")} canonical nodes compared)"
+          )
+          true
+        }
+      }
+    }
 
     def report(name: String, lane: DerivedLane): Boolean = {
       if (lane.fixturesMissing.nonEmpty) {
@@ -768,8 +802,10 @@ object Conformance {
 
     // Both derived lanes gate, each against its own baseline. A lane that could only ever be read and never failed
     // would be decoration, and splitting recovery out was never meant to stop measuring it.
-    val oracleFailed = report("oracle_conformance", oracle)
-    val recoveryFailed = report("recovery_conformance", recovery)
+    val oracleFailed = report("oracle_conformance", oracle) |
+      reportDepth("oracle_conformance", oracle, args.depthFloor)
+    val recoveryFailed = report("recovery_conformance", recovery) |
+      reportDepth("recovery_conformance", recovery, args.recoveryDepthFloor)
 
     // The third lane gates too, and is not subject to any baseline. A ratchet exists because
     // agreement with the reference is approached incrementally, one mapping at a time; losing a
