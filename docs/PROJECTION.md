@@ -55,8 +55,8 @@ A projected tree node consists of:
 - `kind`: A qualified syntax tree node kind string, drawn directly from `ast/treekind.json` (e.g. `Expr.Apply`, `Decl.Def`, `Type.Tuple`, `ErrorTree`).
 
   Qualification is mandatory, not cosmetic. `SyntaxTree.TreeKind` has no `toString` override, so
-  13 simple names are reused across sub-traits — `Expr.Apply` and `Type.Apply` both print as
-  `"Apply"`, and 28 leaf positions collapse to 13 bare strings. A bare name cannot identify a node
+  14 simple names are reused across sub-traits — `Expr.Apply` and `Type.Apply` both print as
+  `"Apply"`, and 30 qualified kinds collapse onto those 14 bare strings. A bare name cannot identify a node
   kind. Qualified names are derived from the **type hierarchy**, not from lexical nesting: the two
   disagree for `DerivationList`, which is declared at `TreeKind` top level but extends `Type`, and
   is therefore `Type.DerivationList`.
