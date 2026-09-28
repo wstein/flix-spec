@@ -80,6 +80,15 @@ val artifactsJar = tasks.register<Jar>("artifactsJar") {
     dependsOn(flixPinMarker)
     from(assembled)
     archiveBaseName.set("flix-spec")
+    // Byte-identical for a given input tree, on any machine. Gradle's defaults take entry timestamps
+    // from the staged files and entry order from the filesystem, both of which differ between a fresh
+    // CI clone and a working tree -- so the jar was reproducible here and would not have been there.
+    //
+    // This is what lets tools/packaging/verify-published.sh compare the digest of the artifact it just
+    // built against the digest of the artifact actually served. Without it that check could only ever
+    // be "something resolved", which is the check that already existed and that a stale snapshot passes.
+    isPreserveFileTimestamps = false
+    isReproducibleFileOrder = true
     doFirst {
         val markers = assembled.get().asFile.listFiles()
             .orEmpty()

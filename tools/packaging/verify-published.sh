@@ -33,6 +33,21 @@ trap 'rm -rf "$WORK"' EXIT
 # An isolated Gradle home: a cache hit would prove nothing about what is published.
 export GRADLE_USER_HOME="$WORK/gradle-home"
 
+# The digest of the artifact this checkout builds, when it builds this version. Resolution plus a
+# content check only ever proves that *something* plausible is being served -- an older snapshot under
+# the same coordinate satisfies both, which is the failure this script exists to catch one layer down.
+# Comparing digests is the only form of the question that distinguishes "published" from "published
+# and actually the thing we built". Requires the reproducible-jar settings in packaging/build.gradle.kts.
+LOCAL_JAR="$ROOT/packaging/build/distributions/$ARTIFACT-$VERSION.jar"
+EXPECTED_SHA=""
+if [ -f "$LOCAL_JAR" ]; then
+  EXPECTED_SHA="$(shasum -a 256 "$LOCAL_JAR" | cut -d' ' -f1)"
+  echo "Comparing against locally built $ARTIFACT-$VERSION.jar ($EXPECTED_SHA)"
+else
+  echo "NOTE: no local build of $VERSION at $LOCAL_JAR; checking contents only." >&2
+  echo "      Run ./gradlew :packaging:artifactsJar first to compare digests." >&2
+fi
+
 mkdir -p "$WORK/probe"
 cat > "$WORK/probe/settings.gradle.kts" <<EOF
 rootProject.name = "flix-spec-publish-probe"
@@ -78,15 +93,46 @@ tasks.register("resolveProbe") {
         val fixtures = entries.count { it.startsWith("fixtures/") && it.endsWith(".flix") }
         require(fixtures > 0) { "published jar contains no fixtures" }
         println("CONTENTS ok: \$fixtures fixtures, inventories present")
+
+        // The identity check. Contents above are a shape; this is the artifact.
+        val expected = "$EXPECTED_SHA"
+        if (expected.isEmpty()) {
+            println("DIGEST skipped: no local build to compare against")
+        } else {
+            val digest = java.security.MessageDigest.getInstance("SHA-256")
+                .digest(jar.readBytes())
+                .joinToString("") { "%02x".format(it) }
+            require(digest == expected) {
+                "served artifact is not the one built here\n" +
+                    "  built:  \$expected\n" +
+                    "  served: \$digest\n" +
+                    "  The coordinate resolves, so this is a stale or superseded snapshot being served."
+            }
+            println("DIGEST ok: served artifact is byte-identical to the one built here")
+        }
     }
 }
 EOF
 
 # --no-daemon and the isolated home together keep this honest across repeated runs.
-( cd "$WORK/probe" && "$ROOT/gradlew" --no-daemon --quiet resolveProbe 2>&1 ) || {
-  echo "FATAL: $GROUP:$ARTIFACT:$VERSION is not resolvable from $REPO_URL" >&2
-  echo "       The publish reported success, so the failure is in serving, not in building." >&2
+# Two failures are possible here and they have different causes, so they must not share a message.
+# Reporting an identity mismatch as "not resolvable" sends the reader to look at Pages configuration
+# for an artifact that resolved perfectly well and was simply the wrong bytes.
+PROBE_LOG="$WORK/probe.log"
+if ! ( cd "$WORK/probe" && "$ROOT/gradlew" --no-daemon --quiet resolveProbe 2>&1 ) | tee "$PROBE_LOG"; then
+  if grep -q "served artifact is not the one built here" "$PROBE_LOG"; then
+    echo "FATAL: $GROUP:$ARTIFACT:$VERSION resolves, but the served artifact is not the one built here." >&2
+    echo "       Serving is fine; the identity is wrong. Either an older artifact is still being" >&2
+    echo "       served under this coordinate, or this checkout does not build what was published." >&2
+  else
+    echo "FATAL: $GROUP:$ARTIFACT:$VERSION is not resolvable from $REPO_URL" >&2
+    echo "       The publish reported success, so the failure is in serving, not in building." >&2
+  fi
   exit 1
-}
+fi
 
-echo "OK: $VERSION resolves and carries the expected contents"
+if [ -n "$EXPECTED_SHA" ]; then
+  echo "OK: $VERSION resolves, carries the expected contents, and is the artifact built here"
+else
+  echo "OK: $VERSION resolves and carries the expected contents (digest not compared)"
+fi
