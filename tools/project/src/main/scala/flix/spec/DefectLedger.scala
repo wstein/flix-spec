@@ -33,6 +33,7 @@ object DefectLedger {
       reproducer: String,
       parsesCleanly: Boolean,
       absentKinds: List[String],
+      weedOutcome: Option[String],
       presentKinds: List[String],
       upstreamStatus: String,
       upstreamIssue: Option[String],
@@ -48,6 +49,7 @@ object DefectLedger {
         reproducer = e("reproducer").asString,
         parsesCleanly = a("parsesCleanly") == Json.JBool(true),
         absentKinds = a.get("absentKinds").map(_.asArray.map(_.asString)).getOrElse(Nil),
+        weedOutcome = a.get("weedOutcome").map(_.asString),
         presentKinds = a.get("presentKinds").map(_.asArray.map(_.asString)).getOrElse(Nil),
         upstreamStatus = e("upstreamStatus").asString,
         upstreamIssue = e.get("upstreamIssue").filterNot(_.isNull).map(_.asString),
@@ -161,6 +163,20 @@ object DefectLedger {
     e.presentKinds.filterNot(kinds.contains).foreach { k =>
       found += s"${e.id}: '$k' was expected in the reproducer's tree but is absent -- " +
         "the reproducer no longer demonstrates the defect; minimize it again"
+    }
+
+    // A defect that only shows one phase past this repository's pipeline. Asserted the same way and for the same
+    // reason: when upstream stops crashing, this stops matching and the entry has to be closed rather than left to
+    // rot. Run with xnodeprecated=true, which is what Flix holds its own library to.
+    e.weedOutcome.foreach { expected =>
+      val actual = WeedCheck.weed(repro) match {
+        case Left(_)                      => "crashes"
+        case Right(errs) if errs.nonEmpty => "rejected"
+        case Right(_)                     => "clean"
+      }
+      if (actual != expected)
+        found += s"${e.id}: expected Weeder2 to be '$expected' on the reproducer, got '$actual' -- " +
+          "the defect appears fixed upstream; close this entry"
     }
     found.toList
   }

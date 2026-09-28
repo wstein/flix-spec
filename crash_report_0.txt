@@ -1,0 +1,64 @@
+#
+# An unexpected error has been detected by the Flix compiler:
+#
+#   Expr.Binary operator not recognized (/private/tmp/claude-501/-Users-werner-github-com-wstein-flix-spec/c2961235-ac1c-4a43-974c-cf89e622ef22/scratchpad/mathop/Main.flix:6:13)
+#
+# This is a bug in the Flix compiler. Please report it here:
+#
+# https://github.com/flix/flix/issues
+#
+# -- Flix Compiler --
+#
+# Flix Version : 0.77.0
+#   incremental: All
+#
+# -- Java Virtual Machine --
+#
+# JVM Version  : 21.0.12.1 (2026-08-18)
+# JVM Vendor   : Homebrew
+# JAVA_HOME    : /opt/homebrew/Cellar/openjdk@21/21.0.12.1/libexec/openjdk.jdk/Contents/Home
+# System       : Mac OS X (26.6.2)
+#
+# -- Stack Trace --
+ca.uwaterloo.flix.util.InternalCompilerException: Expr.Binary operator not recognized (/private/tmp/claude-501/-Users-werner-github-com-wstein-flix-spec/c2961235-ac1c-4a43-974c-cf89e622ef22/scratchpad/mathop/Main.flix:6:13)
+	at ca.uwaterloo.flix.language.phase.Weeder2$Exprs$.visitBinaryExpr(Weeder2.scala:1248)
+	at ca.uwaterloo.flix.language.phase.Weeder2$Exprs$.visitExpr(Weeder2.scala:790)
+	at ca.uwaterloo.flix.language.phase.Weeder2$Exprs$.$anonfun$pickExpr$1(Weeder2.scala:757)
+	at scala.Option.map(Option.scala:242)
+	at ca.uwaterloo.flix.language.phase.Weeder2$Exprs$.pickExpr(Weeder2.scala:757)
+	at ca.uwaterloo.flix.language.phase.Weeder2$Exprs$.$anonfun$visitArguments$1(Weeder2.scala:1041)
+	at scala.collection.immutable.List.map(List.scala:236)
+	at ca.uwaterloo.flix.language.phase.Weeder2$Exprs$.visitArguments(Weeder2.scala:1039)
+	at ca.uwaterloo.flix.language.phase.Weeder2$Exprs$.pickArguments(Weeder2.scala:1024)
+	at ca.uwaterloo.flix.language.phase.Weeder2$Exprs$.visitApplyExpr(Weeder2.scala:1016)
+	at ca.uwaterloo.flix.language.phase.Weeder2$Exprs$.visitExpr(Weeder2.scala:785)
+	at ca.uwaterloo.flix.language.phase.Weeder2$Exprs$.visitStatementExpr(Weeder2.scala:1324)
+	at ca.uwaterloo.flix.language.phase.Weeder2$Exprs$.visitExpr(Weeder2.scala:792)
+	at ca.uwaterloo.flix.language.phase.Weeder2$Exprs$.$anonfun$pickExpr$1(Weeder2.scala:757)
+	at scala.Option.map(Option.scala:242)
+	at ca.uwaterloo.flix.language.phase.Weeder2$Exprs$.pickExpr(Weeder2.scala:757)
+	at ca.uwaterloo.flix.language.phase.Weeder2$Exprs$.visitLetMatchExpr(Weeder2.scala:1542)
+	at ca.uwaterloo.flix.language.phase.Weeder2$Exprs$.visitExpr(Weeder2.scala:802)
+	at ca.uwaterloo.flix.language.phase.Weeder2$Exprs$.visitStatementExpr(Weeder2.scala:1324)
+	at ca.uwaterloo.flix.language.phase.Weeder2$Exprs$.visitExpr(Weeder2.scala:792)
+	at ca.uwaterloo.flix.language.phase.Weeder2$Exprs$.$anonfun$pickExpr$1(Weeder2.scala:757)
+	at scala.Option.map(Option.scala:242)
+	at ca.uwaterloo.flix.language.phase.Weeder2$Exprs$.pickExpr(Weeder2.scala:757)
+	at ca.uwaterloo.flix.language.phase.Weeder2$Exprs$.visitLetMatchExpr(Weeder2.scala:1542)
+	at ca.uwaterloo.flix.language.phase.Weeder2$Exprs$.visitExpr(Weeder2.scala:802)
+	at ca.uwaterloo.flix.language.phase.Weeder2$Exprs$.$anonfun$pickExpr$1(Weeder2.scala:757)
+	at scala.Option.map(Option.scala:242)
+	at ca.uwaterloo.flix.language.phase.Weeder2$Exprs$.pickExpr(Weeder2.scala:757)
+	at ca.uwaterloo.flix.language.phase.Weeder2$Decls$.visitDefinitionDecl(Weeder2.scala:337)
+	at ca.uwaterloo.flix.language.phase.Weeder2$Decls$.$anonfun$pickAllDeclarations$1(Weeder2.scala:253)
+	at scala.collection.immutable.List.map(List.scala:240)
+	at ca.uwaterloo.flix.language.phase.Weeder2$Decls$.pickAllDeclarations(Weeder2.scala:248)
+	at ca.uwaterloo.flix.language.phase.Weeder2$.weed(Weeder2.scala:77)
+	at ca.uwaterloo.flix.language.phase.Weeder2$.$anonfun$run$3(Weeder2.scala:58)
+	at ca.uwaterloo.flix.util.ParOps$.$anonfun$parMap$2(ParOps.scala:56)
+	at ca.uwaterloo.flix.util.ParOps$.$anonfun$parMap$2$adapted(ParOps.scala:56)
+	at ca.uwaterloo.flix.util.ParOps$.$anonfun$parFold$2(ParOps.scala:232)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+

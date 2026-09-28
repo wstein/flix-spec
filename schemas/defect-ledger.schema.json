@@ -158,7 +158,12 @@
           },
           "description": "Kinds that must NOT appear -- typically the kind the reference intends but cannot emit."
         },
-        "presentKinds": {
+        "weedOutcome": {
+   "type": "string",
+   "enum": ["clean", "rejected", "crashes"],
+   "description": "What Weeder2 does with the reproducer, run with xnodeprecated=true. `crashes` records an InternalCompilerException -- the reference failing to handle input its own parser accepted, which no parse-level assertion can express. Optional, and checked only when present; omit it for a defect that is purely about the tree."
+  },
+  "presentKinds": {
           "type": "array",
           "items": {
             "type": "string"

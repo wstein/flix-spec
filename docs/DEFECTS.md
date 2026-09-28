@@ -21,8 +21,9 @@ two come apart, the ledger is where that is recorded rather than normalised away
 | Id | Defect | Component | Disposition | Upstream | Review by |
 | --- | --- | --- | --- | --- | --- |
 | `FLIX-0001` | Predicate.ParamUntyped is dead by assignment in Parser2.param() | `Parser2` | accepted-upstream-defect | not filed | 2026-11-01 |
+| `FLIX-0002` | Weeder2 crashes on a math-name operator used infix | `Weeder2` | accepted-upstream-defect | not filed | 2026-11-01 |
 
-1 entry, each re-checked against the pinned oracle on every run. See [`defects/ledger.json`](../defects/ledger.json) for each reproducer, its citations and the full impact note.
+2 entries, each re-checked against the pinned oracle on every run. See [`defects/ledger.json`](../defects/ledger.json) for each reproducer, its citations and the full impact note.
 <!-- /generated: defects -->
 
 ## What makes an entry

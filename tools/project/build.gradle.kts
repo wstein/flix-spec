@@ -117,6 +117,15 @@ tasks.register<JavaExec>("generateTokenKind") {
     workingDir = rootProject.projectDir
 }
 
+tasks.register<JavaExec>("weedCheck") {
+    description =
+        "Runs Weeder2 over the positive fixtures with xnodeprecated=true. Advisory: reports fixtures that parse " +
+            "but the reference rejects, including deprecated syntax. Pass --strict to fail."
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("flix.spec.WeedCheck")
+    workingDir = rootProject.projectDir
+}
+
 tasks.register<JavaExec>("proposeAnnotation") {
     description =
         "Reports the annotation count and digest for the pinned jar without asserting or writing. " +
@@ -254,7 +263,7 @@ tasks.register<JavaExec>("conformance") {
     workingDir = rootProject.projectDir
 }
 
-tasks.matching { it.name in setOf("run", "extract", "proposeTreeKind", "generateTreeKind", "proposeTokenKind", "generateTokenKind", "proposeAnnotation", "generateAnnotation", "generateFixtures", "reachability", "validateDefects") }.configureEach {
+tasks.matching { it.name in setOf("run", "extract", "proposeTreeKind", "generateTreeKind", "proposeTokenKind", "generateTokenKind", "proposeAnnotation", "generateAnnotation", "weedCheck", "generateFixtures", "reachability", "validateDefects") }.configureEach {
     (this as JavaExec).doFirst {
         check(oracleJar.asFile.exists()) {
             "Missing ${oracleJar.asFile}. Run tools/oracle/fetch.sh first."

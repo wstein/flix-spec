@@ -78,6 +78,14 @@ echo "== regenerating ast/status.json =="
 # produces -- or when any input disagrees with pin.json about the upstream commit.
 ./gradlew -q :tools:project:generateStatus
 
+echo "== weeding the positive fixtures, one phase past the pipeline =="
+# Advisory, and deliberately not a gate. This repository's authority stops at the parse, so a fixture
+# that parses but the reference rejects is not automatically wrong -- `positive` here means "parses".
+# What this surfaces is what that boundary hides: deprecated syntax, which Flix reports with no
+# diagnostic at all because it has no warning level, and inputs the reference cannot handle. Run with
+# xnodeprecated=true, the setting Flix holds its own library to.
+./gradlew -q :tools:project:weedCheck
+
 echo "== validating the reference-compiler defect ledger =="
 # Re-parses each entry's reproducer against the pinned oracle. An entry that stops reproducing means
 # upstream fixed the defect, and fails here so the entry gets closed deliberately rather than rotting
