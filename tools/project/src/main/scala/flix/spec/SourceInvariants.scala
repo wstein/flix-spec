@@ -203,15 +203,22 @@ object SourceInvariants {
           if (sourceName.isEmpty || !Files.isRegularFile(source)) Nil
           else {
             val text = Files.readString(source, StandardCharsets.UTF_8)
-            // Offset of the first character of each 1-indexed line.
-            val lineStarts = text.linesWithSeparators.scanLeft(0)(_ + _.length).toVector
+            // Offset of the first character of each 1-indexed line, and where each line ends.
+            val lines = text.linesWithSeparators.toVector
+            val lineStarts = lines.scanLeft(0)(_ + _.length)
             def offset(pos: Json): Option[Int] = {
               val line = pos("line").asInt
               val col = pos("col").asInt
-              if (line < 1 || line > lineStarts.length) None
+              if (line < 1 || line > lines.length) None
               else {
-                val at = lineStarts(line - 1) + col - 1
-                if (at < 0 || at > text.length) None else Some(at)
+                // Bound the column by its own line, not by the file. Checking only the file bounds lets a
+                // column run off the end of a short line and land on a later one, where the text can still
+                // match: in "def\nf\n" a token claiming line 1 column 5 resolves to the `f` of line 2 and
+                // every assertion below passes. That is exactly the misplacement this check exists to catch.
+                val start = lineStarts(line - 1)
+                val end = start + lines(line - 1).length
+                val at = start + col - 1
+                if (at < start || at > end) None else Some(at)
               }
             }
             val tokens = unit.get("tree").map(TokenAccounting.tokensInOrder).getOrElse(Nil)

@@ -71,6 +71,36 @@ class SourceInvariantsTest extends AnyFunSuite with Matchers {
       |  {"token":"Ident","text":"f","start":{"line":1,"col":5},"end":{"line":1,"col":6}}
       |]}""".stripMargin
 
+  test("a column that runs past the end of its own line is rejected") {
+    // The file-bounds form of this check passed here. In "def\nf\n" a token claiming line 1
+    // column 5 resolves to offset 4 -- the `f` of line 2 -- so the text matches, the order is
+    // monotone and the gap is empty. Every assertion held while the token was on the wrong line,
+    // which is the one thing this check exists to catch.
+    val offLine =
+      """{"kind":"Root","children":[
+        |  {"token":"KeywordDef","text":"def","start":{"line":1,"col":1},"end":{"line":1,"col":4}},
+        |  {"token":"Ident","text":"f","start":{"line":1,"col":5},"end":{"line":1,"col":6}}
+        |]}""".stripMargin
+
+    withOutput("def\nf\n", offLine) { files =>
+      val lane = run(files, mapped = false)
+      verdictOf(lane, "token-positions") shouldBe "fail"
+    }
+  }
+
+  test("the same token at its real line and column passes") {
+    val onLine =
+      """{"kind":"Root","children":[
+        |  {"token":"KeywordDef","text":"def","start":{"line":1,"col":1},"end":{"line":1,"col":4}},
+        |  {"token":"Ident","text":"f","start":{"line":2,"col":1},"end":{"line":2,"col":2}}
+        |]}""".stripMargin
+
+    withOutput("def\nf\n", onLine) { files =>
+      val lane = run(files, mapped = false)
+      verdictOf(lane, "token-positions") shouldBe "pass"
+    }
+  }
+
   test("output that accounts for its source passes every applicable check") {
     withOutput("def f", WellFormed) { files =>
       val lane = run(files, mapped = false)
