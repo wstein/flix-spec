@@ -21,13 +21,16 @@ import scala.jdk.CollectionConverters._
   *     the structural lane and kept in the recovery lane -- that asymmetry is the whole reason they are declared
   *     separately -- so removing one on both sides would leave its shape measured nowhere, silently, with the report
   *     still reading `pass`;
-  *   - **no mapping may target a kind that `ast/transparency.json` removes.** This is the check that measurement asked
-  *     for. Normalisation deletes those nodes from `fixtures/expected` before any consumer sees it, so a mapping onto
-  *     one can never match -- it does not merely do nothing, it *manufactures* divergences, because the consumer's own
-  *     node keeps standing where the canonical tree now has none. Both instrumented consumers carried such mappings
-  *     after the contract landed, and on `flix-jetbrains-plugin` they were worth 31 of its 34 divergences. A kind the
-  *     contract *splices* is the one exception, and only when the native node is declared in `recoveryMarkers`: the
-  *     recovery lane keeps those on both sides, which is precisely what makes the mapping reachable there.
+  *   - **no mapping may target a kind that no canonical tree contains.** This is the check that measurement asked for.
+  *     Normalisation deletes those nodes from `fixtures/expected` before any consumer sees it, so a mapping onto one
+  *     can never match -- it does not merely do nothing, it *manufactures* divergences, because the consumer's own node
+  *     keeps standing where the canonical tree now has none. Both instrumented consumers carried such mappings after
+  *     the contract landed, and on `flix-jetbrains-plugin` they were worth 31 of its 34 divergences. Which kinds those
+  *     are is *measured* from `fixtures/expected`, not inferred from the rule's name, because elision fires per
+  *     occurrence: `QName` is elided wherever a name is unqualified and stands wherever it is qualified, so a mapping
+  *     onto it is legitimate and only the walk can say so. A kind the contract *splices* is removed at every arity, and
+  *     is reachable only when the native node is declared in `recoveryMarkers`: the recovery lane keeps those on both
+  *     sides, which is precisely what makes the mapping reachable there.
   *
   * A node may legitimately appear in **both** `ignored` and `mappings`. That is not a contradiction: elision only fires
   * when a node has at most one child, so the two entries describe different situations -- "splice me when I wrap a
@@ -65,7 +68,7 @@ object ProjectionMapValidator {
       sys.exit(1)
     }
 
-    val errors = validate(maps, schema, inventory, contract, unattachable)
+    val errors = validate(maps, schema, inventory, contract, unattachable, canonicalKinds())
 
     if (!errors.isEmpty) {
       System.err.println("FATAL: projection map validation failed")
@@ -78,12 +81,32 @@ object ProjectionMapValidator {
   }
 
   /** The checks themselves, separated from `main` so they can be exercised without exiting the JVM. */
+  /** Every kind that actually occurs in `fixtures/expected`, i.e. what survived normalisation.
+    *
+    * Read rather than inferred, because the contract's rules fire per occurrence: a kind can be elided in most
+    * positions and still stand in some. This is the only honest basis for calling a mapping target unreachable.
+    */
+  private def canonicalKinds(): Set[String] = {
+    val out = scala.collection.mutable.Set.empty[String]
+    def walk(n: Json): Unit = n.get("kind").foreach { k =>
+      out += k.asString
+      n.get("children").map(_.asArray).getOrElse(Nil).foreach(walk)
+    }
+    val dir = Paths.get(ProjectionExtractor.NormalizedDir)
+    if (Files.isDirectory(dir))
+      Files.list(dir).iterator().asScala.map(_.toString).filter(_.endsWith(".json")).foreach { f =>
+        Json.parseFile(Paths.get(f)).get("units").map(_.asArray).getOrElse(Nil).foreach(_.get("tree").foreach(walk))
+      }
+    out.toSet
+  }
+
   def validate(
       maps: List[String],
       schema: Json,
       inventory: Set[String],
       contract: Transparency.Contract,
-      unattachable: Set[String] = Set.empty
+      unattachable: Set[String] = Set.empty,
+      canonicalKinds: Set[String] = Set.empty
   ): SchemaValidator.Errors = {
     val requiredKeys = schema("required").asArray.map(_.asString)
     val allowedKeys = schema("properties").asObject.keySet
@@ -111,11 +134,15 @@ object ProjectionMapValidator {
         val canonical = target.asString
         if (!inventory.contains(canonical))
           errors.add(s"$path.mappings['$native']: '$canonical' is not in ast/treekind.json")
-        else if (contract.elide.contains(canonical))
+        // Elision fires per occurrence, so an elided kind is not necessarily absent: QName survives
+        // wherever a name is qualified. The unreachable-target check therefore has to be a measurement of
+        // what normalisation actually left behind, not an inference from the rule's name -- inferring it
+        // would reject a mapping onto the branching occurrences, which are real canonical structure.
+        else if (contract.elide.contains(canonical) && !canonicalKinds.contains(canonical))
           errors.add(
-            s"$path.mappings['$native']: '$canonical' is elided by ast/transparency.json, so no canonical tree " +
-              "contains it and this mapping can only manufacture divergences. Declare '" + native +
-              "' in `ignored` instead."
+            s"$path.mappings['$native']: '$canonical' is elided by ast/transparency.json at every occurrence in " +
+              "fixtures/expected, so no canonical tree contains it and this mapping can only manufacture " +
+              "divergences. Declare '" + native + "' in `ignored` instead."
           )
         else if (unattachable.contains(canonical))
           errors.add(
