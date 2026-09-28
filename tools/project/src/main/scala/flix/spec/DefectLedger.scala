@@ -26,6 +26,9 @@ import java.nio.file.{Files, Path, Paths}
   */
 object DefectLedger {
 
+  /** The one ledger shape this reader understands. Bumped with every breaking change to the schema. */
+  private val SupportedSchemaVersion = 2
+
   private final case class Entry(
       id: String,
       title: String,
@@ -85,6 +88,18 @@ object DefectLedger {
     // every entry cites upstream source *by line*, and a line number does not survive a pin bump on
     // trust. Without this the citations drift silently -- which is exactly what happened to the other
     // two evidence files at the v0.75.2 bump, and was caught only by a review reading them.
+    // Refuse a version this reader does not know, in both directions. The schema's `minimum` rejects
+    // an older ledger, but nothing would stop a newer one from being read as though its fields meant
+    // what they mean here -- and the last change to this file moved a required field.
+    val ledgerVersion = doc("schemaVersion").asInt
+    if (ledgerVersion != SupportedSchemaVersion) {
+      System.err.println(
+        s"FATAL: defects/ledger.json declares schemaVersion $ledgerVersion; this tool reads " +
+          s"$SupportedSchemaVersion. Upgrade the reader rather than assuming the fields still mean the same."
+      )
+      sys.exit(1)
+    }
+
     val pinCommit = Json.parseFile(Paths.get("pin.json"))("upstream")("commit").asString
     val stamped = doc("upstreamCommit").asString
     if (stamped != pinCommit) {

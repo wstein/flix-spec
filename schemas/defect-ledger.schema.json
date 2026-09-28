@@ -12,7 +12,8 @@
   "properties": {
     "schemaVersion": {
       "type": "integer",
-      "minimum": 1
+      "minimum": 2,
+      "description": "2: the required `review` date became `reviewedAtPin`, an upstream commit. Breaking, because a reader that required `review` no longer finds it -- which is the intended outcome, since the field it would have read encoded a wall-clock deadline that no longer exists. Version 1 stood for as long as the ledger expired on a clock."
     },
     "upstreamCommit": {
       "type": "string",
