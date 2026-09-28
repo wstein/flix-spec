@@ -59,7 +59,7 @@
       "rule": "elide",
       "reason": "unsafeExpr()'s own shape comment shows the fragment holding exactly one Type.Type, and the production closes it immediately after that single type; the `as` keyword is eaten before the mark is opened.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:2666",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:2667",
         "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:2681"
       ]
     },
