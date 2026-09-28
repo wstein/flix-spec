@@ -63,6 +63,18 @@ object TokenAccounting {
     squeeze(sb.toString)
   }
 
+  /** Every token leaf, in document order, with its `text`/`start`/`end` intact.
+    *
+    * [[reconstruct]] throws the positions away because it compares concatenated text. They are the only thing that can
+    * say *where* a token sat, which is what separates a `$` the lexer stepped over -- one lying in the gap between two
+    * tokens -- from a `$` inside a string literal, which lies within one. See [[SourceInvariants]].
+    */
+  def tokensInOrder(node: Json): List[Json] =
+    node.get("kind") match {
+      case Some(_) => node.get("children").map(_.asArray).getOrElse(Nil).flatMap(tokensInOrder)
+      case None    => List(node)
+    }
+
   /** Whether a projected tree carries any token text at all.
     *
     * Consumers are not required to emit tokens -- `docs/PROJECTION.md` gates kind, child order and nesting, and leaves

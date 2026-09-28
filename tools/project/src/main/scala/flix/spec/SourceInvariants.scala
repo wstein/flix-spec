@@ -184,7 +184,74 @@ object SourceInvariants {
       accountingSkip
     )
 
-    val checks = List(shape, kindVocabulary, tokenVocabulary, accounting)
+    // ---------------------------------------------------- token positions
+    // The strictly stronger form of token-accounting, and the one the schema already demands the data for:
+    // `start` and `end` are required on every token leaf and, until now, were read by nothing in this repository.
+    // A consumer could emit every token at line 1 col 1 and pass every gate.
+    //
+    // Three properties, and the third is the interesting one. Once tokens are known to sit at the offsets they
+    // claim and to advance monotonically, whatever lies *between* them is exactly what the lexer did not tokenise
+    // -- and that set can be named: whitespace, and the `$` the lexer steps over in `x.$and(y)`. Asserting it
+    // positionally is what `token-accounting` cannot do: it compares concatenated text, where a `$` in a gap and a
+    // `$` inside a string literal are indistinguishable, which is why a dropped `"$abc"` escapes it.
+    val positionFailures =
+      if (accountingSkip.isDefined) Nil
+      else
+        validUnits.toList.flatMap { case (f, unit) =>
+          val sourceName = unit.get("source").map(_.asString).getOrElse("")
+          val source = Paths.get(sourceName)
+          if (sourceName.isEmpty || !Files.isRegularFile(source)) Nil
+          else {
+            val text = Files.readString(source, StandardCharsets.UTF_8)
+            // Offset of the first character of each 1-indexed line.
+            val lineStarts = text.linesWithSeparators.scanLeft(0)(_ + _.length).toVector
+            def offset(pos: Json): Option[Int] = {
+              val line = pos("line").asInt
+              val col = pos("col").asInt
+              if (line < 1 || line > lineStarts.length) None
+              else {
+                val at = lineStarts(line - 1) + col - 1
+                if (at < 0 || at > text.length) None else Some(at)
+              }
+            }
+            val tokens = unit.get("tree").map(TokenAccounting.tokensInOrder).getOrElse(Nil)
+            val problems = List.newBuilder[String]
+            var previousEnd = 0
+            tokens.foreach { t =>
+              val body = t.get("text").map(_.asString).getOrElse("")
+              (t.get("start").flatMap(offset), t.get("end").flatMap(offset)) match {
+                case (Some(from), Some(to)) if from <= to =>
+                  if (text.substring(from, to) != body)
+                    problems += s"$sourceName: token at ${from}..${to} says '$body' but the source has " +
+                      s"'${text.substring(from, to)}'"
+                  if (from < previousEnd)
+                    problems += s"$sourceName: token '$body' starts at $from, before the previous token ended " +
+                      s"at $previousEnd"
+                  else {
+                    val gap = text.substring(previousEnd, from)
+                    if (gap.exists(c => !c.isWhitespace && c != '$'))
+                      problems += s"$sourceName: '${gap.replace("\n", "\\n")}' lies between two tokens but is " +
+                        "neither whitespace nor the $ escape marker, so it is content no token accounts for"
+                  }
+                  previousEnd = math.max(previousEnd, to)
+                case _ =>
+                  problems += s"$sourceName: token '$body' carries a start/end that is not a position in its source"
+              }
+            }
+            problems.result()
+          }
+        }
+
+    val positions = check(
+      "token-positions",
+      "every token's text is exactly what its source says at its own start/end, tokens advance in order, " +
+        "and what lies between them is only whitespace or the $ escape marker",
+      if (accountingSkip.isDefined) 0 else validUnits.length,
+      positionFailures,
+      accountingSkip.map(_ => "the consumer's trees carry no token text, so there are no positions to check")
+    )
+
+    val checks = List(shape, kindVocabulary, tokenVocabulary, accounting, positions)
     val verdict =
       if (checks.exists(_.verdict == Fail)) Fail
       else if (checks.forall(_.verdict == NotApplicable)) NotApplicable

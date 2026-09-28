@@ -214,7 +214,7 @@
       "properties": {
         "id": {
           "type": "string",
-          "enum": ["document-shape", "kind-vocabulary", "token-vocabulary", "token-accounting"]
+          "enum": ["document-shape", "kind-vocabulary", "token-vocabulary", "token-accounting", "token-positions"]
         },
         "verdict": { "type": "string", "enum": ["pass", "fail", "not-applicable"] },
         "claim": { "type": "string", "minLength": 1 },
