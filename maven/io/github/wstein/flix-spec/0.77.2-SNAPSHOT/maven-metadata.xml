@@ -3,21 +3,21 @@
   <groupId>io.github.wstein</groupId>
   <artifactId>flix-spec</artifactId>
   <versioning>
-    <lastUpdated>20260928225652</lastUpdated>
+    <lastUpdated>20260928232032</lastUpdated>
     <snapshot>
-      <timestamp>20260928.225652</timestamp>
-      <buildNumber>2</buildNumber>
+      <timestamp>20260928.232032</timestamp>
+      <buildNumber>3</buildNumber>
     </snapshot>
     <snapshotVersions>
       <snapshotVersion>
         <extension>pom</extension>
-        <value>0.77.2-20260928.225652-2</value>
-        <updated>20260928225652</updated>
+        <value>0.77.2-20260928.232032-3</value>
+        <updated>20260928232032</updated>
       </snapshotVersion>
       <snapshotVersion>
         <extension>jar</extension>
-        <value>0.77.2-20260928.225652-2</value>
-        <updated>20260928225652</updated>
+        <value>0.77.2-20260928.232032-3</value>
+        <updated>20260928232032</updated>
       </snapshotVersion>
     </snapshotVersions>
   </versioning>
