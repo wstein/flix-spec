@@ -383,7 +383,10 @@ object Conformance {
       "each carries the same gated kind and line"
     val caveatBase = "Derived from the reference, so agreement with a reference diagnostic that is itself wrong " +
       "scores as agreement; defects/ledger.json is where those are recorded. `col` and `message` are advisory and " +
-      "are never compared -- both are recovery-dependent."
+      "are never compared -- both are recovery-dependent. Everything compared here is an error: Flix has no " +
+      "warning level -- Severity is Error, Info and Hint, and the latter two are produced by CodeHinter, which " +
+      "only the LSP servers run -- so a consumer that emits IDE-style hints will disagree about accept/reject " +
+      "for a reason that is not a defect."
 
     val stats = new Stats
     val divergences = scala.collection.mutable.Buffer.empty[(String, Divergence)]

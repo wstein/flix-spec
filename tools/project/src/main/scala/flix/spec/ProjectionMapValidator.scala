@@ -76,6 +76,23 @@ object ProjectionMapValidator {
       sys.exit(1)
     }
 
+    // Deprecation notices, read from the schema rather than listed here, so marking a key deprecated is enough
+    // to make it reported. A marker nothing acts on is the same defect as a schema keyword nothing enforces: the
+    // file reads as though the decision has consequences and no run disagrees.
+    val deprecatedKeys = schema("properties").asObject.collect {
+      case (key, spec) if spec.get("deprecated").contains(Json.JBool(true)) => key
+    }.toSet
+    val notices = maps.flatMap { path =>
+      val used = Json.parseFile(Paths.get(path)).asObject.keySet.intersect(deprecatedKeys)
+      used.toList.sorted.map(k => s"$path: '$k' is deprecated")
+    }
+    if (notices.nonEmpty) {
+      println(s"NOTE: ${notices.length} deprecated key(s) still in use:")
+      notices.foreach(n => println(s"  $n"))
+      println("  These still work. `elide` and `flattenCanonical` state on the consumer's side what")
+      println("  ast/transparency.json now states once, centrally, for every consumer.")
+    }
+
     val total = maps.map(p => Json.parseFile(Paths.get(p)).get("mappings").map(_.asObject.size).getOrElse(0)).sum
     println(s"OK: ${maps.length} projection map(s) valid, $total mappings, all targets in inventory")
   }

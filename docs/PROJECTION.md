@@ -188,6 +188,20 @@ accept/reject alone and records that it did. A consumer that emits no diagnostic
 `not-applicable`, with the reason stated: reporting no errors is a permitted modelling decision,
 and failing it here would penalise a choice the contract grants.
 
+**Everything in this lane is an error.** Flix has no warning level: `Severity` is `Error`, `Info`
+and `Hint`, and the latter two come from `CodeHinter`, which only the LSP servers run. On the
+command line a program either compiles or fails. So a consumer that reports IDE-style hints or
+infos alongside errors will disagree about accept/reject for a reason that is not a defect — filter
+them, or map them away, before emitting a projected document.
+
+Deprecation is the case where this matters most, and it is invisible here by construction. A
+construct inside its grace period produces **no diagnostic at all**: `pub redef` is accepted unless
+the compiler is run with `--Xno-deprecated`, which turns it into a hard error. That decision lives
+in `Weeder2`, one phase past this contract, so a deprecated construct parses exactly like a
+supported one and will go on doing so after upstream removes it. `tools/project/verify.sh` runs
+`weedCheck` to surface that class of thing; it is advisory, and nothing in the published contract
+depends on it.
+
 ## 5. Schema Versioning
 
 All generated artifacts carry an explicit `schemaVersion` field.
