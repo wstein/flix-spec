@@ -2,11 +2,11 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://raw.githubusercontent.com/wstein/flix-spec/main/schemas/conformance-report.schema.json",
   "title": "Flix Conformance Report Schema",
-  "description": "Schema for the report emitted by `conformance --report <file>`. Three lanes, deliberately not summed into a single score: `oracle_conformance` measures structural agreement with the pinned reference, modulo error recovery, and inherits the reference's defects; `recovery_conformance` measures error-recovery shape alone, on the fixtures that recover from something; `source_invariants` measures properties of the consumer's own output against its own input and inherits nothing. A number that averaged them would mean none of the three.",
+  "description": "Schema for the report emitted by `conformance --report <file>`. Four lanes, deliberately not summed into a single score: `oracle_conformance` measures structural agreement with the pinned reference, modulo error recovery, and inherits the reference's defects; `recovery_conformance` measures error-recovery shape alone, on the fixtures that recover from something; `diagnostic_conformance` measures whether the same units are rejected and carry the same gated kind and line, needing no tree and no projection map; `source_invariants` measures properties of the consumer's own output against its own input and inherits nothing. A number that averaged them would mean none of the three.",
   "type": "object",
   "required": ["schemaVersion", "generatedBy", "consumer", "provenance", "lanes"],
   "properties": {
-    "schemaVersion": { "type": "integer", "minimum": 6 },
+    "schemaVersion": { "type": "integer", "minimum": 7 },
     "generatedBy": { "type": "string", "minLength": 1 },
     "consumer": { "type": "string", "minLength": 1 },
     "provenance": { "$ref": "#/definitions/Provenance" },
@@ -43,11 +43,15 @@
     },
     "Lanes": {
       "type": "object",
-      "required": ["oracle_conformance", "recovery_conformance", "source_invariants"],
+      "required": ["oracle_conformance", "recovery_conformance", "diagnostic_conformance", "source_invariants"],
       "properties": {
         "oracle_conformance": {
           "$ref": "#/definitions/DerivedLane",
           "description": "Structure modulo recovery, compared against fixtures/expected/ -- the normalised canonical tree, with wrapper nodes elided and the error vocabulary spliced out per ast/transparency.json."
+        },
+        "diagnostic_conformance": {
+          "$ref": "#/definitions/DerivedLane",
+          "description": "Whether the consumer reports the same diagnostics as the reference: the same units rejected, and each carrying the same gated kind and line. `col` and `message` are advisory and never compared, because both are recovery-dependent. Accept/reject needs no shared vocabulary, so it is available to every consumer; kind and line are compared only when the consumer's diagnostic names can be read as the reference's, via `diagnosticMappings` or because they already are. The lane stands down entirely for a consumer that emits no diagnostics at all."
         },
         "recovery_conformance": {
           "$ref": "#/definitions/DerivedLane",
@@ -88,7 +92,7 @@
         "verdict": {
           "type": "string",
           "enum": ["pass", "fail", "not-applicable"],
-          "description": "`not-applicable` is reachable only for recovery_conformance, when the consumer's projection map declares no recoveryMarkers: there is then no error-recovery vocabulary for the lane to compare, and failing a consumer for not modelling recovery would penalise a decision the contract never required."
+          "description": "`not-applicable` is reachable for recovery_conformance, when the consumer's projection map declares no recoveryMarkers, and for diagnostic_conformance, when the consumer emits no diagnostics for any fixture. In both cases there is nothing for the lane to compare, and failing a consumer for not modelling recovery or error reporting would penalise a decision the contract never required."
         },
         "claim": { "type": "string", "minLength": 1 },
         "authority": {

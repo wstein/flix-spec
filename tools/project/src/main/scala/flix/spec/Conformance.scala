@@ -27,6 +27,9 @@ import scala.jdk.CollectionConverters._
   *     the *only* difference from the first lane is the recovery markers. Comparing against raw verbatim was the
   *     obvious design and the wrong one: it would drown the recovery signal in wrapper divergences the first lane has
   *     already accounted for, and this lane exists to isolate recovery shape, not to re-measure transparency.
+  *   - `diagnostic_conformance` -- whether the consumer rejects the same units and reports the same gated
+  *     `kind`/`line`. It needs no tree and no projection map, which makes it the only derived signal a consumer without
+  *     a structural model can produce.
   *   - `source_invariants` -- [[SourceInvariants]], which consults no expected tree and can therefore contradict the
   *     reference. A consumer can pass the derived lanes and fail this one, and that case is the reason for the split:
   *     blanking one token's text leaves kind, child order and nesting untouched, so every fixture still agrees while
@@ -110,7 +113,13 @@ object Conformance {
       elide: Set[String] = Set.empty,
       flatten: Set[String] = Set.empty,
       flattenCanonical: Set[String] = Set.empty,
-      recoveryMarkers: Set[String] = Set.empty
+      recoveryMarkers: Set[String] = Set.empty,
+      /** Consumer diagnostic name -> reference diagnostic name, for the diagnostic lane.
+        *
+        * Separate from `mappings`, which is about tree kinds. A consumer may model the tree faithfully and name its
+        * errors nothing like the reference, or the reverse, and conflating the two would make one gap hide the other.
+        */
+      diagnosticMappings: Map[String, String] = Map.empty
   ) {
 
     /** The vocabulary the structural lane uses: the consumer's own recovery markers are spliced out of its tree,
@@ -324,6 +333,164 @@ object Conformance {
     * the two divergence counts incomparable, and the whole point is that together they account for every divergence the
     * single lane used to report.
     */
+  /** One diagnostic as the contract gates it: `kind` and `line`. `col` and `message` stay advisory. */
+  private final case class Diag(kind: String, line: Int)
+
+  private def diagnosticsOf(unit: Json, map: Map[String, String]): List[Diag] =
+    unit.get("diagnostics").map(_.asArray).getOrElse(Nil).map { d =>
+      val k = d.get("kind").map(_.asString).getOrElse("")
+      Diag(map.getOrElse(k, k), d.get("line").map(_.asInt).getOrElse(0))
+    }
+
+  private def unitsWithDiagnostics(path: String): Map[String, Json] =
+    Json
+      .parseFile(Paths.get(path))
+      .get("units")
+      .map(_.asArray)
+      .getOrElse(Nil)
+      .map(u => u("source").asString -> u)
+      .toMap
+
+  /** The lane that needs no tree at all: does the consumer agree about what is *wrong* with the input.
+    *
+    * `docs/PROJECTION.md` has described diagnostics as gated on class and line since the contract was written, and
+    * nothing gated them. They were extracted, schema-checked and published, and then compared to nothing -- including
+    * the 23-of-24 diagnostic-kind coverage the README leads with, which was a measurement of this repository against
+    * itself.
+    *
+    * Two properties, and the first is the one every consumer can answer:
+    *
+    *   - **accept/reject** -- both sides agree the unit has some diagnostic, or neither does. This needs no shared
+    *     vocabulary, no projection map and no tree, which makes it the only structural signal available to a consumer
+    *     that models none of those.
+    *   - **kind and line** -- the multiset of gated diagnostics agrees. This needs a shared vocabulary, so it is
+    *     compared only when the consumer's own diagnostic names can be read as the reference's: either because a
+    *     `diagnosticMappings` entry translates them, or because they already are the reference's. Otherwise it stands
+    *     down and says so, rather than reporting a modelling difference as disagreement.
+    *
+    * The lane stands down entirely for a consumer that emits no diagnostics anywhere. That is not a failure: a
+    * structural adapter that reports `diagnostics: []` for every unit is exercising a choice the contract grants it,
+    * and failing it here would penalise a permitted decision while passing it would claim a property nothing
+    * established -- the same argument the source-invariants lane already makes for token text.
+    */
+  private def runDiagnosticLane(
+      expectedFiles: List[String],
+      actualDir: String,
+      vocab: Vocabulary,
+      baseline: Int
+  ): DerivedLane = {
+    val claim = "the consumer reports the same diagnostics as the reference: the same units are rejected, and " +
+      "each carries the same gated kind and line"
+    val caveatBase = "Derived from the reference, so agreement with a reference diagnostic that is itself wrong " +
+      "scores as agreement; defects/ledger.json is where those are recorded. `col` and `message` are advisory and " +
+      "are never compared -- both are recovery-dependent."
+
+    val stats = new Stats
+    val divergences = scala.collection.mutable.Buffer.empty[(String, Divergence)]
+    val missing = scala.collection.mutable.Buffer.empty[String]
+    var agreeing = 0
+    var count = 0
+
+    val pairs = expectedFiles.flatMap { ef =>
+      val name = Paths.get(ef).getFileName.toString
+      val af = Paths.get(actualDir, name).toString
+      if (!Files.exists(Paths.get(af))) { missing += name; None }
+      else Some((name, unitsWithDiagnostics(ef), unitsWithDiagnostics(af)))
+    }
+
+    // Does the consumer model diagnostics at all, and can its names be read as the reference's?
+    val actualKinds = pairs.flatMap(_._3.values.flatMap(u => diagnosticsOf(u, Map.empty).map(_.kind))).toSet
+    val referenceKinds = pairs.flatMap(_._2.values.flatMap(u => diagnosticsOf(u, Map.empty).map(_.kind))).toSet
+    val translated = actualKinds.map(k => vocab.diagnosticMappings.getOrElse(k, k))
+    val compareKinds = actualKinds.isEmpty || translated.subsetOf(referenceKinds)
+
+    if (actualKinds.isEmpty && pairs.exists(_._2.values.exists(u => diagnosticsOf(u, Map.empty).nonEmpty)))
+      return DerivedLane(
+        claim = claim,
+        caveat = caveatBase,
+        baseline = baseline,
+        fixturesExpected = expectedFiles.length,
+        fixturesMissing = Nil,
+        fixturesAgreeing = 0,
+        stats = stats,
+        divergences = Nil,
+        divergenceCount = 0,
+        notApplicable = Some(
+          "the consumer emits no diagnostics for any fixture, so it models none of the reference's error reporting " +
+            "-- which docs/PROJECTION.md permits"
+        )
+      )
+
+    pairs.foreach { case (name, expUnits, actUnits) =>
+      count += 1
+      var ok = true
+      expUnits.toList.sortBy(_._1).foreach { case (source, expUnit) =>
+        val exp = diagnosticsOf(expUnit, Map.empty)
+        stats.counts("diagnosticsExpected") += exp.length
+        actUnits.get(source).orElse(actUnits.values.headOption) match {
+          case None =>
+            ok = false
+            stats.inc("divergences")
+            divergences += ((name, Divergence(source, "unit", "nothing", "missing-unit")))
+          case Some(actUnit) =>
+            val act = diagnosticsOf(actUnit, vocab.diagnosticMappings)
+            // (1) accept/reject -- available to every consumer.
+            if (exp.nonEmpty != act.nonEmpty) {
+              ok = false
+              stats.inc("divergences")
+              divergences += ((
+                name,
+                Divergence(
+                  source,
+                  if (exp.nonEmpty) "rejected" else "accepted",
+                  if (act.nonEmpty) "rejected" else "accepted",
+                  "accept-reject"
+                )
+              ))
+            }
+            // (2) gated kind and line, when the two vocabularies can be read as one.
+            if (compareKinds) {
+              stats.counts("diagnosticsCompared") += exp.length
+              val missingD = exp.diff(act)
+              val extraD = act.diff(exp)
+              (missingD.map(d => (d, true)) ++ extraD.map(d => (d, false))).foreach { case (d, isMissing) =>
+                ok = false
+                stats.inc("divergences")
+                divergences += ((
+                  name,
+                  Divergence(
+                    s"$source:${d.line}",
+                    if (isMissing) s"${d.kind}@${d.line}" else "nothing",
+                    if (isMissing) "nothing" else s"${d.kind}@${d.line}",
+                    "diagnostic"
+                  )
+                ))
+              }
+            } else act.foreach(d => stats.unmapped(d.kind) += 1)
+        }
+      }
+      if (ok) agreeing += 1
+    }
+
+    val caveat =
+      if (compareKinds) caveatBase
+      else
+        caveatBase + " Kind and line stood down for this consumer: its diagnostic names are not the reference's " +
+          "and no `diagnosticMappings` translates them, so only accept/reject was compared."
+
+    DerivedLane(
+      claim = claim,
+      caveat = caveat,
+      baseline = baseline,
+      fixturesExpected = expectedFiles.length,
+      fixturesMissing = missing.toList.sorted,
+      fixturesAgreeing = agreeing,
+      stats = stats,
+      divergences = divergences.toList,
+      divergenceCount = stats.counts("divergences")
+    )
+  }
+
   private def runLane(
       expectedFiles: List[String],
       normalizeWith: Option[Transparency.Contract],
@@ -542,6 +709,7 @@ object Conformance {
       rawFiles: List[String],
       oracle: DerivedLane,
       recovery: DerivedLane,
+      diagnostics: DerivedLane,
       invariants: SourceInvariants.Lane
   ): String = {
     val sb = new StringBuilder
@@ -562,7 +730,12 @@ object Conformance {
     // 6: recovery_conformance joined the lanes, and fixtureRevision now covers both committed
     // fixture forms. Both are breaking: a reader that required exactly two lanes now finds three,
     // and a revision computed the old way is not comparable to one computed the new way.
-    sb.append("  \"schemaVersion\": 6,\n")
+    // 7: diagnostic_conformance joined the lanes, and every derived lane gained nodesExpected /
+    // depthPercent / nodesDroppedEmpty. A reader that required exactly three lanes now finds four,
+    // and depth in a version-6 report was computed against the walk rather than the expectation --
+    // a strictly different number that reads highest for the maps that skip most, so the two are
+    // not comparable and a bump is the only honest way to say so.
+    sb.append("  \"schemaVersion\": 7,\n")
     sb.append("  \"generatedBy\": \"flix.spec.Conformance\",\n")
     sb.append(s"""  "consumer": "${esc(consumer)}",\n""")
 
@@ -578,6 +751,8 @@ object Conformance {
     sb.append(renderDerivedLane("oracle_conformance", oracle, "    "))
     sb.append(",\n")
     sb.append(renderDerivedLane("recovery_conformance", recovery, "    "))
+    sb.append(",\n")
+    sb.append(renderDerivedLane("diagnostic_conformance", diagnostics, "    "))
     sb.append(",\n")
 
     sb.append("    \"source_invariants\": {\n")
@@ -615,7 +790,8 @@ object Conformance {
       baseline: Int,
       recoveryBaseline: Int,
       depthFloor: Int,
-      recoveryDepthFloor: Int
+      recoveryDepthFloor: Int,
+      diagnosticBaseline: Int
   )
 
   private def parseArgs(argv: Array[String]): Args = {
@@ -626,6 +802,7 @@ object Conformance {
     var recoveryBaseline = 0
     var depthFloor = 0
     var recoveryDepthFloor = 0
+    var diagnosticBaseline = 0
     var i = 0
     while (i < argv.length) {
       argv(i) match {
@@ -636,6 +813,7 @@ object Conformance {
         case "--recovery-baseline"    => recoveryBaseline = argv(i + 1).toInt; i += 2
         case "--depth-floor"          => depthFloor = argv(i + 1).toInt; i += 2
         case "--recovery-depth-floor" => recoveryDepthFloor = argv(i + 1).toInt; i += 2
+        case "--diagnostic-baseline"  => diagnosticBaseline = argv(i + 1).toInt; i += 2
         case other =>
           System.err.println(s"unknown argument: $other")
           sys.exit(2)
@@ -651,7 +829,8 @@ object Conformance {
       baseline,
       recoveryBaseline,
       depthFloor,
-      recoveryDepthFloor
+      recoveryDepthFloor,
+      diagnosticBaseline
     )
   }
 
@@ -690,7 +869,9 @@ object Conformance {
         elide = names("elide"),
         flatten = names("flatten"),
         flattenCanonical = names("flattenCanonical"),
-        recoveryMarkers = names("recoveryMarkers")
+        recoveryMarkers = names("recoveryMarkers"),
+        diagnosticMappings =
+          m.get("diagnosticMappings").map(_.asObject.view.mapValues(_.asString).toMap).getOrElse(Map.empty)
       )
       consumer = m("consumer").asString
 
@@ -784,6 +965,9 @@ object Conformance {
           caveat = recoveryCaveat
         )
 
+    val diagnostics =
+      runDiagnosticLane(expectedFiles, args.actual, vocab, args.diagnosticBaseline)
+
     // The third lane runs over whatever the consumer actually produced, never over the
     // expectations, so it says something the derived lanes structurally cannot.
     lazy val invariants = SourceInvariants.run(
@@ -807,6 +991,7 @@ object Conformance {
           rawFiles = rawFiles,
           oracle = oracle,
           recovery = recovery,
+          diagnostics = diagnostics,
           invariants = invariants
         ),
         StandardCharsets.UTF_8
@@ -816,14 +1001,27 @@ object Conformance {
     def summarise(name: String, lane: DerivedLane): String = lane.notApplicable match {
       case Some(reason) => s"$consumer: $name not-applicable — $reason"
       case None =>
-        val unmapped = lane.stats.counts("unmapped")
-        val suffix = if (unmapped > 0) s", $unmapped unmapped" else ""
-        s"$consumer: $name ${lane.fixturesAgreeing}/${lane.fixturesCompared} fixtures agree, " +
-          s"${lane.divergenceCount} divergences, ${lane.stats.counts("compared")} nodes compared" +
-          f" (depth ${lane.depth * 100}%.0f%%)$suffix"
+        val head = s"$consumer: $name ${lane.fixturesAgreeing}/${lane.fixturesCompared} fixtures agree, " +
+          s"${lane.divergenceCount} divergences"
+        // Depth is a statement about how much of the canonical *tree* was compared, so it is
+        // meaningless for the diagnostic lane and was printing a flat 0%. That lane reports what it
+        // actually counted instead: how many gated diagnostics it was able to compare.
+        if (name == "diagnostic_conformance") {
+          val compared = lane.stats.counts("diagnosticsCompared")
+          val expected = lane.stats.counts("diagnosticsExpected")
+          val unmapped = lane.stats.counts("unmapped")
+          val suffix = if (unmapped > 0) s", $unmapped with an unmapped kind" else ""
+          s"$head, $compared/$expected gated diagnostics compared$suffix"
+        } else {
+          val unmapped = lane.stats.counts("unmapped")
+          val suffix = if (unmapped > 0) s", $unmapped unmapped" else ""
+          s"$head, ${lane.stats.counts("compared")} nodes compared" +
+            f" (depth ${lane.depth * 100}%.0f%%)$suffix"
+        }
     }
     println(summarise("oracle_conformance", oracle))
     println(summarise("recovery_conformance", recovery))
+    println(summarise("diagnostic_conformance", diagnostics))
     println(
       s"$consumer: source_invariants ${invariants.verdict} — " +
         invariants.checks.map(c => s"${c.id} ${c.verdict}").mkString(", ")
@@ -872,6 +1070,7 @@ object Conformance {
       reportDepth("oracle_conformance", oracle, args.depthFloor)
     val recoveryFailed = report("recovery_conformance", recovery) |
       reportDepth("recovery_conformance", recovery, args.recoveryDepthFloor)
+    val diagnosticsFailed = report("diagnostic_conformance", diagnostics)
 
     // The third lane gates too, and is not subject to any baseline. A ratchet exists because
     // agreement with the reference is approached incrementally, one mapping at a time; losing a
@@ -886,6 +1085,6 @@ object Conformance {
       }
     }
 
-    if (oracleFailed || recoveryFailed || invariantsFailed) sys.exit(1)
+    if (oracleFailed || recoveryFailed || diagnosticsFailed || invariantsFailed) sys.exit(1)
   }
 }

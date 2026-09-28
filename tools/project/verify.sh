@@ -189,6 +189,36 @@ jq -e '.lanes.oracle_conformance.verdict == "fail"
        and .lanes.oracle_conformance.fixturesCompared > 0' "$MUTREPORT" > /dev/null
 echo "OK: mutation detected, and the report names it"
 
+echo "== conformance: the diagnostic lane must gate, and stand down when it cannot =="
+# The same argument the tree lanes get: a lane that cannot fail is decoration. Drop one diagnostic
+# from one expectation and the lane must report both halves of what it checks -- the unit is no
+# longer rejected, and one gated kind/line has gone missing -- and exit non-zero.
+DIAGMUT="$WORK/diag-mutated"
+cp -r fixtures/expected "$DIAGMUT"
+jq '.units[0].diagnostics = []' "$DIAGMUT/trailing-dot.json" > "$DIAGMUT/trailing-dot.json.tmp"
+mv "$DIAGMUT/trailing-dot.json.tmp" "$DIAGMUT/trailing-dot.json"
+DIAGREPORT="$WORK/diag-mutated.json"
+if ./gradlew -q :tools:project:conformance --args="--actual $DIAGMUT --report $DIAGREPORT" >/dev/null 2>&1; then
+  echo "FATAL: the diagnostic lane passed an expectation with a diagnostic removed" >&2
+  exit 1
+fi
+jq -e '.lanes.diagnostic_conformance.verdict == "fail"
+       and .lanes.diagnostic_conformance.divergenceCount > 0
+       and ([.lanes.diagnostic_conformance.divergences[].reason] | index("accept-reject")) != null
+       and ([.lanes.diagnostic_conformance.divergences[].reason] | index("diagnostic")) != null' "$DIAGREPORT" > /dev/null
+# And the other half: a consumer that models no diagnostics at all must not be failed for it.
+NODIAG="$WORK/no-diagnostics"
+cp -r fixtures/expected "$NODIAG"
+for f in "$NODIAG"/*.json; do
+  jq '.units |= map(.diagnostics = [])' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+done
+NODIAGREPORT="$WORK/no-diagnostics.json"
+./gradlew -q :tools:project:conformance \
+  --args="--actual $NODIAG --report $NODIAGREPORT" > /dev/null
+jq -e '.lanes.diagnostic_conformance.verdict == "not-applicable"
+       and (.lanes.diagnostic_conformance.notApplicable | length) > 0' "$NODIAGREPORT" > /dev/null
+echo "OK: the diagnostic lane fails a dropped diagnostic and stands down with a reason"
+
 echo "== conformance: a recovery-only mutation must be caught by the recovery lane alone =="
 # The load-bearing property of the split, and the one a passing run cannot demonstrate. Delete the
 # error markers from one raw tree: the first lane cannot see it, because normalization removes those

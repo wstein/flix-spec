@@ -152,6 +152,7 @@ object ConformanceReportValidator {
       s"OK: $path is a valid conformance report — " +
         s"oracle_conformance ${oracle("verdict").asString}, " +
         s"recovery_conformance ${recovery("verdict").asString}, " +
+        s"diagnostic_conformance ${doc("lanes")("diagnostic_conformance")("verdict").asString}, " +
         s"source_invariants $laneVerdict"
     )
   }

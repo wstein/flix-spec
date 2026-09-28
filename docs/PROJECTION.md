@@ -44,7 +44,7 @@ Every document also declares its **`form`**, and this repository commits both:
 
 A consumer emits `raw`: its own tree, its own wrappers, its own error-recovery nodes intact. The
 conformance comparison applies that consumer's declared transparency rules itself, and it needs the
-unreduced tree because two of its three lanes reduce it differently.
+unreduced tree because two of its four lanes reduce it differently.
 
 A projected tree whose shape depends on an unstated normalisation is not comparable to anything,
 which is why `form` is required rather than inferred from a directory name.
@@ -128,7 +128,7 @@ To enable meaningful cross-parser comparison, projected trees distinguish betwee
 | **Source Spans** | Advisory | Line/column positions are recorded for diagnostics but not strictly gated for structural agreement. |
 | **Whitespace / Comments** | Normalised | Whitespace and comment tokens are stripped from non-lexical comparisons unless explicitly under test in lexical fixtures. |
 | **Wrapper Nodes** | Normalised | Removed from the canonical tree per `ast/transparency.json` (§2.3), so they are never compared. |
-| **Error Recovery** | Separately gated | The error vocabulary is spliced out of the canonical tree and measured in its own conformance lane against `fixtures/raw/`. Diagnostics still gate on class and line number (§3.4). |
+| **Error Recovery** | Separately gated | The error vocabulary is spliced out of the canonical tree and measured in its own conformance lane against `fixtures/raw/`. Diagnostics gate on `kind` and `line` in the `diagnostic_conformance` lane; `col` and `message` stay advisory. |
 
 ## 4. Consumer Projection Maps
 
@@ -166,7 +166,27 @@ genuinely cannot produce but that is not transparent in the reference.
 
 `recoveryMarkers` is the one thing a consumer must still declare about the reference's vocabulary,
 and it is really a declaration about its own: which of its nodes mark error recovery. It is
-deliberately not `flatten` — see [`CONFORMANCE.md`](CONFORMANCE.md), "The three lanes".
+deliberately not `flatten` — see [`CONFORMANCE.md`](CONFORMANCE.md), "The four lanes".
+
+### 4.1 Diagnostics
+
+The `diagnostic_conformance` lane compares two things, and only the second needs a shared vocabulary:
+
+- **accept/reject** — the same units are rejected. This needs no tree, no projection map and no
+  agreement about names, which makes it the one derived signal a consumer without a structural
+  model can still produce.
+- **`kind` and `line`** — the multiset of gated diagnostics agrees. `col` and `message` are never
+  compared: both are recovery-dependent.
+
+A consumer whose diagnostic names are its own declares `diagnosticMappings` in its projection map,
+mapping each native name to the reference's. It is deliberately separate from `mappings`, which is
+about tree kinds — a consumer may model the tree faithfully and name its errors nothing like the
+reference, or the reverse, and one gap must not hide the other.
+
+Without such a mapping, and when the names are not already the reference's, the lane compares
+accept/reject alone and records that it did. A consumer that emits no diagnostics at all is
+`not-applicable`, with the reason stated: reporting no errors is a permitted modelling decision,
+and failing it here would penalise a choice the contract grants.
 
 ## 5. Schema Versioning
 

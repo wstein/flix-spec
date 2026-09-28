@@ -43,18 +43,19 @@ Per [`PROJECTION.md`](PROJECTION.md) section 3:
   spans are advisory, so comparing either would report differences that are not disagreements
   about structure.
 
-## The three lanes
+## The four lanes
 
-A conformance report has three lanes, and they are deliberately never summed into one score.
+A conformance report has four lanes, and they are deliberately never summed into one score.
 
-| | `oracle_conformance` | `recovery_conformance` | `source_invariants` |
-| --- | --- | --- | --- |
-| Measures | structure, *modulo* error recovery | error-recovery shape, and nothing else | the consumer's output against its own input |
-| Compares against | `fixtures/expected` — the normalized canonical tree | `fixtures/raw` with the wrapper rules applied and the error vocabulary left standing | nothing; it consults no expected tree |
-| Scope | every fixture | only the fixtures whose raw tree contains a recovery marker | every unit the consumer produced |
-| Authority | `derived` | `derived` | `independent` |
-| Can falsify the reference | no | no | yes |
-| Gated by a baseline | `--baseline` | `--recovery-baseline` | no |
+| | `oracle_conformance` | `recovery_conformance` | `diagnostic_conformance` | `source_invariants` |
+| --- | --- | --- | --- | --- |
+| Measures | structure, *modulo* error recovery | error-recovery shape, and nothing else | which units are rejected, and with what | the consumer's output against its own input |
+| Compares against | `fixtures/expected` — the normalized canonical tree | `fixtures/raw` with the wrapper rules applied and the error vocabulary left standing | the `diagnostics` of each expectation | nothing; it consults no expected tree |
+| Scope | every fixture | only the fixtures whose raw tree contains a recovery marker | every fixture | every unit the consumer produced |
+| Needs a tree | yes | yes | **no** | no |
+| Authority | `derived` | `derived` | `derived` | `independent` |
+| Can falsify the reference | no | no | no | yes |
+| Gated by a baseline | `--baseline` | `--recovery-baseline` | `--diagnostic-baseline` | no |
 
 The split exists because a single number could not carry the differences. Agreement is measured
 against trees the reference produced, so both derived lanes inherit the reference's defects by
@@ -62,6 +63,23 @@ construction: a consumer that faithfully reproduces a compiler bug scores as agr
 implements the reference's *intent* instead scores as divergent. That is the correct measure of
 **compatibility** — consumers should agree with the exact pinned behaviour — and it is not a measure
 of correctness. See [`DEFECTS.md`](DEFECTS.md), which the lanes' `caveat` fields name inline.
+
+### Why diagnostics are their own lane
+
+Because they need nothing else. Accept/reject — did the consumer reject the units the reference
+rejected — requires no tree, no projection map and no shared vocabulary, which makes it the only
+derived signal a consumer without a structural model can produce at all. Kind and line go further
+and need the names to be readable as the reference's, via `diagnosticMappings` or because they
+already are; without that the lane compares accept/reject alone and records that it did.
+
+This lane is new. `docs/PROJECTION.md` had described diagnostics as gated on class and line since
+the contract was written, and nothing gated them: they were extracted, schema-checked, published
+and compared to nothing. The diagnostic-kind coverage counted below was, until this lane existed, a
+measurement of this repository against itself.
+
+A consumer that emits no diagnostics for any fixture is `not-applicable`, with the reason recorded.
+Reporting no errors is a modelling decision the contract permits; failing a consumer for it would
+penalise a permitted choice, and passing it would claim a property nothing established.
 
 ### Why recovery is its own lane
 
