@@ -41,10 +41,11 @@
     ]
   },
   "entryPoint": {
-    "description": "Phase pipeline, driven directly: Reader.run(List(Input.RealFile), AvailableClasses.empty) -> Lexer.run -> Parser2.run, with an implicit Flix. Chosen over the public API because it parses exactly the given inputs.",
+    "description": "Phase pipeline, driven directly: a Source built from the file, wrapped in ReadAst.Root, then Lexer.run -> Parser2.run, with an implicit Flix. Chosen over the public API because it parses exactly the given inputs. v0.77.0 deleted the Reader phase and shared.Input; the compiler now builds ReadAst.Root from Source values itself (Flix.scala), and the adapters here do the same -- bytes read with the compiler's own defaultCharset and wrapped by Source.fromString, which is what the deleted Reader did for a real file. Weeder2 is deliberately not run: everything published here is a statement about what the reference parses.",
     "classes": [
       "ca.uwaterloo.flix.api.Flix",
-      "ca.uwaterloo.flix.language.phase.Reader",
+      "ca.uwaterloo.flix.language.ast.ReadAst",
+      "ca.uwaterloo.flix.language.ast.shared.Source",
       "ca.uwaterloo.flix.language.phase.Lexer",
       "ca.uwaterloo.flix.language.phase.Parser2",
       "ca.uwaterloo.flix.language.ast.SyntaxTree"

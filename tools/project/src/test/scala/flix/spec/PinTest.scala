@@ -120,4 +120,20 @@ class PinTest extends AnyFunSuite with Matchers {
       }
     }
   }
+
+  test("every class pin.json names as an entry point exists in the pinned jar") {
+    // pin.json described `Reader.run(List(Input.RealFile), AvailableClasses.empty)` and listed
+    // `phase.Reader` among its classes for a full pin after v0.77.0 deleted both. The adapters were
+    // migrated; the metadata describing them was not, and nothing compared the two. A name in this
+    // list is a claim about the oracle, so it is checked against the oracle like any other.
+    val classes = Json.parseFile(repoRoot.resolve("pin.json"))("entryPoint")("classes").asArray.map(_.asString)
+    classes should not be empty
+
+    val loader = getClass.getClassLoader
+    classes.foreach { name =>
+      withClue(s"pin.json names '$name' as an entry point, but the pinned jar has no such class: ") {
+        noException should be thrownBy loader.loadClass(name)
+      }
+    }
+  }
 }
