@@ -7,6 +7,38 @@ import Json._
   */
 object SchemaValidator {
 
+  /** Every JSON Schema keyword this validator actually acts on, plus the annotations it may ignore.
+    *
+    * Declared here so `SchemaValidatorTest` can assert that nothing under `schemas/` uses a keyword outside it. A
+    * schema may otherwise state a constraint the validator silently ignores, which is worse than not stating it: the
+    * file reads as though the rule is enforced and no run can disagree. `minItems` sat in
+    * `schemas/defect-ledger.schema.json` in exactly that state.
+    */
+  val KnownKeywords: Set[String] = Set(
+    // structural
+    "type",
+    "properties",
+    "required",
+    "additionalProperties",
+    "items",
+    "definitions",
+    "$ref",
+    "oneOf",
+    // value constraints
+    "enum",
+    "minimum",
+    "maximum",
+    "minLength",
+    "minItems",
+    "pattern",
+    // annotations, carried for readers and deliberately not enforced
+    "$id",
+    "$schema",
+    "title",
+    "description",
+    "deprecated"
+  )
+
   final class Errors {
     private val buf = scala.collection.mutable.ArrayBuffer.empty[String]
     def add(message: String): Unit = buf += message
@@ -73,6 +105,16 @@ object SchemaValidator {
     (schema.get("minimum"), obj) match {
       case (Some(JNumber(min)), JNumber(value)) if value < min =>
         errors.add(s"$path: $value < minimum $min")
+      case _ =>
+    }
+    (schema.get("maximum"), obj) match {
+      case (Some(JNumber(max)), JNumber(value)) if value > max =>
+        errors.add(s"$path: $value > maximum $max")
+      case _ =>
+    }
+    (schema.get("minItems"), obj) match {
+      case (Some(min), JArray(items)) if items.length < min.asInt =>
+        errors.add(s"$path: ${items.length} item(s), fewer than minItems ${min.asInt}")
       case _ =>
     }
     (schema.get("minLength"), obj) match {
