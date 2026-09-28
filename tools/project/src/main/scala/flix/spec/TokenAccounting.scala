@@ -36,8 +36,15 @@ object TokenAccounting {
     *     like whitespace, not content.
     *
     * The `$` rule is deliberately narrow -- only when followed by a name character -- so string interpolation
-    * (`${expr}`, where `$` precedes `{`) still has to round-trip, and a genuinely dropped `$` inside a string literal
-    * is still caught.
+    * (`${expr}`, where `$` precedes `{`) still has to round-trip: dropping that `$` leaves `{expr}`, which no longer
+    * matches the source.
+    *
+    * What it does **not** catch is a `$` dropped from *inside* a string literal when a name character follows it. The
+    * rule is applied to both sides of the comparison, so `"$abc"` and a tree that lost the `$` both reduce to `"abc"`
+    * and compare equal. That is the price of stating the rule over concatenated text rather than over the gaps between
+    * tokens: in the source the escape `$` lies between two tokens, while a literal's `$` lies inside one, and this
+    * function cannot tell those apart because by the time it runs the boundaries are gone. Asserting it positionally
+    * would close the gap; until then the guarantee is the narrower one stated here.
     */
   def squeeze(s: String): String =
     s.replaceAll("\\s+", "").replaceAll("\\$(?=[A-Za-z_])", "")

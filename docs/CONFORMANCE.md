@@ -236,7 +236,7 @@ tell a neutral rule from one shaped by that consumer.
 
 So the contract was tested against a second, independently-written map: `flix-jetbrains-plugin`, a
 Grammar-Kit grammar whose shape differs from the reference far more than tree-sitter's does — 30% of
-its nodes are always single-child wrappers, against 11.4% on the canonical side. Its `elide` list was
+its nodes are always single-child wrappers, against 11.2% on the canonical side. Its `elide` list was
 written before the contract existed, by someone solving a different problem.
 
 | Contract rule | Independently declared transparent by `flix-jetbrains-plugin` |
@@ -324,8 +324,15 @@ Both exclusions are the lexer's own behaviour, not conveniences. Whitespace is n
 The `$` in `x.$and(y)` — Flix's escape for a Java method whose name collides with a keyword — is
 stepped over explicitly by `Lexer.scala:519-521` ("Don't include the $ sign in the name"), so the
 token spans `and` and the `$` belongs to nothing. The rule is deliberately narrow, applying only
-when `$` precedes a name character, so string interpolation (`${expr}`) must still round-trip and
-a `$` genuinely dropped from a string literal is still caught.
+when `$` precedes a name character, so string interpolation (`${expr}`) must still round-trip:
+dropping that `$` leaves `{expr}`, which no longer matches the source.
+
+It does not, however, catch a `$` dropped from inside a string literal when a name character
+follows — `"$abc"` and a tree that lost the `$` both reduce to `"abc"`, because the rule is applied
+to both sides. The distinction the check would need is positional: the escape `$` lies *between*
+two tokens and a literal's `$` lies *inside* one, and comparing concatenated text has already
+discarded the boundaries that say which. This is a known gap, stated here rather than claimed
+away.
 
 That precision was not designed; it was **measured**. An earlier, broader form of the rule held on
 every fixture but failed on 6 cleanly-parsed corpus files — `BigInt.flix`, `Regex.flix`, and four
@@ -578,7 +585,7 @@ repository's CI maintains — the CLI dependency is why.
 `flix-jetbrains-plugin` is a Grammar-Kit grammar, and its shape differs from the reference far more
 than tree-sitter's does. Every expression descends through roughly seventeen precedence levels --
 `LAZY_FORCE_EXPR`, `NOT_EXPR`, `SIGN_EXPR`, `ADDITIVE_EXPR`, … -- each of which is a pass-through
-when its operator is absent. **30% of its nodes are always single-child wrappers**, against 11.4%
+when its operator is absent. **30% of its nodes are always single-child wrappers**, against 11.2%
 on the canonical side.
 
 This is why a node may appear in both `ignored` and `mappings`. `ADDITIVE_EXPR` is transparent on
