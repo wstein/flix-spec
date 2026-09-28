@@ -52,6 +52,35 @@ jobs:
       - name: Fetch Oracle Jar and Verify SHA-256
         run: ./tools/oracle/fetch.sh
 
+      - name: Refuse to Release Anything That Is Not a Version Tag
+        # `workflow_dispatch` makes GITHUB_REF_NAME whatever ref was dispatched, and everything below
+        # names the release, the tag and the bundle from it. Dispatched on `main` that produces a
+        # GitHub release called `main`, and `gh release create` would create the tag to match --
+        # a permanent, wrongly-named release from one click.
+        #
+        # The second half is the disagreement this leaves open even on a real tag: the bundle takes
+        # its version from the tag while Maven takes its own from Gradle, so a tag that does not match
+        # `gradle.properties` publishes two artifacts under two different versions from one commit.
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          case "$TAG" in
+            v[0-9]*.[0-9]*.[0-9]*) ;;
+            *)
+              echo "FATAL: '$TAG' is not a vX.Y.Z tag. Releases are cut from a tag, never from a branch." >&2
+              echo "       Tag the commit and push the tag; workflow_dispatch is for re-running a tag." >&2
+              exit 1
+              ;;
+          esac
+          GRADLE_VERSION="$(./gradlew -q :packaging:properties | awk -F': ' '/^version:/ {print $2}')"
+          if [ "${TAG#v}" != "$GRADLE_VERSION" ]; then
+            echo "FATAL: tag $TAG and gradle.properties version $GRADLE_VERSION disagree." >&2
+            echo "       The bundle is named from the tag and Maven publishes from Gradle; releasing" >&2
+            echo "       now would put two different versions of one commit into the world." >&2
+            exit 1
+          fi
+          echo "OK: releasing $TAG, which matches gradle.properties"
+
       - name: Run End-to-End Verification Suite
         run: ./tools/project/verify.sh
 
@@ -127,7 +156,9 @@ jobs:
             echo "The oracle jar is attested by digest, not by provenance; see \`NOTICE.md\`."
           } > dist/NOTES.md
 
+          # --verify-tag: refuse if the tag does not already exist, rather than creating it here.
           gh release create "${GITHUB_REF_NAME}" \
+            --verify-tag \
             --title "${GITHUB_REF_NAME}" \
             --notes-file dist/NOTES.md \
             "dist/${BUNDLE}.tar.gz" \
