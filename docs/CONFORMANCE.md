@@ -418,28 +418,20 @@ gated against so a passing verdict cannot hide the threshold that produced it.
 
 ## Measured baselines
 
-> **These rows were measured at pin `v0.75.1` (`318bb51a`), fixture revision `4eccee63`, against
-> flix-spec 0.75.2 — the last release before the pin moved to Flix v0.75.2.** They are kept because
-> the *relationships* they establish are the finding, not the absolute numbers: how agreement and
-> depth trade against each other, and what splitting the recovery lane cost. Every consumer must
-> re-measure against the current release before quoting a figure here; a number carried across a pin
-> is a number about a different compiler. `docs/PIN-BUMP.md` step 8 requires exactly that.
+There is no table of consumer figures here, deliberately. Every consumer's `conformance/baseline.json`
+records its own lanes, and that file is written by the run that measured it: quoting the numbers a
+second time in this repository produced a table that was three pins, ten fixtures and one metric
+change out of date, while still reading as the ecosystem's reference figures.
 
-| Consumer | Lane | Verdict | Detail |
-| --- | --- | --- | --- |
-| `tree-sitter-flix` | `oracle_conformance` | **pass** (baseline 61) | 103 / 136 fixtures agree · 61 divergences · 1923 nodes compared · **99% depth** · 12 unmapped |
-| `tree-sitter-flix` | `recovery_conformance` | **fail** (baseline 45) | 5 / 21 in-scope fixtures agree · 45 divergences · **100% depth** |
-| `tree-sitter-flix` | `source_invariants` | **pass** (1 of 4 checks evaluated) | `document-shape` pass · the other three `not-applicable` |
-| `flix-jetbrains-plugin` | `oracle_conformance` | **pass** (baseline 3) | 133 / 136 fixtures agree · 3 divergences · 1258 nodes compared · **93% depth** · 89 unmapped |
-| `flix-jetbrains-plugin` | `recovery_conformance` | **fail** (measured here; its own port has no recovery lane) | 19 / 21 in-scope fixtures agree · 5 divergences · **94% depth** |
-| `flix-jetbrains-plugin` | `source_invariants` | **pass** (1 of 4 checks evaluated) | `document-shape` pass · the other three `not-applicable` |
-| `flix-antlr-grammar` | `oracle_conformance` | **pass** (baseline 75) | 76 / 136 fixtures agree · 75 divergences · 818 nodes compared · **88% depth** · 113 unmapped |
-| `flix-antlr-grammar` | `recovery_conformance` | **not-applicable** | declares no `recoveryMarkers`; ANTLR's recovery inserts nodes the parse tree does not name |
-| `flix-antlr-grammar` | `source_invariants` | **pass** (1 of 4 checks evaluated) | `document-shape` pass · the other three `not-applicable` |
+Read a consumer's numbers from its own `baseline.json`. Read `fixturesAgreeing` together with
+`depthPercent`, which the report now carries alongside `nodesExpected`: agreement alone is gameable,
+because a map that maps almost nothing compares almost nothing and so agrees with almost everything.
+A `depthPercent` computed against the *walk* rather than the expectation is the retired metric and
+reads highest for the maps that skip most; a report without `nodesExpected` predates the repair and
+should be re-measured rather than quoted.
 
-Two figures in these rows also predate a correctness fix and would not reproduce even at that pin:
-`divergenceCount` was truncated at twenty per fixture, and `depth` used the walk rather than the
-expectation as its denominator. Both were repaired after this table was written.
+The relationships those measurements established are the finding, and they are stated below in their
+own right. The absolute numbers were never the point.
 
 ### What splitting the lanes cost, and what it did not
 
