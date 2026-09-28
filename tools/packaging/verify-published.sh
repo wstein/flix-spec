@@ -9,7 +9,13 @@
 #
 # A resolution is not a proxy. If this passes, a consumer can add the coordinate and get the files.
 #
-# Usage: verify-published.sh [<version>]   (default: the version pages.yml just published)
+# Usage: verify-published.sh [--require-digest] <version>
+#
+# --require-digest makes the identity comparison mandatory: no local build of that version is a
+# failure rather than a downgrade to the content check. CI passes it, because there the jar was just
+# built in the same job and its absence means something is wrong with the job, not with the request.
+# Without it the comparison is best-effort, which is what a human checking an older published version
+# from a clean tree needs -- there is nothing local to compare and that is not a fault.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -18,10 +24,18 @@ cd "$ROOT"
 REPO_URL="${FLIXSPEC_MAVEN_URL:-https://wstein.github.io/flix-spec/maven/}"
 GROUP="io.github.wstein"
 ARTIFACT="flix-spec"
-VERSION="${1:-}"
+REQUIRE_DIGEST=0
+VERSION=""
+for arg in "$@"; do
+  case "$arg" in
+    --require-digest) REQUIRE_DIGEST=1 ;;
+    -*) echo "unknown option: $arg" >&2; exit 2 ;;
+    *) VERSION="$arg" ;;
+  esac
+done
 
 if [ -z "$VERSION" ]; then
-  echo "usage: verify-published.sh <version>" >&2
+  echo "usage: verify-published.sh [--require-digest] <version>" >&2
   exit 2
 fi
 
@@ -43,6 +57,12 @@ EXPECTED_SHA=""
 if [ -f "$LOCAL_JAR" ]; then
   EXPECTED_SHA="$(shasum -a 256 "$LOCAL_JAR" | cut -d' ' -f1)"
   echo "Comparing against locally built $ARTIFACT-$VERSION.jar ($EXPECTED_SHA)"
+elif [ "$REQUIRE_DIGEST" -eq 1 ]; then
+  echo "FATAL: --require-digest was given but there is no local build at $LOCAL_JAR." >&2
+  echo "       In CI the jar was built in this job, so its absence means the job is wrong, not the" >&2
+  echo "       request. Falling back to the content check here would leave the identity of the" >&2
+  echo "       published artifact unverified while still reporting success." >&2
+  exit 1
 else
   echo "NOTE: no local build of $VERSION at $LOCAL_JAR; checking contents only." >&2
   echo "      Run ./gradlew :packaging:artifactsJar first to compare digests." >&2

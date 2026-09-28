@@ -251,7 +251,10 @@ jobs:
           FULL_VERSION="${{ steps.version.outputs.full_version }}"
 
           for attempt in $(seq 1 20); do
-            if ./tools/packaging/verify-published.sh "$FULL_VERSION"; then
+            # --require-digest: the jar was built in this job, so there is always something to compare
+            # against. Without it a missing local build would quietly downgrade to the content check
+            # and still report success -- a gate that cannot fire is decoration.
+            if ./tools/packaging/verify-published.sh --require-digest "$FULL_VERSION"; then
               exit 0
             fi
             echo "not resolvable yet (attempt $attempt); Pages may still be propagating"
