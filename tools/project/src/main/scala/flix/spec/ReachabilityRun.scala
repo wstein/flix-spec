@@ -1,9 +1,9 @@
 package flix.spec
 
 import ca.uwaterloo.flix.api.Flix
-import ca.uwaterloo.flix.language.ast.{ChangeSet, SyntaxTree, Token}
-import ca.uwaterloo.flix.language.ast.shared.{AvailableClasses, Input, SecurityContext}
-import ca.uwaterloo.flix.language.phase.{Lexer, Parser2, Reader}
+import ca.uwaterloo.flix.language.ast.{ChangeSet, ReadAst, SyntaxTree, Token}
+import ca.uwaterloo.flix.language.ast.shared.{Origin, SecurityContext, Source, SourceName}
+import ca.uwaterloo.flix.language.phase.{Lexer, Parser2}
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths}
@@ -65,11 +65,20 @@ object ReachabilityRun {
     flix.threadPool = new ca.uwaterloo.flix.util.ThreadPool(1)
     try {
 
-      val inputs = List(Input.RealFile(file, SecurityContext.Plain))
-      val (afterReader, readerErrors) = Reader.run(inputs, AvailableClasses.empty)
-      if (readerErrors.nonEmpty) return FileResult(readable = false, cleanParse = false, lossless = false)
+      // v0.77.0 deleted the Reader phase, and with it the one thing that reported a file as
+      // unreadable. The corpus counts those deliberately -- `filesUnreadable` in
+      // ast/reachability.json -- so the failure has to be caught here instead of inferred from a
+      // phase that no longer runs. Anything the filesystem or the charset decoder rejects is
+      // unreadable, exactly as Reader.run would have reported it.
+      val text =
+        try new String(Files.readAllBytes(file), flix.defaultCharset)
+        catch {
+          case _: java.io.IOException => return FileResult(readable = false, cleanParse = false, lossless = false)
+        }
+      val src = Source.fromString(SourceName.PathName(file), Origin.User, SecurityContext.Plain, text)
+      val readRoot = ReadAst.Root(Map(src -> ()))
 
-      val (afterLexer, lexerErrors) = Lexer.run(afterReader, Map.empty, ChangeSet.Everything)
+      val (afterLexer, lexerErrors) = Lexer.run(readRoot, Map.empty, ChangeSet.Everything)
       val (afterParser, parserErrors) = Parser2.run(afterLexer, SyntaxTree.empty, ChangeSet.Everything)
 
       val local = new Tally

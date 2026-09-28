@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "generatedBy": "flix.spec.TreeKindExtractor",
   "toolVersion": "1.0.0",
-  "upstreamCommit": "f2d4678c20bff1242f4cad5e23144db91027b762",
-  "oracleSha256": "d8d9a3870e199c03ed6364ea9430f56f67bfd38c332c411628a6a7cb88b2b0b4",
-  "treeKindCount": 191,
-  "treeKindDigest": "10faeb18f4e5acdbd98822304a05cba09daf2f92165faaf525a32d0ac975f69b",
+  "upstreamCommit": "4a5b60a31ac03bb762f68b554a0fc2b6f4d982b9",
+  "oracleSha256": "20007d79f97b696ba388113e2a4235227691d33a00bfa669f2316b37a7b14201",
+  "treeKindCount": 192,
+  "treeKindDigest": "3080221809bc0a3501d36727c782934f6cd5a3981ac768ae68752cb8c84c5526",
   "kinds": [
     {
       "name": "AnnotationList",
@@ -944,6 +944,11 @@
     },
     {
       "name": "UsesOrImports.ImportMany",
+      "extends": "UsesOrImports",
+      "form": "case-object"
+    },
+    {
+      "name": "UsesOrImports.Package",
       "extends": "UsesOrImports",
       "form": "case-object"
     },

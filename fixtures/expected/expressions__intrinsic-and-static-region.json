@@ -3,8 +3,8 @@
   "generatedBy": "flix.spec.ProjectionExtractor",
   "toolVersion": "2.0.0",
   "form": "normalized",
-  "upstreamCommit": "f2d4678c20bff1242f4cad5e23144db91027b762",
-  "oracleSha256": "d8d9a3870e199c03ed6364ea9430f56f67bfd38c332c411628a6a7cb88b2b0b4",
+  "upstreamCommit": "4a5b60a31ac03bb762f68b554a0fc2b6f4d982b9",
+  "oracleSha256": "20007d79f97b696ba388113e2a4235227691d33a00bfa669f2316b37a7b14201",
   "units": [
     {
       "source": "fixtures/positive/expressions__intrinsic-and-static-region.flix",

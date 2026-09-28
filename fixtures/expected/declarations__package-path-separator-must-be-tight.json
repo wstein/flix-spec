@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 2,
+  "generatedBy": "flix.spec.ProjectionExtractor",
+  "toolVersion": "2.0.0",
+  "form": "normalized",
+  "upstreamCommit": "4a5b60a31ac03bb762f68b554a0fc2b6f4d982b9",
+  "oracleSha256": "20007d79f97b696ba388113e2a4235227691d33a00bfa669f2316b37a7b14201",
+  "units": [
+    {
+      "source": "fixtures/negative/declarations__package-path-separator-must-be-tight.flix",
+      "diagnostics": [
+      {"kind":"Malformed","line":1,"col":14,"message":"Malformed(FromKinds(Set(ColonColonTight)),Unknown,Some(Write '::' without whitespace on either side, e.g. 'flixball::Game.Board'.),fixtures/negative/declarations__package-path-separator-must-be-tight.flix:1:14)"}
+    ],
+      "tree": {"kind":"Root","span":{"start":{"line":1,"col":1},"end":{"line":4,"col":1}},"children":[{"kind":"UsesOrImports.Use","span":{"start":{"line":1,"col":1},"end":{"line":1,"col":27}},"children":[{"token":"KeywordUse","text":"use","start":{"line":1,"col":1},"end":{"line":1,"col":4}},{"kind":"UsesOrImports.Package","span":{"start":{"line":1,"col":5},"end":{"line":1,"col":16}},"children":[{"kind":"Ident","span":{"start":{"line":1,"col":5},"end":{"line":1,"col":13}},"children":[{"token":"NameLowercase","text":"flixball","start":{"line":1,"col":5},"end":{"line":1,"col":13}}]},{"token":"ColonColon","text":"::","start":{"line":1,"col":14},"end":{"line":1,"col":16}}]},{"kind":"QName","span":{"start":{"line":1,"col":17},"end":{"line":1,"col":27}},"children":[{"kind":"Ident","span":{"start":{"line":1,"col":17},"end":{"line":1,"col":21}},"children":[{"token":"NameUppercase","text":"Game","start":{"line":1,"col":17},"end":{"line":1,"col":21}}]},{"token":"Dot","text":".","start":{"line":1,"col":21},"end":{"line":1,"col":22}},{"kind":"Ident","span":{"start":{"line":1,"col":22},"end":{"line":1,"col":27}},"children":[{"token":"NameUppercase","text":"Board","start":{"line":1,"col":22},"end":{"line":1,"col":27}}]}]}]},{"kind":"Decl.Def","span":{"start":{"line":3,"col":1},"end":{"line":3,"col":22}},"children":[{"token":"KeywordDef","text":"def","start":{"line":3,"col":1},"end":{"line":3,"col":4}},{"kind":"Ident","span":{"start":{"line":3,"col":5},"end":{"line":3,"col":9}},"children":[{"token":"NameLowercase","text":"main","start":{"line":3,"col":5},"end":{"line":3,"col":9}}]},{"kind":"ParameterList","span":{"start":{"line":3,"col":9},"end":{"line":3,"col":11}},"children":[{"token":"ParenL","text":"(","start":{"line":3,"col":9},"end":{"line":3,"col":10}},{"token":"ParenR","text":")","start":{"line":3,"col":10},"end":{"line":3,"col":11}}]},{"token":"Colon","text":":","start":{"line":3,"col":11},"end":{"line":3,"col":12}},{"kind":"Ident","span":{"start":{"line":3,"col":13},"end":{"line":3,"col":17}},"children":[{"token":"NameUppercase","text":"Unit","start":{"line":3,"col":13},"end":{"line":3,"col":17}}]},{"token":"Equal","text":"=","start":{"line":3,"col":18},"end":{"line":3,"col":19}},{"kind":"Expr.Tuple","span":{"start":{"line":3,"col":20},"end":{"line":3,"col":22}},"children":[{"token":"ParenL","text":"(","start":{"line":3,"col":20},"end":{"line":3,"col":21}},{"token":"ParenR","text":")","start":{"line":3,"col":21},"end":{"line":3,"col":22}}]}]}]}
+    }
+  ]
+}

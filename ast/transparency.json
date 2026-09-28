@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "upstreamCommit": "f2d4678c20bff1242f4cad5e23144db91027b762",
+  "upstreamCommit": "4a5b60a31ac03bb762f68b554a0fc2b6f4d982b9",
   "note": "HAND-MAINTAINED. The curated input to fixture normalisation: every entry names a canonical TreeKind that ProjectionExtractor removes when it writes fixtures/expected/, and that fixtures/raw/ still carries verbatim. Three rules exist. `elide` is for nodes that contribute no leaf content of their own, and it fires per occurrence: the node is dropped where it is empty, replaced by its child where it holds exactly one, and kept where it holds two or more, because splicing a branching node would discard real structure rather than a wrapper. An entry therefore does not have to show that the kind is always a wrapper -- only that where it holds one child, that child is the whole content, and that it never holds a token directly at that arity, which would splice a bare token into the parent and give it a role no position can express. `elide-empty` is weaker still and is the only rule admissible for a node that holds its tokens directly: it drops the node where it is empty and leaves every other occurrence exactly as it stands, because replacing such a node by its single child would splice a bare token into the parent and strip the role the node's name was carrying. `splice` is for the error vocabulary, which is not syntax at all; splicing it out is what makes the main conformance lane measure structure *modulo* recovery, and the recovery lane is where its shape is measured instead. Every reason below is an argument about the reference's own structure. A reason of the form 'consumer X does not produce one' is inadmissible and must be rejected in review: this repository instruments a single consumer, so no automated check can distinguish a neutral rule from one shaped by that consumer, and the reasons are the only thing that can. Line numbers refer to upstreamCommit, so a pin bump fails until every citation has been re-read against the new source. Deliberately absent: UnclosedMark. It is a placeholder the parser overwrites and can appear in no tree from any input, so it is argued in ast/unattachable.json instead -- a normalisation rule for a node that never occurs would be unfalsifiable, and claiming it is 'measured in the recovery lane' would be false.",
   "treeKinds": [
     {
@@ -8,8 +8,8 @@
       "rule": "elide-empty",
       "reason": "annotations() opens a mark and advances over each Annotation token in turn, so the list holds those tokens directly rather than any sub-node. Where a declaration carries no annotation the loop never runs and the node closes empty, carrying nothing. It cannot be elided at arity one: its single child is a token, and replacing the list with that bare token would hand the declaration a leaf whose role only the list's name states.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1375",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1380"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1398",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1403"
       ]
     },
     {
@@ -17,8 +17,8 @@
       "rule": "elide",
       "reason": "argument() opens a mark, parses one expression, and closes Argument only on the branch where no `=` follows -- the named branch closes ArgumentNamed instead. The single expression is therefore the whole content, and the position in the enclosing ArgumentList is what makes it an argument.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1857",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:2101"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1882",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:2126"
       ]
     },
     {
@@ -26,7 +26,7 @@
       "rule": "elide",
       "reason": "docComment() opens a mark and immediately closes it as Doc, relying on open() having already consumed any leading comment run into a CommentList. So Doc holds either nothing, when the declaration is undocumented, or exactly that one CommentList, which carries the comment tokens; Doc itself never holds a token.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1386"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1409"
       ]
     },
     {
@@ -35,8 +35,8 @@
       "recoveryMarker": true,
       "reason": "Not syntax. closeWithError and advanceWithError close a mark as ErrorTree while recording a diagnostic; the latter first consumes the unexpected token. The node records where recovery happened. Its children are the salvaged material and belong to the enclosing production.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:332",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:344"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:323",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:335"
       ]
     },
     {
@@ -44,7 +44,7 @@
       "rule": "elide",
       "reason": "The debug-interpolation production opens a mark, parses one expression and closes DebugInterpolator around it with no delimiter tokens of its own; the surrounding interpolation tokens belong to the enclosing string expression.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3223"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3248"
       ]
     },
     {
@@ -52,8 +52,8 @@
       "rule": "elide",
       "reason": "Every site that closes Expr.Expr does so as close(openBefore(x), TreeKind.Expr.Expr) -- a mark opened immediately before an already-closed node -- so the wrapper's content is exactly that one node. It is the statement-and-precedence climb's bookkeeping: it records that a sub-expression was re-wrapped while climbing, not that anything is grouped. The child already carries the expression's own kind, so the wrapper's name adds no distinction the position does not.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1479",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1507"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1502",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1530"
       ]
     },
     {
@@ -61,7 +61,7 @@
       "rule": "elide",
       "reason": "The hole-variable production closes around a single name node; the `?` marker is lexed into the name token itself rather than kept as a separate child, so the node adds an edge and nothing else.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1990"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:2015"
       ]
     },
     {
@@ -69,7 +69,7 @@
       "rule": "elide",
       "reason": "The struct-put production opens a second mark after the `=` token, which it has already eaten, and closes StructPutRHS around the single right-hand expression. The operator stays a child of the enclosing Expr.StructPut, so this node holds one expression and nothing else.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1551"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1574"
       ]
     },
     {
@@ -77,8 +77,8 @@
       "rule": "elide",
       "reason": "unsafeExpr()'s own shape comment shows the fragment holding exactly one Type.Type, and the production closes it immediately after that single type; the `as` keyword is eaten before the mark is opened.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:2667",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:2681"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:2692",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:2706"
       ]
     },
     {
@@ -86,8 +86,8 @@
       "rule": "elide-empty",
       "reason": "modifiers() opens a mark and advances over each modifier token in turn, so the list holds those tokens directly rather than any sub-node. Where a declaration carries no modifier the loop never runs and the node closes empty, carrying nothing. It cannot be elided at arity one: `pub` spliced into Decl.Def is indistinguishable from any other token there, and it is the list's name that makes it a modifier.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1367",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1372"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1390",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1395"
       ]
     },
     {
@@ -96,7 +96,7 @@
       "recoveryMarker": true,
       "reason": "Not syntax, and not even text. It is closed over a zero-width mark opened and closed at the same position when a binary operator is missing, so it holds no children and no tokens at all; it exists to give Weeder2 a place to raise MissingBinaryOperator later.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1475"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1498"
       ]
     },
     {
@@ -104,8 +104,8 @@
       "rule": "elide",
       "reason": "pattern() dispatches on the first token to a function that closes the pattern's own kind, then closes Pattern.Pattern around that single closed node -- once at the end of the dispatch and once on the FCons branch via openBefore(lhs). The dispatch is what decides what the pattern is, and that decision is already the child's kind; Pattern.Pattern records only that a pattern was parsed here, which its position in the parent states.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3303",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3307"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3328",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3332"
       ]
     },
     {
@@ -113,7 +113,7 @@
       "rule": "elide",
       "reason": "variablePat() opens a mark, calls nameUnqualified once and closes; the name becomes an Ident node, so Pattern.Variable holds exactly that one node. An Ident directly under a pattern position already is the variable case, so the wrapper distinguishes nothing.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3314"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3339"
       ]
     },
     {
@@ -121,9 +121,9 @@
       "rule": "elide",
       "reason": "Every close site wraps exactly one already-closed predicate node -- atom, functional or guard -- with the leading `not`/`fix` qualifiers eaten into that inner node rather than kept here, so the body node contributes one edge and no leaf content.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3907",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3910",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3913"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3932",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3935",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3938"
       ]
     },
     {
@@ -131,10 +131,10 @@
       "rule": "elide",
       "reason": "The lattice-term productions eat the `;` separator before opening the mark and close around a single expression, pattern or type, so the node never holds the separator and never holds more than the one term.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3796",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3878",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3895",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:4006"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3821",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3903",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3920",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:4031"
       ]
     },
     {
@@ -142,7 +142,7 @@
       "rule": "elide",
       "reason": "nameAllowQualified() closes QName as close(openBefore(first), TreeKind.QName), wrapping the run that starts at the first already-closed name. Where the name is unqualified that run is exactly one Ident and QName's name duplicates it; where it is qualified the run holds the dotted sequence, the node holds two or more children, and it is kept -- so eliding removes precisely the case in which the wrapper distinguishes nothing.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:809"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:801"
       ]
     },
     {
@@ -151,8 +151,8 @@
       "recoveryMarker": true,
       "reason": "Not syntax. The lexer leaves a dangling `.` that starts no selection, and the parser wraps that one token in a TrailingDot so recovery can continue past it. The token itself is real source text and stays; the marker records that recovery consumed it.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:777",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:802"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:769",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:794"
       ]
     },
     {
@@ -160,7 +160,7 @@
       "rule": "elide",
       "reason": "The type-argument production closes around a single Type.Type and never holds the surrounding brackets or commas, which belong to the enclosing Type.ArgumentList.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3499"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3524"
       ]
     },
     {
@@ -168,8 +168,8 @@
       "rule": "elide",
       "reason": "Both close sites wrap a single effect type after its separator has already been eaten: a backslash on the normal branch, or a slash on the recovery branch that emits ExpectedBackslashGotSlash. The node carries one type node and no token of its own.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3401",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3406"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3426",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3431"
       ]
     },
     {
@@ -177,10 +177,10 @@
       "rule": "elide",
       "reason": "The type productions re-close a single already-closed type node as Type.Type at every level of the precedence climb, using openBefore on the node they just built. It is the type equivalent of a parenthesis-free grouping level: one child, never a token, and never more than one.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3418",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3436",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3445",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3610"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3443",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3461",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3470",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3635"
       ]
     },
     {
@@ -188,8 +188,8 @@
       "rule": "elide",
       "reason": "usesOrImports() opens one mark, consumes `use` and `import` declarations until neither follows, and closes UseOrImportList over whatever it collected -- including nothing at all, which is what a compilation unit with no uses produces. At zero or one child the node states only how many declarations were collected, which the parent's own child count already states; at two or more it is the thing that groups them and is kept.",
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:862",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:877"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:854",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:869"
       ]
     }
   ]

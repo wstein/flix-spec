@@ -75,14 +75,14 @@ construction* — is what turns a bare ratio into a status.
 <!-- generated: status -->
 | Status | `TreeKind` | `TokenKind` |
 | --- | ---: | ---: |
-| Inventory | 191 | 158 |
-| `reachable-covered` — the corpus emits it, a fixture pins it | 183 | 150 |
-| `fixture-only` — only a curated fixture reaches it | 2 | 7 |
+| Inventory | 192 | 159 |
+| `reachable-covered` — the corpus emits it, a fixture pins it | 182 | 151 |
+| `fixture-only` — only a curated fixture reaches it | 4 | 7 |
 | `corpus-only` — real Flix reaches it, no fixture does | 0 | 0 |
 | `structurally-unattachable` — cannot appear in any tree, argued in `ast/unattachable.json` | 6 | 1 |
 | `unknown` — neither exercised nor explained | 0 | 0 |
 
-Measured over 144 fixtures and 900 corpus files at pin `v0.76.0` (`f2d4678c`).
+Measured over 146 fixtures and 893 corpus files at pin `v0.77.0` (`4a5b60a3`).
 `corpus-only` is the only row that is a to-do list. Machine-readable form:
 [`ast/status.json`](ast/status.json).
 <!-- /generated: status -->
@@ -111,12 +111,12 @@ is it* — and the two are independent: a `wrapper` can be `reachable-covered`, 
 <!-- generated: roles -->
 | Role | `TreeKind` |
 | --- | ---: |
-| `syntax` — the vocabulary a consumer is asked to agree with | 164 |
+| `syntax` — the vocabulary a consumer is asked to agree with | 165 |
 | `wrapper` — carries no information beyond its child; elided when normalising | 18 |
 | `error-marker` — marks recovery rather than syntax; spliced out, measured in the recovery lane | 3 |
 | `unattachable` — cannot appear in any tree from any input | 6 |
 
-The four partition the 191 `TreeKind`s exactly. Machine-readable form:
+The four partition the 192 `TreeKind`s exactly. Machine-readable form:
 `treeKindRole` in [`ast/status.json`](ast/status.json).
 <!-- /generated: roles -->
 

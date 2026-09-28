@@ -1,9 +1,9 @@
 package flix.spec
 
 import ca.uwaterloo.flix.api.Flix
-import ca.uwaterloo.flix.language.ast.{ChangeSet, SourcePosition, SyntaxTree, Token, TokenKind}
-import ca.uwaterloo.flix.language.ast.shared.{AvailableClasses, Input, SecurityContext}
-import ca.uwaterloo.flix.language.phase.{Lexer, Parser2, Reader}
+import ca.uwaterloo.flix.language.ast.{ChangeSet, ReadAst, SourcePosition, SyntaxTree, Token, TokenKind}
+import ca.uwaterloo.flix.language.ast.shared.{Origin, SecurityContext, Source, SourceName}
+import ca.uwaterloo.flix.language.phase.{Lexer, Parser2}
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths}
@@ -121,7 +121,6 @@ object ProjectionExtractor {
   /** Parses one file against the pinned oracle and projects the result. */
   def project(file: Path, repoRoot: Path): Projection = {
     val absolute = file.toAbsolutePath.normalize()
-    val inputs = List(Input.RealFile(absolute, SecurityContext.Plain))
 
     implicit val flix: Flix = new Flix()
     // Flix.check() would call the private initThreadPool(); driving phases directly means
@@ -129,10 +128,16 @@ object ProjectionExtractor {
     flix.threadPool = new ca.uwaterloo.flix.util.ThreadPool(1)
     try {
 
-      val (afterReader, readerErrors) = Reader.run(inputs, AvailableClasses.empty)
-      require(readerErrors.isEmpty, s"FATAL: reader errors for $file: $readerErrors")
+      // v0.77.0 deleted the Reader phase and `shared.Input` with it: the compiler now builds its
+      // `ReadAst.Root` directly from `Source` values (`Flix.scala`, `ReadAst.Root(getSources...)`).
+      // This reproduces exactly what the deleted Reader did for a real file -- read the bytes with
+      // the compiler's own default charset and wrap them in a `Source` named by path -- so the
+      // projected trees are unaffected by the phase's removal.
+      val text = new String(Files.readAllBytes(absolute), flix.defaultCharset)
+      val src = Source.fromString(SourceName.PathName(absolute), Origin.User, SecurityContext.Plain, text)
+      val readRoot = ReadAst.Root(Map(src -> ()))
 
-      val (afterLexer, lexerErrors) = Lexer.run(afterReader, Map.empty, ChangeSet.Everything)
+      val (afterLexer, lexerErrors) = Lexer.run(readRoot, Map.empty, ChangeSet.Everything)
       val (afterParser, parserErrors) = Parser2.run(afterLexer, SyntaxTree.empty, ChangeSet.Everything)
 
       val units = afterParser.units.toList
