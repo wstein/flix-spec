@@ -24,11 +24,15 @@ class TreeKindExtractorTest extends AnyFunSuite with Matchers {
     }
   }
 
-  test("extractTreeKinds should return exactly 191 unique qualified kinds") {
+  test("extractTreeKinds returns exactly the number of unique qualified kinds pin.json names") {
+    // Read from the pin rather than hardcoded: the count is a property of the pinned oracle, and a
+    // literal here has to be found and edited on every bump, in a file whose name does not suggest
+    // it records the vocabulary size. pin.json is where that fact already lives, under assertion.
+    val expected = Json.parseFile(repoRoot.resolve("pin.json"))("treeKindCount").asInt
     val kinds = TreeKindExtractor.extractTreeKinds(oracleJar)
 
-    kinds.length shouldBe 191
-    kinds.map(_.name).distinct.length shouldBe 191
+    kinds.length shouldBe expected
+    kinds.map(_.name).distinct.length shouldBe expected
 
     // Check specific known kinds and their qualification
     kinds.map(_.name) should contain("Decl.Def")
@@ -49,9 +53,10 @@ class TreeKindExtractorTest extends AnyFunSuite with Matchers {
     val kinds = TreeKindExtractor.extractTreeKinds(oracleJar)
 
     // ErrorTree is the only case class at this pin, but the generator must not know that by
-    // name -- it must reach the same answer reflectively.
+    // name -- it must reach the same answer reflectively. Everything else is a case object, stated
+    // as "the rest" so the assertion survives a bump that only adds kinds.
     kinds.count(_.form == "case-class") shouldBe 1
-    kinds.count(_.form == "case-object") shouldBe 190
+    kinds.count(_.form == "case-object") shouldBe kinds.length - 1
   }
 
   test("every declared parent is TreeKind or a real sub-trait") {
