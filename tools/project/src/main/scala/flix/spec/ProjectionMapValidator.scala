@@ -82,15 +82,34 @@ object ProjectionMapValidator {
     val deprecatedKeys = schema("properties").asObject.collect {
       case (key, spec) if spec.get("deprecated").contains(Json.JBool(true)) => key
     }.toSet
+    // Naming the key alone is not actionable: it fires on the key's presence, so a consumer that removes
+    // every entry the contract already covers still sees the same line and cannot tell whether any work is
+    // left. Split the entries instead -- what the contract now covers and can go, and what is genuinely this
+    // consumer's and must stay until it is argued into ast/transparency.json.
+    val covered = contract.all
     val notices = maps.flatMap { path =>
-      val used = Json.parseFile(Paths.get(path)).asObject.keySet.intersect(deprecatedKeys)
-      used.toList.sorted.map(k => s"$path: '$k' is deprecated")
+      val doc = Json.parseFile(Paths.get(path))
+      doc.asObject.keySet.intersect(deprecatedKeys).toList.sorted.map { key =>
+        val entries = doc.get(key).map(_.asArray.map(_.asString)).getOrElse(Nil).sorted
+        val redundant = entries.filter(covered)
+        val remaining = entries.filterNot(covered)
+        val detail =
+          if (entries.isEmpty) "no entries; the key can be removed"
+          else if (redundant.isEmpty) s"${remaining.length} entry/entries, none covered by the contract"
+          else s"${redundant.length} of ${entries.length} now covered by ast/transparency.json"
+        (path, key, detail, redundant, remaining)
+      }
     }
     if (notices.nonEmpty) {
       println(s"NOTE: ${notices.length} deprecated key(s) still in use:")
-      notices.foreach(n => println(s"  $n"))
-      println("  These still work. `elide` and `flattenCanonical` state on the consumer's side what")
-      println("  ast/transparency.json now states once, centrally, for every consumer.")
+      notices.foreach { case (path, key, detail, redundant, remaining) =>
+        println(s"  $path: '$key' is deprecated — $detail")
+        if (redundant.nonEmpty) println(s"    removable now: ${redundant.mkString(", ")}")
+        if (remaining.nonEmpty) println(s"    still yours:   ${remaining.mkString(", ")}")
+      }
+      println("  The key stays reportable until it is empty: `elide` and `flattenCanonical` say on the")
+      println("  consumer's side what ast/transparency.json now says once, centrally. An entry under")
+      println("  `still yours` is a candidate to argue into that contract, not something to delete.")
     }
 
     val total = maps.map(p => Json.parseFile(Paths.get(p)).get("mappings").map(_.asObject.size).getOrElse(0)).sum
