@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/wstein/flix-spec/main/schemas/retired.schema.json",
+  "title": "Flix Retired Vocabulary Schema",
+  "description": "Schema for ast/retired.json: vocabulary the reference once defined and has since removed. Hand-maintained, because nothing in the current jar can say what used to be in an older one. This is to vocabulary what retired-versions.json is to published coordinates -- the record that survives a removal, so a consumer can learn that a kind is gone by name rather than by a digest that merely stopped matching.",
+  "type": "object",
+  "required": ["schemaVersion", "note", "retired"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "minimum": 1 },
+    "note": { "type": "string", "minLength": 1 },
+    "retired": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "vocabulary", "removedAtTag", "removedAtCommit", "lastPresentAtTag", "reason"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "vocabulary": { "type": "string", "enum": ["TreeKind", "TokenKind", "Annotation"] },
+          "removedAtTag": { "type": "string", "pattern": "^v\\d+\\.\\d+\\.\\d+$" },
+          "removedAtCommit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+          "lastPresentAtTag": { "type": "string", "pattern": "^v\\d+\\.\\d+\\.\\d+$" },
+          "reason": {
+            "type": "string",
+            "minLength": 40,
+            "description": "Why it went, and what a consumer should do about it. Long enough to force an argument rather than an assertion."
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

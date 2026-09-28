@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "note": "HAND-MAINTAINED. Vocabulary the reference once defined and has since removed, with the pin at which it went. A removal is the one vocabulary change a consumer cannot recover from the current inventories: an added kind is visible as a new name, but a removed one leaves nothing behind except a digest that no longer matches, and a consumer holding a mapping onto it learns only that the mapping stopped matching. This file is what survives the removal, and it is the counterpart for vocabulary of what retired-versions.json is for published coordinates. It is deliberately not generated: nothing in the current jar can tell you what used to be in an older one.",
+  "retired": [
+    {
+      "name": "Decl.Law",
+      "vocabulary": "TreeKind",
+      "removedAtTag": "v0.75.2",
+      "removedAtCommit": "40949531b4d42e5eaf2e4b9997537eaf793c24e7",
+      "lastPresentAtTag": "v0.75.1",
+      "reason": "Flix removed law declarations from the language. `law` is no longer parsed as a declaration inside a trait, so the TreeKind that grouped one can no longer be emitted from any input."
+    },
+    {
+      "name": "KeywordLaw",
+      "vocabulary": "TokenKind",
+      "removedAtTag": "v0.75.2",
+      "removedAtCommit": "40949531b4d42e5eaf2e4b9997537eaf793c24e7",
+      "lastPresentAtTag": "v0.75.1",
+      "reason": "Retired with law declarations. `law` is not a keyword at this pin -- it lexes as an ordinary lowercase name, so a grammar still scoping it as a keyword colours a plain identifier."
+    },
+    {
+      "name": "KeywordLawful",
+      "vocabulary": "TokenKind",
+      "removedAtTag": "v0.75.2",
+      "removedAtCommit": "40949531b4d42e5eaf2e4b9997537eaf793c24e7",
+      "lastPresentAtTag": "v0.75.1",
+      "reason": "Retired with law declarations. The `lawful` trait modifier went with them."
+    }
+  ]
+}

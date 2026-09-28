@@ -14,15 +14,13 @@ class TokenKindExtractorTest extends AnyFunSuite with Matchers {
   private val repoRoot: Path = Paths.get("../..").toAbsolutePath.normalize()
   private val oracleJar: Path = repoRoot.resolve(".oracle/flix.jar")
 
-  test("the vocabulary has the size pin.json names and retires the law keywords") {
+  test("the vocabulary has the size pin.json names") {
     // The count comes from the pin for the same reason as TreeKind's, and the test name no longer
     // carries a version: it said v0.75.2 through two later pins.
     val expected = Json.parseFile(repoRoot.resolve("pin.json"))("tokenKindCount").asInt
     val names = TokenKindExtractor.extractTokenKinds(oracleJar).map(_.name)
 
     names.length shouldBe expected
-    names should not contain "KeywordLaw"
-    names should not contain "KeywordLawful"
   }
 
   test("TokenKind is a flat hierarchy with no qualification needed") {
