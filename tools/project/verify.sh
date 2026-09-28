@@ -254,6 +254,11 @@ echo "== generating ast/tokenkind.json via reflection =="
 echo "== validating regenerated ast/tokenkind.json against schema =="
 ./gradlew -q :tools:project:validateTokenKind
 
+echo "== regenerating and validating ast/annotation.json =="
+# The third vocabulary. A single TokenKind.Annotation covers every one of these names, so no TokenKind
+# digest can move when one is added, removed or renamed -- the same blind spot ColonColonTight exposed.
+./gradlew -q :tools:project:generateAnnotation
+
 echo "== validating committed ast/treekind.json against schema =="
 ./gradlew -q :tools:project:validateTreeKind
 

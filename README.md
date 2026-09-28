@@ -82,7 +82,7 @@ construction* — is what turns a bare ratio into a status.
 | `structurally-unattachable` — cannot appear in any tree, argued in `ast/unattachable.json` | 6 | 1 |
 | `unknown` — neither exercised nor explained | 0 | 0 |
 
-Measured over 146 fixtures and 893 corpus files at pin `v0.77.0` (`4a5b60a3`).
+Measured over 147 fixtures and 893 corpus files at pin `v0.77.0` (`4a5b60a3`).
 `corpus-only` is the only row that is a to-do list. Machine-readable form:
 [`ast/status.json`](ast/status.json).
 <!-- /generated: status -->

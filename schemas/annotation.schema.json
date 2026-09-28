@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/wstein/flix-spec/main/schemas/annotation.schema.json",
+  "title": "Flix Annotation Inventory Schema",
+  "description": "Schema for ast/annotation.json, enumerating every annotation the pinned Flix reference defines. This is a third vocabulary, needed because the first two cannot express it: the lexer emits a single TokenKind.Annotation for all of them, so the name survives only in the token's text and no TokenKind digest moves when one is added, removed or renamed. It is a COVERAGE vocabulary and never a validity check -- the Annotation token is genuinely open, because Java interop annotations lex identically and upstream models them with Annotation.Error.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "generatedBy",
+    "toolVersion",
+    "upstreamCommit",
+    "oracleSha256",
+    "annotationCount",
+    "annotationDigest",
+    "annotations"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "minimum": 1 },
+    "generatedBy": { "type": "string", "minLength": 1 },
+    "toolVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "upstreamCommit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$",
+      "description": "The pinned commit this inventory was reflected from."
+    },
+    "oracleSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "annotationCount": { "type": "integer", "minimum": 1 },
+    "annotationDigest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "SHA-256 over the sorted names, newline-joined. Asserted against pin.json, so an annotation cannot enter or leave the vocabulary without a human editing the pin."
+    },
+    "note": { "type": "string" },
+    "annotations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^@[A-Za-z][A-Za-z0-9]*$",
+            "description": "The annotation as the reference writes it, read from its toString rather than derived from the class name: TailRecursive renders as @Tailrec, so deriving would produce a name the reference never emits."
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -117,6 +117,23 @@ tasks.register<JavaExec>("generateTokenKind") {
     workingDir = rootProject.projectDir
 }
 
+tasks.register<JavaExec>("proposeAnnotation") {
+    description =
+        "Reports the annotation count and digest for the pinned jar without asserting or writing. " +
+            "Use during a pin bump, before updating pin.json."
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("flix.spec.AnnotationExtractor")
+    args = listOf("--propose")
+    workingDir = rootProject.projectDir
+}
+
+tasks.register<JavaExec>("generateAnnotation") {
+    description = "Generates ast/annotation.json from reflection over the pinned jar."
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("flix.spec.AnnotationExtractor")
+    workingDir = rootProject.projectDir
+}
+
 tasks.register<JavaExec>("validateTokenKind") {
     description = "Validates ast/tokenkind.json against schemas/tokenkind.schema.json."
     classpath = sourceSets["main"].runtimeClasspath
@@ -237,7 +254,7 @@ tasks.register<JavaExec>("conformance") {
     workingDir = rootProject.projectDir
 }
 
-tasks.matching { it.name in setOf("run", "extract", "proposeTreeKind", "generateTreeKind", "proposeTokenKind", "generateTokenKind", "generateFixtures", "reachability", "validateDefects") }.configureEach {
+tasks.matching { it.name in setOf("run", "extract", "proposeTreeKind", "generateTreeKind", "proposeTokenKind", "generateTokenKind", "proposeAnnotation", "generateAnnotation", "generateFixtures", "reachability", "validateDefects") }.configureEach {
     (this as JavaExec).doFirst {
         check(oracleJar.asFile.exists()) {
             "Missing ${oracleJar.asFile}. Run tools/oracle/fetch.sh first."

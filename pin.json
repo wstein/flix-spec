@@ -62,5 +62,7 @@
   "treeKindCount": 192,
   "treeKindDigest": "3080221809bc0a3501d36727c782934f6cd5a3981ac768ae68752cb8c84c5526",
   "tokenKindCount": 159,
-  "tokenKindDigest": "d665b11181ef4639282ea5a32d180c0b445c2298fd0ab128c753ee0fd8026887"
+  "tokenKindDigest": "d665b11181ef4639282ea5a32d180c0b445c2298fd0ab128c753ee0fd8026887",
+  "annotationCount": 16,
+  "annotationDigest": "bab9fe325bea849269b32b4b09d7e6d985fcfb3c082382f94dd840d8c36e3d9a"
 }

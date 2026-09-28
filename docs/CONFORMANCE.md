@@ -203,7 +203,7 @@ The exact figure is **generated**, not written here: `ast/coverage.json` carries
 `generateCoverage` whenever fixtures change.
 
 <!-- generated: wrappers -->
-At this pin that is **495 of 4449 nodes (11.1%)**, across 146 fixtures.
+At this pin that is **498 of 4484 nodes (11.1%)**, across 147 fixtures.
 Read [`ast/coverage.json`](../ast/coverage.json) for the per-kind `alwaysSingleChildWrapper`
 breakdown; this paragraph is regenerated from it rather than retyped.
 <!-- /generated: wrappers -->
@@ -359,7 +359,7 @@ found it; that is what the corpus is for. Narrowing the `$` exclusion to exactly
 behaviour is what closed them.
 
 <!-- generated: lossless -->
-It now holds on **all 146 fixtures and all 892
+It now holds on **all 147 fixtures and all 892
 cleanly-parsed corpus files** — 892 of the 893 corpus files parse without error, and the
 remainder are excluded rather than failing (see below).
 <!-- /generated: lossless -->

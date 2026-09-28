@@ -14,6 +14,9 @@
   "tokenKindCount": 159,
   "tokenReachableCount": 151,
   "tokenUnreachableCount": 8,
+  "annotationCount": 16,
+  "annotationReachableCount": 13,
+  "annotationUnreachableCount": 3,
   "reachable": {
     "AnnotationList": 33477,
     "Argument": 136543,
@@ -372,6 +375,26 @@
     "KeywordForall",
     "KeywordSealed",
     "KeywordStaticLowercase"
+  ],
+  "annotationReachable": {
+    "@CompileTest": 1357,
+    "@DefaultHandler": 48,
+    "@Experimental": 124,
+    "@Inline": 2,
+    "@Lazy": 26,
+    "@LazyWhenPure": 20,
+    "@LoweringTargetChannel": 7,
+    "@LoweringTargetDatalog": 81,
+    "@Parallel": 22,
+    "@ParallelWhenPure": 27,
+    "@Tailrec": 80,
+    "@Terminates": 127,
+    "@Test": 19002
+  },
+  "annotationUnreachable": [
+    "@Deprecated",
+    "@DontInline",
+    "@Skip"
   ],
   "lossyFiles": []
 }

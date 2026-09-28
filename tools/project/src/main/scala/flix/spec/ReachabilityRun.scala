@@ -41,6 +41,11 @@ object ReachabilityRun {
   private final class Tally {
     val kinds: mutable.Map[String, Long] = mutable.Map.empty
     val tokens: mutable.Map[String, Long] = mutable.Map.empty
+
+    /** Annotation names, by text. The lexer emits one TokenKind for all of them, so this is the only place the
+      * vocabulary in `ast/annotation.json` can be measured against real code.
+      */
+    val annotations: mutable.Map[String, Long] = mutable.Map.empty
     val text: StringBuilder = new StringBuilder
   }
 
@@ -52,6 +57,7 @@ object ReachabilityRun {
       case tok: Token =>
         val tn = TreeKindNaming.simpleName(tok.kind.getClass.getName)
         t.tokens.update(tn, t.tokens.getOrElse(tn, 0L) + 1L)
+        if (tn == "Annotation") t.annotations.update(tok.text, t.annotations.getOrElse(tok.text, 0L) + 1L)
         t.text.append(tok.text)
       case _ => ()
     }
@@ -86,6 +92,7 @@ object ReachabilityRun {
 
       local.kinds.foreach { case (k, n) => t.kinds.update(k, t.kinds.getOrElse(k, 0L) + n) }
       local.tokens.foreach { case (k, n) => t.tokens.update(k, t.tokens.getOrElse(k, 0L) + n) }
+      local.annotations.foreach { case (k, n) => t.annotations.update(k, t.annotations.getOrElse(k, 0L) + n) }
 
       val onDisk = TokenAccounting.squeeze(Files.readString(file, StandardCharsets.UTF_8))
       FileResult(
@@ -175,6 +182,14 @@ object ReachabilityRun {
     val tokReached = tokInv.filter(tally.tokens.contains).sorted
     val tokUnreachable = tokInv.filterNot(tally.tokens.contains).sorted
 
+    // Coverage only. An annotation the corpus does not use is unexercised, never invalid -- and a name the corpus
+    // uses that is *not* in the inventory is not an error either: Java interop annotations lex identically, which is
+    // what upstream's Annotation.Error models. So this reports the inventory's own coverage and nothing else.
+    val annInv =
+      Json.parseFile(Paths.get("ast/annotation.json"))("annotations").asArray.map(_("name").asString).sorted
+    val annReached = annInv.filter(tally.annotations.contains).sorted
+    val annUnreachable = annInv.filterNot(tally.annotations.contains).sorted
+
     val sb = new StringBuilder
     sb.append("{\n")
     sb.append("  \"schemaVersion\": 1,\n")
@@ -192,10 +207,15 @@ object ReachabilityRun {
     sb.append(s"""  "tokenKindCount": ${tokInv.length},\n""")
     sb.append(s"""  "tokenReachableCount": ${tokReached.length},\n""")
     sb.append(s"""  "tokenUnreachableCount": ${tokUnreachable.length},\n""")
+    sb.append(s"""  "annotationCount": ${annInv.length},\n""")
+    sb.append(s"""  "annotationReachableCount": ${annReached.length},\n""")
+    sb.append(s"""  "annotationUnreachableCount": ${annUnreachable.length},\n""")
     obj(sb, "reachable", reached.map(k => k -> tally.kinds(k)))
     arr(sb, "unreachable", unreachable)
     obj(sb, "tokenReachable", tokReached.map(k => k -> tally.tokens(k)))
     arr(sb, "tokenUnreachable", tokUnreachable)
+    obj(sb, "annotationReachable", annReached.map(a => a -> tally.annotations(a)))
+    arr(sb, "annotationUnreachable", annUnreachable)
     arr(sb, "lossyFiles", lossy.toList.sorted, last = true)
     sb.append("}\n")
 
@@ -207,6 +227,7 @@ object ReachabilityRun {
       s"Wrote $out over ${files.length} corpus files ($clean parsed without error):\n" +
         s"  TreeKind  ${reached.length}/${treeInv.length} reachable, ${unreachable.length} never emitted\n" +
         s"  TokenKind ${tokReached.length}/${tokInv.length} reachable, ${tokUnreachable.length} never emitted\n" +
+        s"  Annotation ${annReached.length}/${annInv.length} exercised, ${annUnreachable.length} never used\n" +
         s"  lossless  ${clean - lossy.length}/$clean of cleanly-parsed files"
     )
 
