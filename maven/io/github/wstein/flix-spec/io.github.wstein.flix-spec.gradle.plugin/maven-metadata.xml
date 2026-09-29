@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <groupId>io.github.wstein.flix-spec</groupId>
+  <artifactId>io.github.wstein.flix-spec.gradle.plugin</artifactId>
+  <versioning>
+    <latest>0.77.4-SNAPSHOT</latest>
+    <versions>
+      <version>0.77.4-SNAPSHOT</version>
+    </versions>
+    <lastUpdated>20260929134640</lastUpdated>
+  </versioning>
+</metadata>

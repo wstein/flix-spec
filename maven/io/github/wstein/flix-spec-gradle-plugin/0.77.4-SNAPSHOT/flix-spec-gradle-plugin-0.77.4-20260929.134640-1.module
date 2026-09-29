@@ -1,0 +1,60 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "io.github.wstein",
+    "module": "flix-spec-gradle-plugin",
+    "version": "0.77.4-SNAPSHOT",
+    "attributes": {
+      "org.gradle.status": "integration"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.7.1"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.version": 21,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api"
+      },
+      "files": [
+        {
+          "name": "flix-spec-gradle-plugin-0.77.4-SNAPSHOT.jar",
+          "url": "flix-spec-gradle-plugin-0.77.4-SNAPSHOT.jar",
+          "size": 9657,
+          "sha512": "01f046cce1ee53cdcd587058aa6c0bff0a95d58522ec0af7a94318af549f5e17b1b0c4cda8a78cbe4a811ec65a925e671c8edc2916e00a60ce92ce3006e7d1a0",
+          "sha256": "0f28a0eff272e7d1b2d713f955e4a63c810ce5b852316eda3106d07c964e1615",
+          "sha1": "76574333fd8ef4e43f3e0d7dfa3205cf62b63b09",
+          "md5": "140f284afe770c67d432072b42d31f7c"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.version": 21,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "flix-spec-gradle-plugin-0.77.4-SNAPSHOT.jar",
+          "url": "flix-spec-gradle-plugin-0.77.4-SNAPSHOT.jar",
+          "size": 9657,
+          "sha512": "01f046cce1ee53cdcd587058aa6c0bff0a95d58522ec0af7a94318af549f5e17b1b0c4cda8a78cbe4a811ec65a925e671c8edc2916e00a60ce92ce3006e7d1a0",
+          "sha256": "0f28a0eff272e7d1b2d713f955e4a63c810ce5b852316eda3106d07c964e1615",
+          "sha1": "76574333fd8ef4e43f3e0d7dfa3205cf62b63b09",
+          "md5": "140f284afe770c67d432072b42d31f7c"
+        }
+      ]
+    }
+  ]
+}
