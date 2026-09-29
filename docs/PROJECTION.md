@@ -221,7 +221,9 @@ measurement rather than failing it.
 "capabilities": ["structure", "tokens", "recovery", "diagnostics"]
 ```
 
-Each entry says "I model this". The matching lane then **fails** instead of standing down when the
+Each entry says "I model this". `structure` fails the structural lane when not one canonical node was
+compared -- that lane has no `not-applicable` verdict, so without the check a map that mapped nothing
+reported "147/147 fixtures agree" at depth 0%. The matching lane then **fails** instead of standing down when the
 thing it measures is absent, and the failure names the capability rather than reporting a divergence
 that does not exist. Omit the key entirely and the permissive behaviour is unchanged, so this is
 opt-in and adds nothing to a consumer that does not want it.

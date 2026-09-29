@@ -194,10 +194,12 @@ object Conformance {
       * Agreement alone is gameable -- a map that maps almost nothing compares almost nothing and so agrees with almost
       * everything -- so depth is what makes the count mean anything.
       *
-      * The denominator is every node in the expectation, not every node the walk reached. Those differ exactly where it
-      * matters: [[compare]] stops at an unmapped node, so that node's whole subtree left both terms of the old ratio
-      * and the metric read *highest* for the maps that skipped most. Counting the expectation makes an unmapped subtree
-      * cost what it actually costs.
+      * The denominator is every node in the canonical tree **as the reference published it** -- not every node the walk
+      * reached, and not the tree left after the consumer's own `flattenCanonical` and `elide` have run. All three
+      * differ, and each difference was a way to raise depth by measuring less. Those differ exactly where it matters:
+      * [[compare]] stops at an unmapped node, so that node's whole subtree left both terms of the old ratio and the
+      * metric read *highest* for the maps that skipped most. Counting the expectation makes an unmapped subtree cost
+      * what it actually costs.
       */
     def depth: Double =
       if (stats.counts("expected") == 0) 0.0
@@ -606,7 +608,16 @@ object Conformance {
                   "flattened",
                   "ignored"
                 )
-              stats.counts("expected") += sizeOf(expTree)
+              // The denominator is the canonical tree, not the canonical tree after the *consumer's* own
+              // splicing. `flattenCanonical` and `elide` are accommodations a consumer asks for, so counting
+              // the tree after they run lets the consumer supply both terms of the ratio: adding `Ident` to
+              // `flattenCanonical` removed 37% of the compared nodes and moved depth from 95% to 96%, which
+              // newly cleared a floor the honest map had only just met. Depth exists to catch a map that
+              // measures less; it must not be something a map can raise by measuring less.
+              //
+              // A node the consumer splices away is a node it did not compare, and that is exactly what depth
+              // is for. Counted here against the tree the reference published.
+              stats.counts("expected") += sizeOf(expRaw)
               compare(expTree, actTree, vocab, source, found, stats, identities, name)
           }
         }
@@ -990,6 +1001,20 @@ object Conformance {
         sys.exit(ExitCode.InvalidInput)
       }
 
+      // `flattenCanonical` and `elide` name canonical kinds too, and they were never checked. A typo there
+      // is worse than a typo in `mappings`: a name that matches nothing simply never fires, so the map reads
+      // as though it accommodates something it does not, and the only sign is a depth figure nobody expected
+      // to move. Held to the same standard as a mapping target.
+      val badCanonical =
+        (names("flattenCanonical") ++ names("elide")).diff(inventory).toList.sorted
+      if (badCanonical.nonEmpty) {
+        System.err.println(
+          s"FATAL: projection map names canonical kinds absent from the inventory: $badCanonical"
+        )
+        System.err.println("  `flattenCanonical` and `elide` take canonical TreeKind names, as `mappings` values do.")
+        sys.exit(ExitCode.InvalidInput)
+      }
+
       // A node removed on both lanes is a node whose recovery shape is never measured, which defeats the reason the
       // second lane exists. The distinction is the whole point of declaring recovery markers separately.
       val doubleDeclared = vocab.recoveryMarkers.intersect(vocab.flatten ++ vocab.ignored).toList.sorted
@@ -1254,7 +1279,23 @@ object Conformance {
 
     // Both derived lanes gate, each against its own baseline. A lane that could only ever be read and never failed
     // would be decoration, and splitting recovery out was never meant to stop measuring it.
+    // `structure` was accepted by the schema and read by nothing, so a map that mapped nothing could declare
+    // it and still report "147/147 fixtures agree" at depth 0%. The structural lane has no `not-applicable`
+    // path, which is why it needed its own check: standing down here looks like agreeing.
+    def reportStructure(lane: DerivedLane): Boolean =
+      if (!vocab.capabilities.contains("structure")) false
+      else if (lane.stats.counts("compared") > 0) false
+      else {
+        System.err.println(
+          "FATAL: oracle_conformance: the projection map declares the `structure` capability, but not one " +
+            "canonical node was compared. Every node was unmapped, flattened or elided away, so the lane " +
+            "agreed about nothing."
+        )
+        true
+      }
+
     val oracleFailed = report("oracle_conformance", oracle) |
+      reportStructure(oracle) |
       reportDepth("oracle_conformance", oracle, args.depthFloor) |
       reportAccepted("oracle_conformance", oracle)
     val recoveryFailed = report("recovery_conformance", recovery) |
