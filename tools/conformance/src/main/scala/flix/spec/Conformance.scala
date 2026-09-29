@@ -828,7 +828,12 @@ object Conformance {
     // and depth in a version-6 report was computed against the walk rather than the expectation --
     // a strictly different number that reads highest for the maps that skip most, so the two are
     // not comparable and a bump is the only honest way to say so.
-    sb.append("  \"schemaVersion\": 7,\n")
+    // 8: depthPercent's denominator became the canonical tree the reference published, rather than the tree
+    // left after the consumer's own flattenCanonical and elide had run. Same field, same shape, different
+    // number -- and different in the direction that matters, because the old one could be raised by
+    // measuring less. A version-7 depth and a version-8 depth are not comparable, and the precedent for
+    // saying so with a bump rather than a footnote is version 7 itself.
+    sb.append("  \"schemaVersion\": 8,\n")
     sb.append("  \"generatedBy\": \"flix.spec.Conformance\",\n")
     sb.append(s"""  "consumer": "${esc(consumer)}",\n""")
 

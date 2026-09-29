@@ -11,7 +11,7 @@
 ```
 
 <!-- generated: current-version -->
-Current: `0.77.3`, derived from `flix/flix` v0.77.0.
+Current: `0.77.4`, derived from `flix/flix` v0.77.0.
 <!-- /generated: current-version -->
 
 - **`flixMajor.flixMinor`** track the upstream Flix line. `0.75.x` is derived from Flix 0.75.x.

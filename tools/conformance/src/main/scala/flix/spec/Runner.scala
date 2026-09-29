@@ -15,6 +15,11 @@ object Runner {
   }
   lazy val supported: Json = Json.parse(supportedText)
 
+  /** The one version of a named schema this runner reads. Exposed so tests state the number once, here, rather than
+    * repeating it wherever a report is synthesised.
+    */
+  def supportedVersion(name: String): Int = supported(name).asInt
+
   def checkVersion(doc: Json, kind: String, label: String): Unit = {
     val expected = supported(kind).asInt
     require(

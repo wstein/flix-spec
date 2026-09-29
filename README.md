@@ -273,7 +273,7 @@ repositories {
 
 dependencies {
 <!-- generated: maven-coordinate -->
-    implementation("io.github.wstein:flix-spec:0.77.3")
+    implementation("io.github.wstein:flix-spec:0.77.4")
 <!-- /generated: maven-coordinate -->
 }
 ```
