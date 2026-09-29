@@ -40,6 +40,7 @@ a rebuild), and [`docs/PIN-BUMP.md`](docs/PIN-BUMP.md) (how the pin moves).
 
 Consumer integrations: [standalone runner, HTML reports and adapter scaffolding](docs/RUNNER.md),
 [Gradle plugin](docs/GRADLE-PLUGIN.md), and a [tested executable example](examples/consumer/README.md).
+Pre-release evidence: [real consumer pilots and remaining adoption gates](docs/CONSUMER-PILOTS.md).
 
 **Phase 1 (pin, contracts, AST inventory, corpus) and Phase 2 (projected fixtures, coverage, reachability) complete.**
 
