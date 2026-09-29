@@ -53,6 +53,24 @@ sealed trait Json {
 }
 
 object Json {
+
+  /** Escapes a string for a JSON literal. Lives here rather than on the extractor because every writer in this
+    * repository needs it and only one of them is allowed to know about the oracle.
+    */
+  def esc(s: String): String = {
+    val sb = new StringBuilder
+    for (c <- s) c match {
+      case '"'           => sb.append("\\\"")
+      case '\\'          => sb.append("\\\\")
+      case '\n'          => sb.append("\\n")
+      case '\r'          => sb.append("\\r")
+      case '\t'          => sb.append("\\t")
+      case c if c < 0x20 => sb.append(f"\\u${c.toInt}%04x")
+      case c             => sb.append(c)
+    }
+    sb.toString
+  }
+
   final class JsonException(message: String) extends RuntimeException(message)
 
   case class JObject(fields: Map[String, Json]) extends Json

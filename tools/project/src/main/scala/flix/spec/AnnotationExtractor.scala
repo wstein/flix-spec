@@ -100,7 +100,7 @@ object AnnotationExtractor {
     sb.append("  \"annotations\": [\n")
     names.zipWithIndex.foreach { case (n, i) =>
       val comma = if (i < names.length - 1) "," else ""
-      sb.append(s"""    {"name": "${ProjectionExtractor.esc(n)}"}$comma\n""")
+      sb.append(s"""    {"name": "${Json.esc(n)}"}$comma\n""")
     }
     sb.append("  ]\n")
     sb.append("}\n")

@@ -74,7 +74,7 @@ object TransparencyProposer {
   def main(args: Array[String]): Unit = {
     // The verbatim trees, never the normalised ones: a rule cannot be proposed from a tree the rules have already
     // been applied to, and a committed rule cannot be contradicted by one either.
-    val dir = Paths.get(ProjectionExtractor.RawDir)
+    val dir = Paths.get(Spec.RawDir)
     if (!Files.isDirectory(dir)) {
       System.err.println(s"FATAL: no raw projected trees in $dir/ — run generateFixtures first")
       sys.exit(1)

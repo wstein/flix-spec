@@ -86,7 +86,7 @@ object Normalizer {
   private def renderInto(node: Json, sb: StringBuilder): Unit =
     node.get("kind") match {
       case Some(kind) =>
-        sb.append("{\"kind\":\"").append(ProjectionExtractor.esc(kind.asString)).append("\"")
+        sb.append("{\"kind\":\"").append(Json.esc(kind.asString)).append("\"")
         node.get("span").foreach { span =>
           sb.append(",\"span\":{\"start\":")
           renderPosition(span("start"), sb)
@@ -101,8 +101,8 @@ object Normalizer {
         }
         sb.append("]}")
       case None =>
-        sb.append("{\"token\":\"").append(ProjectionExtractor.esc(node("token").asString)).append("\"")
-        sb.append(",\"text\":\"").append(ProjectionExtractor.esc(node("text").asString)).append("\",\"start\":")
+        sb.append("{\"token\":\"").append(Json.esc(node("token").asString)).append("\"")
+        sb.append(",\"text\":\"").append(Json.esc(node("text").asString)).append("\",\"start\":")
         renderPosition(node("start"), sb)
         sb.append(",\"end\":")
         renderPosition(node("end"), sb)

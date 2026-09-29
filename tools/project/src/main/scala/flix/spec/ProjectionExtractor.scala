@@ -33,8 +33,8 @@ object ProjectionExtractor {
   val ToolVersion = "2.0.0"
 
   /** Where the two forms live, so nothing has to spell either directory twice. */
-  val RawDir = "fixtures/raw"
-  val NormalizedDir = "fixtures/expected"
+  val RawDir = Spec.RawDir
+  val NormalizedDir = Spec.NormalizedDir
 
   val RawForm = "raw"
   val NormalizedForm = "normalized"
@@ -44,19 +44,7 @@ object ProjectionExtractor {
 
   // ------------------------------------------------------------------ output
 
-  def esc(s: String): String = {
-    val sb = new StringBuilder
-    for (c <- s) c match {
-      case '"'           => sb.append("\\\"")
-      case '\\'          => sb.append("\\\\")
-      case '\n'          => sb.append("\\n")
-      case '\r'          => sb.append("\\r")
-      case '\t'          => sb.append("\\t")
-      case c if c < 0x20 => sb.append(f"\\u${c.toInt}%04x")
-      case c             => sb.append(c)
-    }
-    sb.toString
-  }
+  def esc(s: String): String = Json.esc(s)
 
   /** Sub-trait-qualified kind name, shared with [[TreeKindExtractor]] via [[TreeKindNaming]].
     *

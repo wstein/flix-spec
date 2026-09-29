@@ -75,7 +75,7 @@ object SourceInvariants {
       mapped: Boolean,
       treeInventory: Set[String],
       tokenInventory: Set[String],
-      projectionSchema: Json = Json.parseFile(Paths.get("schemas/projection.schema.json")),
+      projectionSchema: Json = Json.parseFile(Spec.resolve("schemas/projection.schema.json")),
       /** Capabilities the consumer declared. A declared `tokens` turns "no token text" from a reason to stand down into
         * a failure: three of the four checks here are about token text, so an adapter that claims to emit it and then
         * emits none would otherwise slip from pass to `not-applicable` with nothing to say so.
@@ -175,7 +175,7 @@ object SourceInvariants {
       else
         validUnits.toList.flatMap { case (f, unit) =>
           val sourceName = unit.get("source").map(_.asString).getOrElse("")
-          val source = Paths.get(sourceName)
+          val source = Spec.resolveSource(sourceName)
           if (sourceName.isEmpty) Some(s"$f: unit has no 'source', so its tree cannot be checked against one")
           else if (!Files.isRegularFile(source)) Some(s"$f: source '$sourceName' does not exist")
           else {
@@ -214,7 +214,7 @@ object SourceInvariants {
       else
         validUnits.toList.flatMap { case (f, unit) =>
           val sourceName = unit.get("source").map(_.asString).getOrElse("")
-          val source = Paths.get(sourceName)
+          val source = Spec.resolveSource(sourceName)
           if (sourceName.isEmpty || !Files.isRegularFile(source)) Nil
           else {
             val text = Files.readString(source, StandardCharsets.UTF_8)

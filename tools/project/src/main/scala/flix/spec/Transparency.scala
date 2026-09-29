@@ -131,7 +131,7 @@ object Transparency {
     * `pinCommit` is asserted the way `ast/unattachable.json`'s is: the citations are line numbers into upstream source,
     * and a line number does not survive a pin bump on trust.
     */
-  def load(root: Path = Paths.get("")): Contract = {
+  def load(root: Path = Spec.specRoot): Contract = {
     val doc = Json.parseFile(root.resolve(ContractFile))
     val schema = Json.parseFile(root.resolve(SchemaFile))
 

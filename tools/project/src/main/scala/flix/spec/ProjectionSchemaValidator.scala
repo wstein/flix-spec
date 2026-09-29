@@ -71,13 +71,13 @@ object ProjectionSchemaValidator {
   private val DriveLetter = "^[A-Za-z]:".r
 
   def main(args: Array[String]): Unit = {
-    val schema = Json.parseFile(Paths.get("schemas/projection.schema.json"))
-    val inventory = Json.parseFile(Paths.get("ast/treekind.json"))("kinds").asArray.map(_("name").asString).toSet
+    val schema = Json.parseFile(Spec.resolve("schemas/projection.schema.json"))
+    val inventory = Json.parseFile(Spec.resolve("ast/treekind.json"))("kinds").asArray.map(_("name").asString).toSet
     val tokenInventory =
-      Json.parseFile(Paths.get("ast/tokenkind.json"))("kinds").asArray.map(_("name").asString).toSet
+      Json.parseFile(Spec.resolve("ast/tokenkind.json"))("kinds").asArray.map(_("name").asString).toSet
     val errors = new SchemaValidator.Errors
 
-    val dirs = List(ProjectionExtractor.RawDir, ProjectionExtractor.NormalizedDir)
+    val dirs = List(Spec.RawDir, Spec.NormalizedDir)
     val files = dirs.flatMap { dir =>
       val path = Paths.get(dir)
       if (!Files.isDirectory(path)) {

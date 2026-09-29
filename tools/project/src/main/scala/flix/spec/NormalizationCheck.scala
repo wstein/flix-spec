@@ -32,8 +32,8 @@ object NormalizationCheck {
       .sortBy(_.getFileName.toString)
 
   def main(args: Array[String]): Unit = {
-    val rawDir = Paths.get(ProjectionExtractor.RawDir)
-    val normalizedDir = Paths.get(ProjectionExtractor.NormalizedDir)
+    val rawDir = Paths.get(Spec.RawDir)
+    val normalizedDir = Paths.get(Spec.NormalizedDir)
 
     List(rawDir, normalizedDir).foreach { dir =>
       if (!Files.isDirectory(dir)) {

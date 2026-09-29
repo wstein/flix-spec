@@ -128,7 +128,7 @@ object ProjectionMapValidator {
       out += k.asString
       n.get("children").map(_.asArray).getOrElse(Nil).foreach(walk)
     }
-    val dir = Paths.get(ProjectionExtractor.NormalizedDir)
+    val dir = Paths.get(Spec.NormalizedDir)
     if (Files.isDirectory(dir))
       Files.list(dir).iterator().asScala.map(_.toString).filter(_.endsWith(".json")).foreach { f =>
         Json.parseFile(Paths.get(f)).get("units").map(_.asArray).getOrElse(Nil).foreach(_.get("tree").foreach(walk))

@@ -48,8 +48,8 @@ import scala.jdk.CollectionConverters._
   */
 object Conformance {
 
-  private val ExpectedDir = ProjectionExtractor.NormalizedDir
-  private val RawDir = ProjectionExtractor.RawDir
+  private val ExpectedDir = Spec.NormalizedDir
+  private val RawDir = Spec.RawDir
   private val MaxDivergencesPerFixture = 20
 
   /** A projected tree with its token leaves dropped -- kinds, order and arity are what the contract gates.
@@ -683,10 +683,10 @@ object Conformance {
   }
 
   private def provenance(expectedFiles: List[String], rawFiles: List[String]): List[(String, String)] = {
-    val pin = Json.parseFile(Paths.get("pin.json"))
-    val corpus = Json.parseFile(Paths.get("corpus/corpus.json"))
-    val treeInv = Json.parseFile(Paths.get("ast/treekind.json"))
-    val tokenInv = Json.parseFile(Paths.get("ast/tokenkind.json"))
+    val pin = Json.parseFile(Spec.resolve("pin.json"))
+    val corpus = Json.parseFile(Spec.resolve("corpus/corpus.json"))
+    val treeInv = Json.parseFile(Spec.resolve("ast/treekind.json"))
+    val tokenInv = Json.parseFile(Spec.resolve("ast/tokenkind.json"))
 
     // Name and content of every expectation, so a renamed fixture moves the revision as surely as an edited one. The
     // parent directory is in the key so the two forms of one fixture cannot collide.
@@ -863,7 +863,8 @@ object Conformance {
 
   private val Usage =
     "usage: Conformance --actual <dir> [--map <file>] [--report <file>] [--baseline <n>] " +
-      "[--recovery-baseline <n>] [--depth-floor <pct>] [--recovery-depth-floor <pct>] [--accepted <file>]"
+      "[--recovery-baseline <n>] [--depth-floor <pct>] [--recovery-depth-floor <pct>] [--accepted <file>] " +
+      "[--spec-root <dir>] [--source-root <dir>]"
 
   final case class Args(
       actual: String,
@@ -874,7 +875,9 @@ object Conformance {
       depthFloor: Int,
       recoveryDepthFloor: Int,
       diagnosticBaseline: Int,
-      accepted: Option[String]
+      accepted: Option[String],
+      specRoot: Option[String],
+      sourceRoot: Option[String]
   )
 
   private def parseArgs(argv: Array[String]): Args = {
@@ -887,6 +890,8 @@ object Conformance {
     var recoveryDepthFloor = 0
     var diagnosticBaseline = 0
     var accepted: Option[String] = None
+    var specRoot: Option[String] = None
+    var sourceRoot: Option[String] = None
     var i = 0
     while (i < argv.length) {
       argv(i) match {
@@ -899,9 +904,12 @@ object Conformance {
         case "--recovery-depth-floor" => recoveryDepthFloor = argv(i + 1).toInt; i += 2
         case "--diagnostic-baseline"  => diagnosticBaseline = argv(i + 1).toInt; i += 2
         case "--accepted"             => accepted = Some(argv(i + 1)); i += 2
+        case "--spec-root"            => specRoot = Some(argv(i + 1)); i += 2
+        case "--source-root"          => sourceRoot = Some(argv(i + 1)); i += 2
         case other =>
           System.err.println(s"unknown argument: $other")
-          sys.exit(2)
+          System.err.println(Usage)
+          sys.exit(ExitCode.InvalidInput)
       }
     }
     Args(
@@ -916,13 +924,24 @@ object Conformance {
       depthFloor,
       recoveryDepthFloor,
       diagnosticBaseline,
-      accepted
+      accepted,
+      specRoot,
+      sourceRoot
     )
   }
 
   /** Every projected document in a directory, sorted. */
-  private def documents(dir: String): List[String] =
-    Files.list(Paths.get(dir)).iterator().asScala.map(_.toString).filter(_.endsWith(".json")).toList.sorted
+  /** Every projected document in a bundle-relative directory, sorted. Resolved against the spec root, so the caller's
+    * working directory decides nothing.
+    */
+  private def documents(dir: String): List[String] = {
+    val d = Spec.resolve(dir)
+    if (!Files.isDirectory(d)) {
+      System.err.println(s"FATAL: $d does not exist. Point --spec-root at a flix-spec data bundle.")
+      sys.exit(ExitCode.InvalidInput)
+    }
+    Files.list(d).iterator().asScala.map(_.toString).filter(_.endsWith(".json")).toList.sorted
+  }
 
   /** Whether a raw projected document contains any of the recovery markers.
     *
@@ -940,6 +959,8 @@ object Conformance {
 
   def main(argv: Array[String]): Unit = {
     val args = parseArgs(argv)
+    // Before anything is read: every bundle path below resolves against this.
+    Spec.configure(args.specRoot, args.sourceRoot)
 
     var vocab = Vocabulary()
     var consumer = Paths.get(args.actual.stripSuffix("/")).getFileName.toString
@@ -962,7 +983,7 @@ object Conformance {
       )
       consumer = m("consumer").asString
 
-      val inventory = Json.parseFile(Paths.get("ast/treekind.json"))("kinds").asArray.map(_("name").asString).toSet
+      val inventory = Json.parseFile(Spec.resolve("ast/treekind.json"))("kinds").asArray.map(_("name").asString).toSet
       val bad = mappings.values.toSet.diff(inventory).toList.sorted
       if (bad.nonEmpty) {
         System.err.println(s"FATAL: projection map targets kinds absent from the inventory: $bad")
@@ -1081,8 +1102,9 @@ object Conformance {
         .filter(Files.exists(_))
         .map(_.toString),
       mapped = vocab.mapping.isDefined,
-      treeInventory = Json.parseFile(Paths.get("ast/treekind.json"))("kinds").asArray.map(_("name").asString).toSet,
-      tokenInventory = Json.parseFile(Paths.get("ast/tokenkind.json"))("kinds").asArray.map(_("name").asString).toSet,
+      treeInventory = Json.parseFile(Spec.resolve("ast/treekind.json"))("kinds").asArray.map(_("name").asString).toSet,
+      tokenInventory =
+        Json.parseFile(Spec.resolve("ast/tokenkind.json"))("kinds").asArray.map(_("name").asString).toSet,
       capabilities = vocab.capabilities
     )
 
@@ -1254,6 +1276,7 @@ object Conformance {
       }
     }
 
-    if (oracleFailed || recoveryFailed || diagnosticsFailed || invariantsFailed) sys.exit(1)
+    if (oracleFailed || recoveryFailed || diagnosticsFailed || invariantsFailed)
+      sys.exit(ExitCode.ConformanceFailure)
   }
 }

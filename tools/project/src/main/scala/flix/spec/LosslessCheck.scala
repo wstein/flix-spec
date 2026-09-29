@@ -29,7 +29,7 @@ import scala.jdk.CollectionConverters._
 object LosslessCheck {
 
   def main(args: Array[String]): Unit = {
-    val dirs = List(ProjectionExtractor.RawDir, ProjectionExtractor.NormalizedDir).map(Paths.get(_))
+    val dirs = List(Spec.RawDir, Spec.NormalizedDir).map(Paths.get(_))
     val files = dirs.flatMap { dir =>
       if (!Files.isDirectory(dir)) {
         System.err.println(s"FATAL: $dir/ does not exist — run generateFixtures")

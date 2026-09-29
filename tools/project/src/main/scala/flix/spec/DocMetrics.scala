@@ -148,8 +148,8 @@ object DocMetrics {
         s"`${up("treeHash").asString.take(8)}…`), the release asset's SHA-256 " +
         s"(`${pin("oracleArtifact")("sha256").asString.take(8)}…`)"
 
-    val rawNodes = nodesIn(ProjectionExtractor.RawDir)
-    val normalizedNodes = nodesIn(ProjectionExtractor.NormalizedDir)
+    val rawNodes = nodesIn(Spec.RawDir)
+    val normalizedNodes = nodesIn(Spec.NormalizedDir)
     val removedNodes = rawNodes - normalizedNodes
     val removedPct = f"${100.0 * removedNodes / rawNodes}%.1f"
     val normalisationBlock =

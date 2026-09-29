@@ -82,7 +82,7 @@ object Coverage {
     val inventory = Json.parseFile(Paths.get("ast/treekind.json"))
     val allKinds = inventory("kinds").asArray.map(_("name").asString)
 
-    val rawDir = Paths.get(ProjectionExtractor.RawDir)
+    val rawDir = Paths.get(Spec.RawDir)
     val fixtures =
       Files.list(rawDir).iterator().asScala.map(_.toString).filter(_.endsWith(".json")).toList.sorted
 
