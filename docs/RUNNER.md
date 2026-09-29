@@ -36,6 +36,10 @@ to `--spec-root`. No oracle, Gradle installation, or repository checkout is need
 The supported interface is the CLI plus versioned JSON, not the Scala classes.
 Run `--help` for comparison thresholds and accepted-difference options. Accepted
 sets remain consumer-owned and bound to the fixture revision.
+Consumer maps are validated against the runner's embedded schema, so upgrading
+the runner can enable capabilities without upgrading an otherwise compatible
+data bundle. See the [real consumer qualification](CONSUMER-PILOTS.md) and
+[migration notes](VERSIONING.md#0774-consumer-migration) before re-recording floors.
 
 ## Distribution acceptance test
 

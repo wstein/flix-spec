@@ -96,3 +96,32 @@ coordinate to be honest about it.
 `version` in `gradle.properties` is hand-maintained. On a pin bump, set `flixMajor.flixMinor` from
 the new upstream tag and reset `revision` to `0` if the line changed, or increment it if it did not.
 See [`PIN-BUMP.md`](PIN-BUMP.md).
+
+## 0.77.4 consumer migration
+
+This candidate publishes the standalone runner and Gradle plugin alongside the
+data bundle. Runner/plugin versions and data versions are independent: input
+schema support is declared by `--supported-schemas`, and consumer maps use the
+runner's embedded schema rather than the data bundle's potentially older copy.
+Java 21 and Gradle 9.7.1 are the tested plugin platform.
+
+The emitted report uses **schema 9**. Important migration decisions:
+
+- Depth uses the full reference tree as denominator (introduced in schema 8),
+  before consumer elision/flattening. Older numeric floors are not comparable.
+  Re-measure with unchanged grammar and fixture revision, explain any floor change,
+  and record the report schema. Tree-sitter's reviewed migration is 93→92%.
+- Diagnostic identities distinguish kind, direction and occurrence. Re-review
+  accepted diagnostics when upgrading from older identity formats; do not blindly
+  translate a line-level allowance into several differences. Known diagnostic
+  kinds remain checked even if other emitted kinds are unmapped.
+- `lexical-correctness` explicitly reports not-applicable: token text/positions
+  establish source fidelity, not independent lexical correctness. Capabilities
+  opt consumers into failing when promised structure/tokens/recovery/diagnostics
+  disappear; they must describe what the adapter genuinely emits.
+- Accepted differences must retain their consumer and fixture-revision binding.
+  A changed fixture revision requires review, not an automatic baseline refresh.
+
+The real-consumer migrations and exact staged artifact hashes are recorded in
+[consumer qualification](CONSUMER-PILOTS.md). Both gates pass with documented
+remaining differences; neither asserts full coverage or perfect conformance.
