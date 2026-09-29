@@ -82,4 +82,47 @@ class DiagnosticConformanceTest extends AnyFunSuite {
       assert(errors.isEmpty, errors.toList.mkString("\n"))
     }
   }
+
+  test("identities distinguish kinds and directions at the same source line") {
+    val lane = compare(List(unit("A" -> 1, "B" -> 1)), List(unit("A" -> 1, "A" -> 1)))
+    assert(lane.divergenceCount == 2)
+    assert(lane.divergenceIdentities.size == 2)
+    assert(lane.divergenceIdentities.exists(_.contains("/missing/B/1|diagnostic")))
+    assert(lane.divergenceIdentities.exists(_.contains("/extra/A/1|diagnostic")))
+  }
+
+  test("accepting one repeated difference does not accept a second occurrence") {
+    val first = compare(List(unit("A" -> 1)), List(unit("A" -> 1, "A" -> 1)))
+    val second = compare(List(unit("A" -> 1)), List(unit("A" -> 1, "A" -> 1, "A" -> 1)))
+    val accepted = AcceptedSet.Parsed(Map("diagnostic_conformance" -> first.divergenceIdentities))
+    val verdict = AcceptedSet.verdict(accepted, "diagnostic_conformance", second.divergenceIdentities)
+    assert(verdict.failed)
+    assert(verdict.introduced.size == 1)
+    assert(verdict.introduced.head.contains("/extra/A/2|diagnostic"))
+    assert(verdict.resolved.isEmpty)
+    val resolved = AcceptedSet.verdict(
+      AcceptedSet.Parsed(Map("diagnostic_conformance" -> second.divergenceIdentities)),
+      "diagnostic_conformance",
+      first.divergenceIdentities
+    )
+    assert(!resolved.failed)
+    assert(resolved.resolved.size == 1)
+  }
+
+  test("same-count replacements at one line are new differences, independent of emission order") {
+    val expected = List(unit("A" -> 1, "B" -> 1, "C" -> 1))
+    val first = compare(expected, List(unit("A" -> 1, "A" -> 1, "C" -> 1)))
+    val swapped = compare(expected, List(unit("A" -> 1, "B" -> 1, "B" -> 1)))
+    assert(first.divergenceCount == swapped.divergenceCount)
+    val accepted = AcceptedSet.Parsed(Map("diagnostic_conformance" -> first.divergenceIdentities))
+    assert(AcceptedSet.verdict(accepted, "diagnostic_conformance", swapped.divergenceIdentities).failed)
+    val reordered = compare(expected, List(unit("C" -> 1, "A" -> 1, "A" -> 1)))
+    assert(first.divergenceIdentities == reordered.divergenceIdentities)
+  }
+
+  test("identical diagnostic differences remain distinct beyond the display cap") {
+    val lane = compare(List(unit("A" -> 1)), List(unit(List.fill(32)("A" -> 1): _*)))
+    assert(lane.divergenceCount == 31)
+    assert(lane.divergenceIdentities.size == 31)
+  }
 }

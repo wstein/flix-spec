@@ -304,6 +304,8 @@ object Conformance {
     * Deliberately not `expected`/`actual`. Those carry the node names, which change whenever the canonical tree or the
     * consumer's own vocabulary moves, so an accepted difference keyed on them would stop matching itself on the next
     * normalisation change and read as new. Position and reason are what stay put.
+    * Diagnostic paths additionally identify canonical kind, direction and occurrence: a source line alone is not
+    * a position within a diagnostic multiset. Canonical kinds are bound by the accepted file's fixture revision.
     */
   def identityOf(fixture: String, d: Divergence): String = s"$fixture|${d.path}|${d.reason}"
 
@@ -536,13 +538,21 @@ object Conformance {
             stats.counts("diagnosticsCompared") += comparableExp.length
             val missingD = comparableExp.diff(comparableAct)
             val extraD = comparableAct.diff(comparableExp)
-            (missingD.map(d => (d, true)) ++ extraD.map(d => (d, false))).foreach { case (d, isMissing) =>
+            // A line is not a diagnostic identity: several kinds, both directions, and repeated
+            // occurrences can share it. Sort to make identities independent of emission order.
+            val occurrences = scala.collection.mutable.Map.empty[(Diag, Boolean), Int].withDefaultValue(0)
+            val differences = (missingD.map(d => (d, true)) ++ extraD.map(d => (d, false)))
+              .sortBy { case (d, missing) => (d.line, d.kind, if (missing) 0 else 1) }
+            differences.foreach { case (d, isMissing) =>
+              val key = (d, isMissing)
+              occurrences(key) += 1
+              val direction = if (isMissing) "missing" else "extra"
               ok = false
               stats.inc("divergences")
               divergences += ((
                 name,
                 Divergence(
-                  s"$source:${d.line}",
+                  s"$source:${d.line}/diagnostic/$direction/${d.kind}/${occurrences(key)}",
                   if (isMissing) s"${d.kind}@${d.line}" else "nothing",
                   if (isMissing) "nothing" else s"${d.kind}@${d.line}",
                   "diagnostic"

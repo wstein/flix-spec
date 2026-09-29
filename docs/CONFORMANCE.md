@@ -98,6 +98,10 @@ difference keyed on them would stop matching itself at the next normalisation ch
 new. And the set is built from *every* divergence, not the capped display sample, or it would
 silently accept the twenty-first difference in a fixture.
 
+Diagnostic paths identify an occurrence within a multiset, not merely a line;
+their kind/direction/occurrence suffix is described below. Canonical diagnostic
+kinds belong to the fixture revision the accepted file already locks.
+
 Both gates can run together; `--accepted` is opt-in and changes nothing when absent.
 
 ### Why diagnostics are their own lane
@@ -114,6 +118,14 @@ vocabulary, kinds established by observed canonical names or explicit mappings
 remain gated; the caveat states how many reference diagnostics could not be
 compared, and `unmapped` lists the unknown names. An accept/reject-only or partial
 pass is not full diagnostic agreement.
+
+Diagnostic accepted-set identities use paths of the form
+`source:line/diagnostic/missing-or-extra/kind/occurrence`. Occurrences are numbered
+within each kind, line and direction, independently of diagnostic emission order.
+Thus two identical extra diagnostics need two accepted entries, and accepting a
+missing kind does not accept an extra kind on the same line. Old line-only
+diagnostic identities must be reviewed and re-recorded; they do not grant a
+wildcard acceptance under this format. Structural identities are unchanged.
 
 This lane is new. `docs/PROJECTION.md` had described diagnostics as gated on class and line since
 the contract was written, and nothing gated them: they were extracted, schema-checked, published
