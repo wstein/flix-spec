@@ -1207,55 +1207,37 @@ object Conformance {
       * automatically, because deciding a difference is genuinely gone is the consumer's judgement and belongs in their
       * commit rather than in this tool's output.
       */
-    lazy val acceptedByLane: Map[String, Set[String]] =
-      args.accepted
-        .map { f =>
-          val doc = Json.parseFile(Paths.get(f))
-
-          // An accepted set is only meaningful for the suite it was recorded against. `fixture|path|reason`
-          // identifies a *location*, and a location survives an upgrade that changes what is at it: the same
-          // path in the same fixture can host a different mismatch after the fixtures are regenerated, and the
-          // old entry would grandfather it in silently. Binding to the fixture revision forces every entry to be
-          // re-confirmed when the suite moves, which is exactly when a stale acceptance becomes dangerous.
-          val recorded = doc("fixtureRevision").asString
-          val current = fixtureRevisionOf(expectedFiles, rawFiles)
-          if (recorded != current) {
-            System.err.println(
-              s"FATAL: $f was recorded against fixture revision $recorded, but this suite is at $current."
-            )
-            System.err.println(
-              "  The fixtures moved, so every accepted difference has to be re-confirmed: the same path in the " +
-                "same fixture can hold a different mismatch now, and these entries would hide it. Re-run without " +
-                "--accepted, check what is reported, and record the set again."
-            )
-            sys.exit(2)
-          }
-          doc("lanes").asObject.map { case (lane, v) => lane -> v.asArray.map(_.asString).toSet }
+    lazy val acceptedSet: Option[AcceptedSet.Parsed] =
+      args.accepted.map { f =>
+        AcceptedSet.parse(Paths.get(f), fixtureRevisionOf(expectedFiles, rawFiles), consumer) match {
+          case Right(parsed) => parsed
+          case Left(problem) =>
+            System.err.println(s"FATAL: ${problem.message}")
+            sys.exit(ExitCode.InvalidInput)
         }
-        .getOrElse(Map.empty)
+      }
 
     def reportAccepted(name: String, lane: DerivedLane): Boolean =
-      if (args.accepted.isEmpty || lane.notApplicable.isDefined) false
-      else {
-        val expected = acceptedByLane.getOrElse(name, Set.empty)
-        val introduced = (lane.divergenceIdentities -- expected).toList.sorted
-        val resolved = (expected -- lane.divergenceIdentities).toList.sorted
-
-        if (resolved.nonEmpty) {
-          println(s"$consumer: $name — ${resolved.length} accepted difference(s) no longer occur:")
-          resolved.take(10).foreach(r => println(s"    resolved: $r"))
-          println("  Remove them from the accepted file in the commit that fixed them.")
-        }
-        if (introduced.isEmpty) false
-        else {
-          System.err.println(s"FATAL: $name: ${introduced.length} difference(s) not in the accepted set")
-          introduced.take(10).foreach(d => System.err.println(s"  new: $d"))
-          System.err.println(
-            "  A count-based baseline would have let these through whenever an equal number of other " +
-              "differences disappeared. Fix them, or add them to the accepted file with a reason."
-          )
-          true
-        }
+      acceptedSet match {
+        case None                                    => false
+        case Some(_) if lane.notApplicable.isDefined => false
+        case Some(parsed) =>
+          val v = AcceptedSet.verdict(parsed, name, lane.divergenceIdentities)
+          if (v.resolved.nonEmpty) {
+            println(s"$consumer: $name — ${v.resolved.length} accepted difference(s) no longer occur:")
+            v.resolved.take(10).foreach(r => println(s"    resolved: $r"))
+            println("  Remove them from the accepted file in the commit that fixed them.")
+          }
+          if (!v.failed) false
+          else {
+            System.err.println(s"FATAL: $name: ${v.introduced.length} difference(s) not in the accepted set")
+            v.introduced.take(10).foreach(d => System.err.println(s"  new: $d"))
+            System.err.println(
+              "  A count-based baseline would have let these through whenever an equal number of other " +
+                "differences disappeared. Fix them, or add them to the accepted file with a reason."
+            )
+            true
+          }
       }
 
     def report(name: String, lane: DerivedLane): Boolean = {
