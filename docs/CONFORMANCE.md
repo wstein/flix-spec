@@ -73,10 +73,20 @@ the new one is never seen. The numbers move the right way while the suite says l
 `--accepted <file>` gates on *which* differences, by identity — `fixture|path|reason`:
 
 ```json
-{ "oracle_conformance": [
-    "hello.json|fixtures/positive/hello.flix.Root[0]|kind"
-] }
+{
+  "schemaVersion": 1,
+  "fixtureRevision": "648ce33e…",
+  "lanes": {
+    "oracle_conformance": ["hello.json|fixtures/positive/hello.flix.Root[0]|kind"]
+  }
+}
 ```
+
+**The set is bound to the fixture revision it was recorded against, and the run refuses when they
+differ.** `fixture|path|reason` identifies a *location*, and a location survives an upgrade that
+changes what is at it: after the fixtures are regenerated the same path in the same fixture can
+hold a different mismatch, and the old entry would grandfather it in silently. Binding to the
+revision forces every entry to be re-confirmed exactly when a stale acceptance becomes dangerous.
 
 A difference outside the set fails whatever the total. An accepted one that no longer occurs is
 reported as **resolved** and never removed automatically: deciding a difference is genuinely gone is

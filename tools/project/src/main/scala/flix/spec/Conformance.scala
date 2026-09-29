@@ -667,6 +667,21 @@ object Conformance {
     * decisive for the recovery lane, so a revision computed over the normalised trees alone would report two genuinely
     * different measurements as comparable.
     */
+  /** The identity of the committed fixture set: name and content of every expectation, both forms.
+    *
+    * Computed here rather than read from a report, because the accepted-set check runs whether or not a report was
+    * asked for -- tying the safeguard to `--report` would have made it optional in exactly the runs that skip it.
+    */
+  def fixtureRevisionOf(expectedFiles: List[String], rawFiles: List[String]): String = {
+    val manifest = (rawFiles ++ expectedFiles)
+      .map { f =>
+        val p = Paths.get(f)
+        s"${p.getParent.getFileName}/${p.getFileName}:${TreeKindExtractor.fileDigest(p)}"
+      }
+      .mkString("\n")
+    TreeKindExtractor.sha256Hex(manifest.getBytes(StandardCharsets.UTF_8))
+  }
+
   private def provenance(expectedFiles: List[String], rawFiles: List[String]): List[(String, String)] = {
     val pin = Json.parseFile(Paths.get("pin.json"))
     val corpus = Json.parseFile(Paths.get("corpus/corpus.json"))
@@ -687,7 +702,7 @@ object Conformance {
       "pinCommit" -> pin("upstream")("commit").asString,
       "oracleSha256" -> pin("oracleArtifact")("sha256").asString,
       "corpusTreeHash" -> corpus("upstream")("treeHash").asString,
-      "fixtureRevision" -> TreeKindExtractor.sha256Hex(manifest.getBytes(StandardCharsets.UTF_8)),
+      "fixtureRevision" -> fixtureRevisionOf(expectedFiles, rawFiles),
       "treeKindDigest" -> treeInv("treeKindDigest").asString,
       "tokenKindDigest" -> tokenInv("tokenKindDigest").asString
     )
@@ -1148,7 +1163,27 @@ object Conformance {
     lazy val acceptedByLane: Map[String, Set[String]] =
       args.accepted
         .map { f =>
-          Json.parseFile(Paths.get(f)).asObject.map { case (lane, v) => lane -> v.asArray.map(_.asString).toSet }
+          val doc = Json.parseFile(Paths.get(f))
+
+          // An accepted set is only meaningful for the suite it was recorded against. `fixture|path|reason`
+          // identifies a *location*, and a location survives an upgrade that changes what is at it: the same
+          // path in the same fixture can host a different mismatch after the fixtures are regenerated, and the
+          // old entry would grandfather it in silently. Binding to the fixture revision forces every entry to be
+          // re-confirmed when the suite moves, which is exactly when a stale acceptance becomes dangerous.
+          val recorded = doc("fixtureRevision").asString
+          val current = fixtureRevisionOf(expectedFiles, rawFiles)
+          if (recorded != current) {
+            System.err.println(
+              s"FATAL: $f was recorded against fixture revision $recorded, but this suite is at $current."
+            )
+            System.err.println(
+              "  The fixtures moved, so every accepted difference has to be re-confirmed: the same path in the " +
+                "same fixture can hold a different mismatch now, and these entries would hide it. Re-run without " +
+                "--accepted, check what is reported, and record the set again."
+            )
+            sys.exit(2)
+          }
+          doc("lanes").asObject.map { case (lane, v) => lane -> v.asArray.map(_.asString).toSet }
         }
         .getOrElse(Map.empty)
 
