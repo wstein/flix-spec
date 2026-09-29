@@ -30,6 +30,7 @@ object SchemaValidator {
     "maximum",
     "minLength",
     "minItems",
+    "uniqueItems",
     "pattern",
     // annotations, carried for readers and deliberately not enforced
     "$id",
@@ -110,6 +111,11 @@ object SchemaValidator {
     (schema.get("maximum"), obj) match {
       case (Some(JNumber(max)), JNumber(value)) if value > max =>
         errors.add(s"$path: $value > maximum $max")
+      case _ =>
+    }
+    (schema.get("uniqueItems"), obj) match {
+      case (Some(JBool(true)), JArray(items)) if items.distinct.length != items.length =>
+        errors.add(s"$path: repeated item(s) ${items.diff(items.distinct).distinct.mkString(", ")}")
       case _ =>
     }
     (schema.get("minItems"), obj) match {

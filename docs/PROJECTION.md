@@ -202,6 +202,32 @@ supported one and will go on doing so after upstream removes it. `tools/project/
 `weedCheck` to surface that class of thing; it is advisory, and nothing in the published contract
 depends on it.
 
+### 4.2 Capabilities
+
+A lane may stand down. `recovery_conformance` reports `not-applicable` when a map declares no
+`recoveryMarkers`; `diagnostic_conformance` does the same when a consumer emits no diagnostics; and
+three of the four `source_invariants` checks stand down when no tree carries token text. That is
+deliberate — failing a consumer for not modelling something it never claimed to model would
+penalise a decision this contract grants.
+
+The cost is that **standing down is indistinguishable from stopping**. An adapter that emitted
+diagnostics yesterday and emits none today does not fail; its lane moves from `pass` to
+`not-applicable`, which no ratchet compares and no baseline records. The regression removes the
+measurement rather than failing it.
+
+`capabilities` is how a consumer gives up that escape:
+
+```json
+"capabilities": ["structure", "tokens", "recovery", "diagnostics"]
+```
+
+Each entry says "I model this". The matching lane then **fails** instead of standing down when the
+thing it measures is absent, and the failure names the capability rather than reporting a divergence
+that does not exist. Omit the key entirely and the permissive behaviour is unchanged, so this is
+opt-in and adds nothing to a consumer that does not want it.
+
+Declare only what the adapter really does. Every entry is an excuse it can no longer use.
+
 ## 5. Schema Versioning
 
 All generated artifacts carry an explicit `schemaVersion` field.

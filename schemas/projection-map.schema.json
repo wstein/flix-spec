@@ -38,6 +38,12 @@
         "minLength": 1
       }
     },
+    "capabilities": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "enum": ["structure", "tokens", "recovery", "diagnostics"] },
+      "description": "What this adapter claims to model. A lane may stand down when a consumer produces nothing for it -- that is how a structural adapter avoids being failed for not modelling error recovery -- but standing down is indistinguishable from an adapter that used to produce something and stopped. Declaring a capability turns that silence into a failure: the lane reports `fail` rather than `not-applicable` when the thing it measures is absent. Omit the key entirely to keep the permissive behaviour; declare only what the adapter really does, because each entry removes an excuse it can no longer use."
+    },
     "diagnosticMappings": {
       "type": "object",
       "description": "Consumer diagnostic name -> reference diagnostic name, used only by the diagnostic lane. Separate from `mappings`, which is about tree kinds: a consumer may model the tree faithfully and name its errors nothing like the reference, or the reverse, and conflating the two would let one gap hide the other. Omit it when the consumer already emits the reference's diagnostic names. When it is absent and the names are not the reference's, the lane compares accept/reject only and says so, rather than reporting a modelling difference as disagreement.",

@@ -119,7 +119,16 @@ object Conformance {
         * Separate from `mappings`, which is about tree kinds. A consumer may model the tree faithfully and name its
         * errors nothing like the reference, or the reverse, and conflating the two would make one gap hide the other.
         */
-      diagnosticMappings: Map[String, String] = Map.empty
+      diagnosticMappings: Map[String, String] = Map.empty,
+      /** What the consumer claims to model, from its projection map.
+        *
+        * A lane standing down is how an adapter avoids being failed for something it never claimed to do. The cost is
+        * that standing down looks exactly like an adapter that used to do it and stopped: the lane's verdict goes from
+        * pass or fail to `not-applicable`, which no ratchet compares and no baseline records. Declaring a capability
+        * removes that escape -- the lane fails instead of standing down -- and declaring nothing keeps the old,
+        * permissive behaviour.
+        */
+      capabilities: Set[String] = Set.empty
   ) {
 
     /** The vocabulary the structural lane uses: the consumer's own recovery markers are spliced out of its tree,
@@ -154,7 +163,14 @@ object Conformance {
         * `divergencesListed` precisely to distinguish these; now they mean what they say.
         */
       divergenceCount: Int,
-      notApplicable: Option[String] = None
+      notApplicable: Option[String] = None,
+      /** Why this lane failed for a reason that is not a divergence count.
+        *
+        * A declared capability that produces nothing is a failure, but there is no divergence to point at -- the
+        * consumer emitted nothing to disagree with. Reporting it as "1 divergence exceeds baseline 0" would name the
+        * wrong thing and send a reader looking for a tree that does not exist.
+        */
+      failureReason: Option[String] = None
   ) {
     def fixturesCompared: Int = fixturesExpected - fixturesMissing.length
     def verdict: String =
@@ -163,6 +179,7 @@ object Conformance {
       // directory is otherwise indistinguishable from perfect agreement. Missing output is not a
       // mapping gap someone is partway through closing; it is the measurement not happening.
       else if (fixturesMissing.nonEmpty) "fail"
+      else if (failureReason.isDefined) "fail"
       else if (divergenceCount > baseline) "fail"
       else "pass"
 
@@ -406,6 +423,25 @@ object Conformance {
     val referenceKinds = pairs.flatMap(_._2.values.flatMap(u => diagnosticsOf(u, Map.empty).map(_.kind))).toSet
     val translated = actualKinds.map(k => vocab.diagnosticMappings.getOrElse(k, k))
     val compareKinds = actualKinds.isEmpty || translated.subsetOf(referenceKinds)
+
+    if (actualKinds.isEmpty && vocab.capabilities.contains("diagnostics"))
+      return DerivedLane(
+        claim = claim,
+        caveat = caveatBase,
+        baseline = baseline,
+        fixturesExpected = expectedFiles.length,
+        fixturesMissing = Nil,
+        fixturesAgreeing = 0,
+        stats = stats,
+        divergences = Nil,
+        divergenceCount = 0,
+        notApplicable = None,
+        failureReason = Some(
+          "the projection map declares the `diagnostics` capability, but the consumer emitted no diagnostics for " +
+            "any fixture. An adapter that models error reporting and then reports nothing is the regression this " +
+            "declaration exists to catch; without it the lane would have stood down and said nothing"
+        )
+      )
 
     if (actualKinds.isEmpty && pairs.exists(_._2.values.exists(u => diagnosticsOf(u, Map.empty).nonEmpty)))
       return DerivedLane(
@@ -874,7 +910,8 @@ object Conformance {
         flattenCanonical = names("flattenCanonical"),
         recoveryMarkers = names("recoveryMarkers"),
         diagnosticMappings =
-          m.get("diagnosticMappings").map(_.asObject.view.mapValues(_.asString).toMap).getOrElse(Map.empty)
+          m.get("diagnosticMappings").map(_.asObject.view.mapValues(_.asString).toMap).getOrElse(Map.empty),
+        capabilities = names("capabilities")
       )
       consumer = m("consumer").asString
 
@@ -941,7 +978,25 @@ object Conformance {
     // that gives the source-invariants checks a `not-applicable` verdict. Omission is the declaration, and the reason
     // is recorded so "not applicable" can never be mistaken for "not run".
     val recovery =
-      if (vocab.recoveryMarkers.isEmpty)
+      if (vocab.recoveryMarkers.isEmpty && vocab.capabilities.contains("recovery"))
+        DerivedLane(
+          claim = recoveryClaim,
+          caveat = recoveryCaveat,
+          baseline = args.recoveryBaseline,
+          fixturesExpected = 0,
+          fixturesMissing = Nil,
+          fixturesAgreeing = 0,
+          stats = new Stats,
+          divergences = Nil,
+          divergenceCount = 0,
+          notApplicable = None,
+          failureReason = Some(
+            "the projection map declares the `recovery` capability, but no recoveryMarkers, so there is nothing " +
+              "for this lane to compare. Remove the capability or declare the markers; standing down silently is " +
+              "what the declaration exists to prevent"
+          )
+        )
+      else if (vocab.recoveryMarkers.isEmpty)
         DerivedLane(
           claim = recoveryClaim,
           caveat = recoveryCaveat,
@@ -980,7 +1035,8 @@ object Conformance {
         .map(_.toString),
       mapped = vocab.mapping.isDefined,
       treeInventory = Json.parseFile(Paths.get("ast/treekind.json"))("kinds").asArray.map(_("name").asString).toSet,
-      tokenInventory = Json.parseFile(Paths.get("ast/tokenkind.json"))("kinds").asArray.map(_("name").asString).toSet
+      tokenInventory = Json.parseFile(Paths.get("ast/tokenkind.json"))("kinds").asArray.map(_("name").asString).toSet,
+      capabilities = vocab.capabilities
     )
 
     args.report.foreach { reportPath =>
@@ -1058,6 +1114,7 @@ object Conformance {
         lane.fixturesMissing.take(10).foreach(f => System.err.println(s"  $f"))
       }
       val failed = lane.verdict == "fail"
+      lane.failureReason.foreach(r => System.err.println(s"FATAL: $name: $r"))
       if (failed && lane.divergenceCount > lane.baseline) {
         System.err.println(s"FATAL: $name: ${lane.divergenceCount} divergences exceeds baseline ${lane.baseline}")
         lane.divergences.take(10).foreach { case (fixture, d) =>

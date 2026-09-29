@@ -68,6 +68,12 @@ class SchemaValidatorTest extends AnyFunSuite with Matchers {
     errors("-1", bounded, bounded) should not be empty
   }
 
+  test("uniqueItems is enforced, not merely declared") {
+    val schema = Json.parse("""{"type":"array","uniqueItems":true}""")
+    errors("""["a","b"]""", schema, schema) shouldBe Nil
+    errors("""["a","a"]""", schema, schema) should not be empty
+  }
+
   test("no committed schema uses a keyword this validator ignores") {
     // A schema keyword nothing acts on is worse than an absent one: the file reads as though the
     // constraint is enforced and no run can disagree. `minItems` sat in defect-ledger.schema.json in

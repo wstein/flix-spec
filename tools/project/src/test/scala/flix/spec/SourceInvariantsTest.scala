@@ -71,6 +71,36 @@ class SourceInvariantsTest extends AnyFunSuite with Matchers {
       |  {"token":"Ident","text":"f","start":{"line":1,"col":5},"end":{"line":1,"col":6}}
       |]}""".stripMargin
 
+  test("a declared `tokens` capability turns silence into a failure") {
+    // Standing down is how an adapter avoids being failed for something it never claimed to do. The cost
+    // is that it looks exactly like an adapter that used to do it and stopped: the verdict moves from
+    // pass to `not-applicable`, which no ratchet compares and no baseline records. Declaring the
+    // capability is how a consumer gives up that escape.
+    val noTokens = """{"kind":"Root","children":[{"kind":"Decl.Def","children":[]}]}"""
+
+    withOutput("def f", noTokens) { files =>
+      val permissive = SourceInvariants.run(
+        files,
+        mapped = false,
+        treeInventory,
+        tokenInventory,
+        Json.parseFile(java.nio.file.Paths.get("../../schemas/projection.schema.json"))
+      )
+      verdictOf(permissive, "token-accounting") shouldBe "not-applicable"
+
+      val declared = SourceInvariants.run(
+        files,
+        mapped = false,
+        treeInventory,
+        tokenInventory,
+        Json.parseFile(java.nio.file.Paths.get("../../schemas/projection.schema.json")),
+        capabilities = Set("tokens")
+      )
+      verdictOf(declared, "token-accounting") shouldBe "fail"
+      verdictOf(declared, "token-positions") shouldBe "fail"
+    }
+  }
+
   test("a column that runs past the end of its own line is rejected") {
     // The file-bounds form of this check passed here. In "def\nf\n" a token claiming line 1
     // column 5 resolves to offset 4 -- the `f` of line 2 -- so the text matches, the order is

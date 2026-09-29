@@ -75,7 +75,12 @@ object SourceInvariants {
       mapped: Boolean,
       treeInventory: Set[String],
       tokenInventory: Set[String],
-      projectionSchema: Json = Json.parseFile(Paths.get("schemas/projection.schema.json"))
+      projectionSchema: Json = Json.parseFile(Paths.get("schemas/projection.schema.json")),
+      /** Capabilities the consumer declared. A declared `tokens` turns "no token text" from a reason to stand down into
+        * a failure: three of the four checks here are about token text, so an adapter that claims to emit it and then
+        * emits none would otherwise slip from pass to `not-applicable` with nothing to say so.
+        */
+      capabilities: Set[String] = Set.empty
   ): Lane = {
     val docs = actualFiles.map(f => f -> Json.parseFile(Paths.get(f)))
     // --------------------------------------------------------------- shape
@@ -124,6 +129,11 @@ object SourceInvariants {
     )
     val anyTokens = validUnits.exists(u => u._2.get("tree").exists(TokenAccounting.carriesTokens))
 
+    val declaresTokens = capabilities.contains("tokens")
+    val missingDeclaredTokens =
+      "the projection map declares the `tokens` capability, but no tree carries token text. An adapter that " +
+        "models tokens and then emits none is the regression that declaration exists to catch"
+
     // -------------------------------------------------------- vocabularies
     val vocabularySkip =
       if (mapped) Some("a projection map is in play, so the consumer emits its own native vocabulary by design")
@@ -139,10 +149,13 @@ object SourceInvariants {
     )
 
     val tokenSkip = vocabularySkip.orElse {
-      if (anyTokens) None else Some("the consumer's trees carry no token text, which docs/PROJECTION.md permits")
+      if (anyTokens || declaresTokens) None
+      else Some("the consumer's trees carry no token text, which docs/PROJECTION.md permits")
     }
     val badTokens =
-      if (tokenSkip.isDefined) Nil else tokensSeen.toList.sorted.filterNot(tokenInventory).map(t => s"token '$t'")
+      if (!anyTokens && declaresTokens && vocabularySkip.isEmpty) List(missingDeclaredTokens)
+      else if (tokenSkip.isDefined) Nil
+      else tokensSeen.toList.sorted.filterNot(tokenInventory).map(t => s"token '$t'")
     val tokenVocabulary = check(
       "token-vocabulary",
       "every token kind is one the reference's lexer defines, per ast/tokenkind.json",
@@ -153,11 +166,12 @@ object SourceInvariants {
 
     // ----------------------------------------------------- token accounting
     val accountingSkip =
-      if (anyTokens) None
+      if (anyTokens || declaresTokens) None
       else Some("the consumer's trees carry no token text, so there is nothing to account for")
 
     val accountingFailures =
-      if (accountingSkip.isDefined) Nil
+      if (!anyTokens && declaresTokens) List(missingDeclaredTokens)
+      else if (accountingSkip.isDefined) Nil
       else
         validUnits.toList.flatMap { case (f, unit) =>
           val sourceName = unit.get("source").map(_.asString).getOrElse("")
@@ -195,7 +209,8 @@ object SourceInvariants {
     // positionally is what `token-accounting` cannot do: it compares concatenated text, where a `$` in a gap and a
     // `$` inside a string literal are indistinguishable, which is why a dropped `"$abc"` escapes it.
     val positionFailures =
-      if (accountingSkip.isDefined) Nil
+      if (!anyTokens && declaresTokens) List(missingDeclaredTokens)
+      else if (accountingSkip.isDefined) Nil
       else
         validUnits.toList.flatMap { case (f, unit) =>
           val sourceName = unit.get("source").map(_.asString).getOrElse("")
