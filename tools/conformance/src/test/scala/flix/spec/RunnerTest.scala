@@ -6,6 +6,14 @@ import org.scalatestplus.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 class RunnerTest extends AnyFunSuite {
+  test("consumer capabilities are validated by the runner without consulting an older data schema") {
+    val map = """{"schemaVersion":1,"consumer":"pilot","description":"Real consumer pilot",
+      "mappings":{},"capabilities":["structure","diagnostics"]}"""
+    Runner.validateMap(Json.parse(map), "map")
+    intercept[IllegalArgumentException] {
+      Runner.validateMap(Json.parse(map.replace("diagnostics", "unsupported")), "map")
+    }
+  }
   test("the emitted report version matches both the runner declaration and report schema") {
     assert(Runner.supported("conformance-report").asInt == Conformance.ReportSchemaVersion)
     val schema = Json.parseFile(java.nio.file.Paths.get("../../schemas/conformance-report.schema.json"))

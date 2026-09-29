@@ -38,6 +38,11 @@ run() {
     --actual "$WORK/actual" --map "$WORK/map.json" --report "$WORK/report.json" "$@"
 }
 expect_exit 0 run
+# A newer runner must accept its own map fields even with an older data bundle's schema.
+cp spec/schemas/projection-map.schema.json original-map-schema.json
+jq 'del(.properties.capabilities)' original-map-schema.json > spec/schemas/projection-map.schema.json
+expect_exit 0 run
+cp original-map-schema.json spec/schemas/projection-map.schema.json
 jq -e '[.lanes[].verdict] | all(. == "pass")' report.json >/dev/null
 jq -e --argjson version "$REPORT_VERSION" '.schemaVersion == $version and
   any(.lanes.source_invariants.checks[]; .id == "lexical-correctness" and .verdict == "not-applicable")' report.json >/dev/null

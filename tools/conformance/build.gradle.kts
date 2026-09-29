@@ -21,6 +21,7 @@ version = rootProject.version.toString() +
 application { mainClass.set("flix.spec.Runner") }
 
 tasks.processResources { from(rootProject.file("schemas/conformance-report.schema.json")) }
+tasks.processResources { from(rootProject.file("schemas/projection-map.schema.json")) }
 
 java { toolchain { languageVersion.set(JavaLanguageVersion.of(21)) } }
 

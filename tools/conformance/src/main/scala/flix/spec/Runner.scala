@@ -15,6 +15,19 @@ object Runner {
   }
   lazy val supported: Json = Json.parse(supportedText)
 
+  /** Consumer input belongs to the runner, not to the independently pinned data bundle. */
+  def validateMap(doc: Json, label: String): Unit = {
+    checkVersion(doc, "projection-map", label)
+    val stream = getClass.getResourceAsStream("/projection-map.schema.json")
+    require(stream != null, "runner is missing its projection-map schema")
+    val schema =
+      try Json.parse(new String(stream.readAllBytes(), StandardCharsets.UTF_8))
+      finally stream.close()
+    val errors = new SchemaValidator.Errors
+    SchemaValidator.check(doc, schema, schema, label, errors)
+    require(errors.isEmpty, errors.toList.mkString("\n"))
+  }
+
   /** The one version of a named schema this runner reads. Exposed so tests state the number once, here, rather than
     * repeating it wherever a report is synthesised.
     */
@@ -49,11 +62,7 @@ object Runner {
       .foreach(p => checkVersion(Json.parseFile(p), "projection", p.toString))
     args.get("--map").foreach { name =>
       val doc = Json.parseFile(Paths.get(name))
-      checkVersion(doc, "projection-map", name)
-      val schema = Json.parseFile(root.resolve("schemas/projection-map.schema.json"))
-      val errors = new SchemaValidator.Errors
-      SchemaValidator.check(doc, schema, schema, name, errors)
-      require(errors.isEmpty, errors.toList.mkString("\n"))
+      validateMap(doc, name)
     }
   }
 
