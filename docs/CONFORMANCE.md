@@ -11,7 +11,7 @@ comparison four times is the duplication `flix-spec` exists to end.
 | Side | Who | What |
 | --- | --- | --- |
 | Produce | the consumer | Parse each fixture, emit a projected tree per `schemas/projection.schema.json` at `form: "raw"`, plus a vocabulary map (`mappings`/`ignored`/`flatten`/`recoveryMarkers`) that is itself the consumer's own data, committed in the consumer's repository -- it encodes facts about that grammar's shape, not about the reference |
-| Compare | `flix-spec` | [`Conformance`](../tools/project/src/main/scala/flix/spec/Conformance.scala) diffs those trees against `fixtures/expected/` and `fixtures/raw/`, validating `mappings` values against `ast/treekind.json` as it runs |
+| Compare | `flix-spec` | [`Conformance`](../tools/conformance/src/main/scala/flix/spec/Conformance.scala) diffs those trees against `fixtures/expected/` and `fixtures/raw/`, validating `mappings` values against `ast/treekind.json` as it runs |
 
 ```mermaid
 flowchart LR

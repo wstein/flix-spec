@@ -33,6 +33,7 @@ spotless {
             "**/*.sh",
             "**/*.yml",
             "**/*.json",
+            "tools/gradle-plugin/src/**/*.java",
             "corpus/fetch",
             ".scalafmt.conf",
             "gradle.properties",

@@ -38,6 +38,9 @@ a rebuild), and [`docs/PIN-BUMP.md`](docs/PIN-BUMP.md) (how the pin moves).
 
 ## Status
 
+Consumer integrations: [standalone runner, HTML reports and adapter scaffolding](docs/RUNNER.md),
+[Gradle plugin](docs/GRADLE-PLUGIN.md), and a [tested executable example](examples/consumer/README.md).
+
 **Phase 1 (pin, contracts, AST inventory, corpus) and Phase 2 (projected fixtures, coverage, reachability) complete.**
 
 Key components established:
@@ -56,7 +59,7 @@ pinned to upstream release `v0.77.0` (`4a5b60a3…`, tree `6a7f542f…`), the re
 - **Annotation inventory ([`ast/annotation.json`](ast/annotation.json))**: the 16 annotations the reference defines, digest-pinned in `pin.json`. A third vocabulary, because the first two cannot express it: the lexer emits a single `TokenKind.Annotation` for every one of them, so the name lives in the token's `text` and no `TokenKind` digest moves when one is added, removed or renamed. It is a **coverage** vocabulary and never a validity check — the `Annotation` token is genuinely open, since Java interop annotations lex identically and upstream models exactly that with `Annotation.Error`. `ReachabilityRun` reports which of them real code exercises: 13 of 16 across the corpus, the other three covered by a fixture.
 - **Retired vocabulary ([`ast/retired.json`](ast/retired.json))**: names the reference once defined and has since removed, with the tag each went at. Hand-maintained, because nothing in the current jar can say what used to be in an older one, and falsifiable — a retired name must be absent from the inventory it was retired from. An added kind announces itself under a name a reader can look up; a removed one leaves only a digest that no longer matches, and this is what survives it.
 - **Coverage, reachability and status ([`ast/coverage.json`](ast/coverage.json), [`ast/reachability.json`](ast/reachability.json), [`ast/status.json`](ast/status.json))**: what the fixtures exercise, what the reference emits across the whole corpus, and the joined per-kind verdict — see [Kind status](#kind-status) below.
-- **Conformance checking ([`docs/CONFORMANCE.md`](docs/CONFORMANCE.md))**: consumers emit canonical projected trees; [`Conformance`](tools/project/src/main/scala/flix/spec/Conformance.scala) does the comparison once, here, rather than four times across four repositories. Its report has **four lanes that are never summed**: `oracle_conformance` measures structure *modulo* error recovery against the normalized canonical tree; `recovery_conformance` measures error-recovery shape alone, against `fixtures/raw/`, scoped to the fixtures that recover from something; `diagnostic_conformance` measures whether the same units are rejected and carry the same gated `kind`/`line`, needing no tree and no projection map at all; `source_invariants` checks the consumer's output against its own input and inherits nothing. A consumer can pass any one and fail another, and CI asserts two such cases rather than asserting them in prose. Splitting recovery out is not forgiveness — recovery is a strategy, not a language feature, and two parsers can agree completely about valid programs while sharing nothing about how they resurface from a malformed one. Each consumer's projection map — its vocabulary, its own wrappers, and which of its own nodes are recovery markers — encodes facts about that consumer's grammar rather than about the reference, so it lives in that consumer's repository; `flix-spec` owns the schema ([`schemas/projection-map.schema.json`](schemas/projection-map.schema.json)), the canonical vocabulary its targets are checked against, and the comparison.
+- **Conformance checking ([`docs/CONFORMANCE.md`](docs/CONFORMANCE.md))**: consumers emit canonical projected trees; [`Conformance`](tools/conformance/src/main/scala/flix/spec/Conformance.scala) does the comparison once, here, rather than four times across four repositories. Its report has **four lanes that are never summed**: `oracle_conformance` measures structure *modulo* error recovery against the normalized canonical tree; `recovery_conformance` measures error-recovery shape alone, against `fixtures/raw/`, scoped to the fixtures that recover from something; `diagnostic_conformance` measures whether the same units are rejected and carry the same gated `kind`/`line`, needing no tree and no projection map at all; `source_invariants` checks the consumer's output against its own input and inherits nothing. A consumer can pass any one and fail another, and CI asserts two such cases rather than asserting them in prose. Splitting recovery out is not forgiveness — recovery is a strategy, not a language feature, and two parsers can agree completely about valid programs while sharing nothing about how they resurface from a malformed one. Each consumer's projection map — its vocabulary, its own wrappers, and which of its own nodes are recovery markers — encodes facts about that consumer's grammar rather than about the reference, so it lives in that consumer's repository; `flix-spec` owns the schema ([`schemas/projection-map.schema.json`](schemas/projection-map.schema.json)), the canonical vocabulary its targets are checked against, and the comparison.
 - **CI and verification**: actions pinned by commit SHA, runner pinned to `ubuntu-24.04`, and Dependabot for actions and Gradle.
 
 Flix v0.77.0 adds `UsesOrImports.Package` and `ColonColonTight`, and removes nothing. Flix v0.76.0
@@ -196,23 +199,30 @@ fixtures/
   expected/              # GENERATED — those trees normalized (form: normalized)
 tools/
   oracle/                # fetch.sh (pinned jar + checksum), build-from-source.sh (fallback)
-  project/               # Gradle + Scala module: extractors, validators, conformance, tests
+  project/               # Oracle-dependent extractors, generators, validators and tests
     src/main/scala/flix/spec/
       TreeKindSchemaValidator.scala  # Validates ast/treekind.json against its schema
-      ProjectionSchemaValidator.scala # Schema + kind-vocabulary validation of both fixture forms
-      ProjectionMapValidator.scala   # Validates a consumer's projection map against the schema
-      Transparency.scala             # Reads and checks ast/transparency.json
       TransparencyProposer.scala     # Reports wrapper candidates by measurement; never writes
-      Normalizer.scala               # Applies the transparency rules; oracle-free by construction
       NormalizationCheck.scala       # Asserts fixtures/expected == normalize(fixtures/raw)
       Coverage.scala                 # Generates ast/coverage.json (measured over fixtures/raw/)
       KindStatus.scala               # Generates ast/status.json (coverage + reachability + evidence)
       DefectLedger.scala             # Validates defects/ledger.json; re-runs each reproducer
       DocMetrics.scala               # Rewrites the generated blocks in README.md and docs/
-      Conformance.scala              # The three-lane comparison against both fixture forms
+    verify.sh            # End-to-end verification suite
+  conformance/           # Oracle-free module and executable flix-spec-runner
+    src/main/scala/flix/spec/
+      Conformance.scala              # Four independent comparison/report lanes
+      ProjectionSchemaValidator.scala # Schema + kind-vocabulary validation of both fixture forms
+      ProjectionMapValidator.scala   # Validates consumer projection maps
+      Transparency.scala             # Reads and checks ast/transparency.json
+      Normalizer.scala               # Applies the transparency rules
       SourceInvariants.scala         # The oracle-free lane: shape, vocabulary, token accounting
       TokenAccounting.scala          # The shared "a tree must account for its source" rule
-    verify.sh            # End-to-end verification suite
+      Runner.scala                   # Versioned CLI and schema compatibility checks
+      HtmlReport.scala               # Offline renderer for JSON reports
+      Scaffold.scala                 # Consumer integration starter
+  gradle-plugin/         # Thin Gradle integration; invokes the published runner
+  runner/                # External-checkout distribution acceptance test
 packaging/               # Gradle module: packages pin.json/ast/schemas/fixtures/corpus.json
                           # into the io.github.wstein:flix-spec Maven artifact
 ```

@@ -53,9 +53,11 @@ jobs:
         run: |
           ./gradlew :packaging:publishFlixSpecPublicationToFlixSpecRepoRepository \
             :tools:conformance:publishRunnerPublicationToFlixSpecRepoRepository \
+            :tools:gradle-plugin:publish \
             "-PflixSpec.publishRepo=file://$(pwd)/build/runner-acceptance-repo"
           VERSION="$(sed -n 's/^version=//p' gradle.properties)"
           bash tools/runner/acceptance.sh build/runner-acceptance-repo "$VERSION"
+          bash tools/gradle-plugin/acceptance.sh build/runner-acceptance-repo "$VERSION"
 
       - name: Verify Generated Artifacts Are Current
         # verify.sh already regenerated everything. Any diff means a committed
