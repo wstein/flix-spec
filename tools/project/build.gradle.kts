@@ -23,6 +23,7 @@ val oracleScalaVersion: String = groovy.json.JsonSlurper()
     .let { it["scalaVersion"] as String }
 
 dependencies {
+    implementation(project(":tools:conformance"))
     implementation("org.scala-lang:scala-library:$oracleScalaVersion")
     // No scala-reflect: TreeKind enumeration reads jar entries and decides via java.lang.Class,
     // so knownDirectSubclasses (direct-only, documented as unreliable) is not needed and the

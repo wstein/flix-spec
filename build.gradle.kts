@@ -14,7 +14,10 @@ spotless {
     scala {
         // Root the input tree at the source directory. A repository-wide glob
         // overlaps subproject build outputs in Gradle's task dependency checks.
-        target(fileTree("tools/project/src") { include("**/*.scala") })
+        target(
+            fileTree("tools/project/src") { include("**/*.scala") },
+            fileTree("tools/conformance/src") { include("**/*.scala") },
+        )
         scalafmt("3.9.4").configFile(".scalafmt.conf")
     }
 

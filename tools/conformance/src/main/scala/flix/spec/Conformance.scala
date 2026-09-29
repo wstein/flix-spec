@@ -676,10 +676,10 @@ object Conformance {
     val manifest = (rawFiles ++ expectedFiles)
       .map { f =>
         val p = Paths.get(f)
-        s"${p.getParent.getFileName}/${p.getFileName}:${TreeKindExtractor.fileDigest(p)}"
+        s"${p.getParent.getFileName}/${p.getFileName}:${Digests.fileDigest(p)}"
       }
       .mkString("\n")
-    TreeKindExtractor.sha256Hex(manifest.getBytes(StandardCharsets.UTF_8))
+    Digests.sha256Hex(manifest.getBytes(StandardCharsets.UTF_8))
   }
 
   private def provenance(expectedFiles: List[String], rawFiles: List[String]): List[(String, String)] = {
@@ -693,7 +693,7 @@ object Conformance {
     val manifest = (rawFiles ++ expectedFiles)
       .map { f =>
         val p = Paths.get(f)
-        s"${p.getParent.getFileName}/${p.getFileName}:${TreeKindExtractor.fileDigest(p)}"
+        s"${p.getParent.getFileName}/${p.getFileName}:${Digests.fileDigest(p)}"
       }
       .mkString("\n")
 
