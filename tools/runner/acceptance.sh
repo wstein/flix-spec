@@ -78,4 +78,10 @@ grep -q 'unsupported.*schemaVersion' invocation.log
 cp original.json actual/hello.json
 expect_exit 2 java -jar runner.jar --actual
 expect_exit 2 java -jar runner.jar --spec-root missing --actual actual
+expect_exit 0 java -jar runner.jar init --directory starter --consumer test-consumer
+expect_exit 2 java -jar runner.jar init --directory starter --consumer another
+expect_exit 2 bash starter/produce.sh "$WORK/spec" "$WORK/unimplemented-output"
+grep -q 'TODO: implement' invocation.log
+expect_exit 2 bash starter/produce.sh "$WORK/spec" "$WORK/unimplemented-output"
+grep -q 'output already exists' invocation.log
 echo 'OK: published runner passes all four lanes and rejects mutations, missing capabilities and incompatible input outside the checkout'

@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "consumer": "@CONSUMER@",
+  "description": "Consumer-owned map. Populate from your parser's vocabulary before comparing.",
+  "capabilities": [],
+  "mappings": {},
+  "ignored": [],
+  "recoveryMarkers": []
+}

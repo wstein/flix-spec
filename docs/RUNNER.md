@@ -63,3 +63,17 @@ offline HTML with no JavaScript or external resources. All consumer content is
 escaped. Each lane retains its verdict, caveats, missing fixtures, unmapped names,
 checks and divergence sample; capped samples are labelled explicitly. The HTML
 does not replace the runner's exit status or merge the lanes into a score.
+
+## Adapter scaffolding
+
+```sh
+java -jar flix-spec-runner.jar init --directory conformance --consumer my-parser
+```
+
+This creates a README, an intentionally failing parser placeholder, fixture
+production and check scripts, and a consumer-owned projection map. Existing
+directories are never overwritten. Production refuses stale output directories;
+checks preserve exit status and render HTML even after a conformance failure.
+Implement the parser and mappings yourself, explicitly declare capabilities, and
+review comparison depth before adding this to CI. No differences are accepted
+automatically. The generated scripts require Bash and jq.
