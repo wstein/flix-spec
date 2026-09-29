@@ -49,6 +49,14 @@ jobs:
       - name: Run End-to-End Verification Suite
         run: ./tools/project/verify.sh
 
+      - name: Test Published Runner Outside Checkout
+        run: |
+          ./gradlew :packaging:publishFlixSpecPublicationToFlixSpecRepoRepository \
+            :tools:conformance:publishRunnerPublicationToFlixSpecRepoRepository \
+            "-PflixSpec.publishRepo=file://$(pwd)/build/runner-acceptance-repo"
+          VERSION="$(sed -n 's/^version=//p' gradle.properties)"
+          bash tools/runner/acceptance.sh build/runner-acceptance-repo "$VERSION"
+
       - name: Verify Generated Artifacts Are Current
         # verify.sh already regenerated everything. Any diff means a committed
         # artifact does not match what the pinned oracle actually produces.

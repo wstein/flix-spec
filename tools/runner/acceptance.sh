@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+# Resolves files from a local Maven publication, then tests them outside the checkout.
+set -euo pipefail
+REPO="${1:?usage: acceptance.sh MAVEN_REPOSITORY VERSION}"
+VERSION="${2:?version required}"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+REPO="$(cd "$REPO" && pwd)"
+WORK="$(mktemp -d)"
+trap 'rm -rf "$WORK"' EXIT
+cp "$REPO/io/github/wstein/flix-spec-runner/$VERSION/flix-spec-runner-$VERSION.jar" "$WORK/runner.jar"
+cp "$REPO/io/github/wstein/flix-spec/$VERSION/flix-spec-$VERSION.jar" "$WORK/spec.jar"
+cp "$ROOT/examples/consumer/identity-adapter.sh" "$WORK/adapter.sh"
+cd "$WORK"
+mkdir spec
+( cd spec && jar xf ../spec.jar )
+if jar tf runner.jar | grep -q '^ca/uwaterloo/'; then
+  echo "FATAL: runner contains oracle classes" >&2
+  exit 1
+fi
+java -jar runner.jar --supported-schemas | jq -e '.projection == 2 and .["conformance-report"] == 7' >/dev/null
+bash adapter.sh "$WORK/spec" actual map.json
+
+expect_exit() {
+  local expected="$1"
+  shift
+  local status=0
+  "$@" > invocation.log 2>&1 || status=$?
+  if [ "$status" -ne "$expected" ]; then
+    cat invocation.log >&2
+    echo "FATAL: expected exit $expected, got $status" >&2
+    exit 1
+  fi
+}
+run() {
+  java -jar runner.jar --spec-root "$WORK/spec" --source-root "$WORK/spec" \
+    --actual "$WORK/actual" --map "$WORK/map.json" --report "$WORK/report.json" "$@"
+}
+expect_exit 0 run
+jq -e '[.lanes[].verdict] | all(. == "pass")' report.json >/dev/null
+
+# A real structural mutation, with an otherwise valid document, must fail.
+cp actual/hello.json original.json
+jq '.units[0].tree.children[0].kind = "Expr.Binary"' original.json > actual/hello.json
+expect_exit 1 run
+jq -e '.lanes.oracle_conformance.divergenceCount > 0' report.json >/dev/null
+cp original.json actual/hello.json
+
+# Explicit capabilities prohibit silence; each failure is named, not a crash.
+cp map.json original-map.json
+for capability in diagnostics tokens recovery; do
+  bash adapter.sh "$WORK/spec" actual map.json
+  case "$capability" in
+    diagnostics)
+      for f in actual/*.json; do
+        jq '.units[].diagnostics = []' "$f" > edit.json
+        mv edit.json "$f"
+      done ;;
+    tokens)
+      for f in actual/*.json; do
+        jq 'walk(if type == "object" and has("children") then .children |= map(select(has("token") | not)) else . end)' \
+          "$f" > edit.json
+        mv edit.json "$f"
+      done ;;
+    recovery) jq '.recoveryMarkers = []' original-map.json > map.json ;;
+  esac
+  expect_exit 1 run
+  grep -q "$capability" invocation.log
+done
+bash adapter.sh "$WORK/spec" actual map.json
+
+jq '.schemaVersion = 999' original.json > actual/hello.json
+expect_exit 2 run
+grep -q 'unsupported.*schemaVersion' invocation.log
+cp original.json actual/hello.json
+expect_exit 2 java -jar runner.jar --actual
+expect_exit 2 java -jar runner.jar --spec-root missing --actual actual
+echo 'OK: published runner passes all four lanes and rejects mutations, missing capabilities and incompatible input outside the checkout'

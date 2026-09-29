@@ -36,3 +36,17 @@ to `--spec-root`. No oracle, Gradle installation, or repository checkout is need
 The supported interface is the CLI plus versioned JSON, not the Scala classes.
 Run `--help` for comparison thresholds and accepted-difference options. Accepted
 sets remain consumer-owned and bound to the fixture revision.
+
+## Distribution acceptance test
+
+```sh
+./gradlew :packaging:publishFlixSpecPublicationToFlixSpecRepoRepository \
+  :tools:conformance:publishRunnerPublicationToFlixSpecRepoRepository \
+  "-PflixSpec.publishRepo=file://$PWD/build/runner-acceptance-repo"
+bash tools/runner/acceptance.sh build/runner-acceptance-repo "$(sed -n 's/^version=//p' gradle.properties)"
+```
+
+CI runs this against the actual Maven publication. It copies only the two jars and
+the [example adapter](../examples/consumer/README.md) into a fresh temporary
+directory. All four lanes must pass, structural mutations and capability silence
+must fail, and unsupported schemas and malformed invocations must exit 2.
