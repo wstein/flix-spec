@@ -37,12 +37,16 @@ run() {
 }
 expect_exit 0 run
 jq -e '[.lanes[].verdict] | all(. == "pass")' report.json >/dev/null
+expect_exit 0 java -jar runner.jar render --report report.json --html report.html
+grep -q 'oracle_conformance: pass' report.html
 
 # A real structural mutation, with an otherwise valid document, must fail.
 cp actual/hello.json original.json
 jq '.units[0].tree.children[0].kind = "Expr.Binary"' original.json > actual/hello.json
 expect_exit 1 run
 jq -e '.lanes.oracle_conformance.divergenceCount > 0' report.json >/dev/null
+expect_exit 0 java -jar runner.jar render --report report.json --html failure.html
+grep -q 'oracle_conformance: fail' failure.html
 cp original.json actual/hello.json
 
 # Explicit capabilities prohibit silence; each failure is named, not a crash.

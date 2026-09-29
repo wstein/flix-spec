@@ -61,10 +61,12 @@ object Runner {
             "  [--accepted FILE] [--baseline N] [--recovery-baseline N] [--diagnostic-baseline N]\n" +
             "  [--depth-floor PCT] [--recovery-depth-floor PCT]\n" +
             "  --supported-schemas | --version | --help\n" +
+            "  render --report FILE --html FILE\n" +
             "Exit codes: 0 pass, 1 conformance failure, 2 invalid input or unsupported schema."
         )
       case List("--supported-schemas") => print(supportedText)
       case List("--version") => println(Option(getClass.getPackage.getImplementationVersion).getOrElse("development"))
+      case List("render", "--report", input, "--html", output) => HtmlReport.write(Paths.get(input), Paths.get(output))
       case _ =>
         preflight(argv)
         Conformance.main(argv)

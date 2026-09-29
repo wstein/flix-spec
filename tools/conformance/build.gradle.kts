@@ -20,6 +20,8 @@ version = rootProject.version.toString() +
 
 application { mainClass.set("flix.spec.Runner") }
 
+tasks.processResources { from(rootProject.file("schemas/conformance-report.schema.json")) }
+
 java { toolchain { languageVersion.set(JavaLanguageVersion.of(21)) } }
 
 val runnerJar = tasks.register<Jar>("runnerJar") {
