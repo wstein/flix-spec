@@ -101,6 +101,24 @@ class SourceInvariantsTest extends AnyFunSuite with Matchers {
     }
   }
 
+  test("a real token may end at the empty EOF line after LF or CRLF") {
+    List("\n", "\r\n").foreach { newline =>
+      val tree = s"""{"kind":"Root","children":[
+        {"token":"Comment","text":"/* open${Json.esc(newline)}",
+         "start":{"line":1,"col":1},"end":{"line":2,"col":1}}
+      ]}"""
+      withOutput("/* open" + newline, tree) { files =>
+        verdictOf(run(files, mapped = true), "token-positions") shouldBe "pass"
+      }
+      withOutput("/* open" + newline, tree.replace("\"line\":2,\"col\":1", "\"line\":2,\"col\":2")) { files =>
+        verdictOf(run(files, mapped = true), "token-positions") shouldBe "fail"
+      }
+      withOutput("/* open" + newline, tree.replace("\"line\":2", "\"line\":3")) { files =>
+        verdictOf(run(files, mapped = true), "token-positions") shouldBe "fail"
+      }
+    }
+  }
+
   test("a column that runs past the end of its own line is rejected") {
     // The file-bounds form of this check passed here. In "def\nf\n" a token claiming line 1
     // column 5 resolves to offset 4 -- the `f` of line 2 -- so the text matches, the order is

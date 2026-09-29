@@ -219,7 +219,12 @@ object SourceInvariants {
           else {
             val text = Files.readString(source, StandardCharsets.UTF_8)
             // Offset of the first character of each 1-indexed line, and where each line ends.
-            val lines = text.linesWithSeparators.toVector
+            val physicalLines = text.linesWithSeparators.toVector
+            // An end-exclusive token can end at column 1 of the empty line after a final newline.
+            // linesWithSeparators omits that line; rejecting it rejects real lexer output at EOF.
+            val lines =
+              if (text.isEmpty || text.endsWith("\n") || text.endsWith("\r")) physicalLines :+ ""
+              else physicalLines
             val lineStarts = lines.scanLeft(0)(_ + _.length)
             def offset(pos: Json): Option[Int] = {
               val line = pos("line").asInt
