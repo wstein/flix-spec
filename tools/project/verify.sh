@@ -107,7 +107,7 @@ echo "== losslessness: trees must reconstruct their source =="
 echo "== conformance: expectations must agree with themselves =="
 ./gradlew -q :tools:project:conformance --args="--actual fixtures/expected"
 
-echo "== conformance: the three-lane report must be well-formed =="
+echo "== conformance: the four-lane report must be well-formed =="
 # The report is the artifact consumers actually read, and it is produced in their repositories where
 # nothing here can check it. Generating one from the identity case and validating it is what keeps
 # the published shape honest -- including that every lane reaches a verdict rather than one silently

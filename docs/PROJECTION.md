@@ -13,13 +13,13 @@ consumers project their parse trees into a **canonical projected tree** defined 
 
 ```mermaid
 flowchart TD
-    UP["Upstream Flix reference compiler<br/>pin v0.76.0 · f2d4678c20…<br/><b>operational oracle</b>"]
+    UP["Upstream Flix reference compiler<br/>pin v0.77.0 · 4a5b60a31ac0…<br/><b>operational oracle</b>"]
     RAW["Raw projected tree<br/><code>fixtures/raw/</code><br/><i>form: raw</i>"]
     CANON["Canonical projected tree<br/><code>fixtures/expected/</code><br/><i>form: normalized</i>"]
     C1["flix-antlr4-grammar"]
     C2["tree-sitter-flix"]
 
-    UP -->|"ProjectionExtractor<br/>(Reader → Lexer → Parser2)"| RAW
+    UP -->|"ProjectionExtractor<br/>(Lexer → Parser2)"| RAW
     RAW -->|"Normalizer<br/>(ast/transparency.json)"| CANON
     C1 -->|"projection map"| CANON
     C2 -->|"projection map"| CANON

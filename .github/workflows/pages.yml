@@ -91,9 +91,9 @@ jobs:
         # Gate every regenerated artifact, including newly created files, before packaging.
         run: |
           git add --intent-to-add --all \
-            ast/ fixtures/raw/ fixtures/expected/ README.md docs/CONFORMANCE.md docs/DEFECTS.md
+            ast/ fixtures/raw/ fixtures/expected/ README.md docs/CONFORMANCE.md docs/DEFECTS.md NOTICE.md docs/VERSIONING.md corpus/corpus.json
           git diff --exit-code \
-            ast/ fixtures/raw/ fixtures/expected/ README.md docs/CONFORMANCE.md docs/DEFECTS.md
+            ast/ fixtures/raw/ fixtures/expected/ README.md docs/CONFORMANCE.md docs/DEFECTS.md NOTICE.md docs/VERSIONING.md corpus/corpus.json
 
       - name: Determine Publish Mode
         id: mode

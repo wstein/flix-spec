@@ -15,7 +15,7 @@ import scala.jdk.CollectionConverters._
   *   - spans and tokens are not compared -- token vocabularies differ legitimately between parsers, and spans are
   *     advisory, so comparing either would report differences that are not disagreements about structure.
   *
-  * The report it writes has **three lanes, never summed into one score**:
+  * The report it writes has **four lanes, never summed into one score**:
   *
   *   - `oracle_conformance` -- structure *modulo* recovery. Compared against `fixtures/expected/`, the normalised
   *     canonical tree, so wrapper nodes and the error vocabulary have already been removed by [[Transparency]]'s rules.

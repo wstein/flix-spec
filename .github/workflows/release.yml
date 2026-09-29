@@ -91,9 +91,9 @@ jobs:
         # oracle, silently, in every other file. This is the same path set verify.yml gates on.
         run: |
           git add --intent-to-add --all \
-            ast/ fixtures/raw/ fixtures/expected/ README.md docs/CONFORMANCE.md docs/DEFECTS.md NOTICE.md
+            ast/ fixtures/raw/ fixtures/expected/ README.md docs/CONFORMANCE.md docs/DEFECTS.md NOTICE.md docs/VERSIONING.md corpus/corpus.json
           git diff --exit-code \
-            ast/ fixtures/raw/ fixtures/expected/ README.md docs/CONFORMANCE.md docs/DEFECTS.md NOTICE.md
+            ast/ fixtures/raw/ fixtures/expected/ README.md docs/CONFORMANCE.md docs/DEFECTS.md NOTICE.md docs/VERSIONING.md corpus/corpus.json
 
       - name: Assemble Release Bundle
         id: bundle

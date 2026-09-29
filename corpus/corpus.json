@@ -11,8 +11,8 @@
     "exampleFlixFiles": 180
   },
   "inclusionRules": {
-    "main": "All .flix files under main/ in upstream (712 files: 467 under main/test, 245 under main/src)",
-    "examples": "All .flix files outside main/ in upstream (188 files, all under examples/). Named 'examples' rather than 'test' -- upstream's own test sources live under main/test and are counted in 'main'."
+    "main": "All .flix files under main/ in upstream",
+    "examples": "All .flix files outside main/ in upstream. Named 'examples' rather than 'test' -- upstream's own test sources live under main/test and are counted in 'main'."
   },
   "generated": false,
   "note": "Hand-written, not generated. The implementation plan's layout calls for a generated file list with per-file digests; corpus identity currently rests on upstream.treeHash alone, which corpus/fetch verifies. Recorded here so the deviation is visible rather than silent."

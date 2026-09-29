@@ -10,7 +10,9 @@
 <flixMajor>.<flixMinor>.<revision>[-SNAPSHOT]
 ```
 
-Current: `0.76.0`, derived from `flix/flix` v0.76.0.
+<!-- generated: current-version -->
+Current: `0.77.3`, derived from `flix/flix` v0.77.0.
+<!-- /generated: current-version -->
 
 - **`flixMajor.flixMinor`** track the upstream Flix line. `0.75.x` is derived from Flix 0.75.x.
 - **`revision`** is this repository's own counter within that line. It advances on every published

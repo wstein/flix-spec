@@ -51,11 +51,13 @@ pinned to upstream release `v0.77.0` (`4a5b60a3…`, tree `6a7f542f…`), the re
 - **JSON schemas ([`schemas/`](schemas/))**: draft-07 definitions for `ast/treekind.json` and canonical projected trees, enforced in CI by [`TreeKindSchemaValidator`](tools/project/src/main/scala/flix/spec/TreeKindSchemaValidator.scala).
 - **Committed AST inventory ([`ast/treekind.json`](ast/treekind.json))**: 192 `TreeKind` nodes with qualified names, parent traits and forms, name-set digest `30802218…`, and a provenance header naming the generator, tool version, upstream commit and the exact oracle jar it was derived from.
 - **Token inventory ([`ast/tokenkind.json`](ast/tokenkind.json))**: 159 `TokenKind`s (158 case objects plus `Err`), digest-pinned in `pin.json`. This is the contract for **lexical** consumers such as `flix-textmate`, which have no parse tree and cannot consume `fixtures/expected/`. Every `token` in a projected tree is validated against it — previously the projection schema declared `token` as an unconstrained string, so 134 distinct names were committed and checked against nothing. Fixture coverage of the lexical vocabulary is now measured exactly as tree-kind coverage is, and reported in [Kind status](#kind-status); `Eof` is the single exception, and it is structurally rather than incidentally uncovered: the lexer always appends it as a virtual sentinel, but the parser only ever tests `at(TokenKind.Eof)` to decide when to stop — it is never pushed onto the tree as a node's child, so no fixture, however constructed, can make it appear in a projected tree.
-- **Corpus definition ([`corpus/`](corpus/))**: 900 pinned `.flix` files (712 under `main/`, 188 under `examples/`), inclusion rules, and a tree-hash-verified fetch script.
+- **Corpus definition ([`corpus/`](corpus/))**: <!-- generated: corpus -->
+**893** pinned `.flix` files (**713** under `main/`, **180** under `examples/`), inclusion rules, and a tree-hash-verified fetch script.
+<!-- /generated: corpus -->
 - **Projected fixtures ([`fixtures/`](fixtures/))**: **two committed forms of every parse**, both generated from the pinned oracle and both held under a diff gate. `fixtures/raw/` is the reference's own tree, node for node — the provenance record, the input to every measurement of the reference's own vocabulary, and the authority the recovery conformance lane compares against. `fixtures/expected/` is that tree **normalized**:
 <!-- generated: normalisation -->
 **2301 of 4484 nodes (51.3%)** removed by [`ast/transparency.json`](ast/transparency.json), which elides wrapper nodes that carry no information beyond their child and splices out the error-recovery vocabulary.
-<!-- /generated: normalisation --> Doing that once here, with a reason argued from the reference's own structure and citations a reader can check, is neutral in a way that asking each consumer to re-derive it never was — with one instrumented consumer, no measurement could have told a neutral rule from one shaped by that consumer's grammar. Every document declares which form it is, in `form`. Kind names are sub-trait qualified, sources are repository-relative, and diagnostics record `kind`/`line` as gated with `col`/`message` advisory. **23 of the 24 diagnostic kinds `Reader`/`Lexer`/`Parser2` can actually produce are now exercised** — 15 of 15 `LexerError` variants and 8 of 9 `Parser2`-raised `ParseError` variants. The ninth, `MisplacedComments`, is not just unreproduced but **unreachable by construction**: `expect()` calls `open()`, which unconditionally consumes any leading comment before `expect()` ever inspects it, so the match arm mapping a comment to `MisplacedComments` can never fire — see `docs/CONFORMANCE.md` for the full trace. Three further `ParseError` variants (`MissingRegion`, `NeedAtleastOne`, `MissingBinaryOperator`) are raised only by `Weeder2`, a phase this repository's pipeline never runs, and are excluded from that count as structurally out of scope rather than silently missing.
+<!-- /generated: normalisation --> Doing that once here, with a reason argued from the reference's own structure and citations a reader can check, is neutral in a way that asking each consumer to re-derive it never was — with one instrumented consumer, no measurement could have told a neutral rule from one shaped by that consumer's grammar. Every document declares which form it is, in `form`. Kind names are sub-trait qualified, sources are repository-relative, and diagnostics record `kind`/`line` as gated with `col`/`message` advisory. **23 of the 24 diagnostic kinds `Lexer`/`Parser2` can actually produce are now exercised** — 15 of 15 `LexerError` variants and 8 of 9 `Parser2`-raised `ParseError` variants. The ninth, `MisplacedComments`, is not just unreproduced but **unreachable by construction**: `expect()` calls `open()`, which unconditionally consumes any leading comment before `expect()` ever inspects it, so the match arm mapping a comment to `MisplacedComments` can never fire — see `docs/CONFORMANCE.md` for the full trace. Three further `ParseError` variants (`MissingRegion`, `NeedAtleastOne`, `MissingBinaryOperator`) are raised only by `Weeder2`, a phase this repository's pipeline never runs, and are excluded from that count as structurally out of scope rather than silently missing.
 - **Annotation inventory ([`ast/annotation.json`](ast/annotation.json))**: the 16 annotations the reference defines, digest-pinned in `pin.json`. A third vocabulary, because the first two cannot express it: the lexer emits a single `TokenKind.Annotation` for every one of them, so the name lives in the token's `text` and no `TokenKind` digest moves when one is added, removed or renamed. It is a **coverage** vocabulary and never a validity check — the `Annotation` token is genuinely open, since Java interop annotations lex identically and upstream models exactly that with `Annotation.Error`. `ReachabilityRun` reports which of them real code exercises: 13 of 16 across the corpus, the other three covered by a fixture.
 - **Retired vocabulary ([`ast/retired.json`](ast/retired.json))**: names the reference once defined and has since removed, with the tag each went at. Hand-maintained, because nothing in the current jar can say what used to be in an older one, and falsifiable — a retired name must be absent from the inventory it was retired from. An added kind announces itself under a name a reader can look up; a removed one leaves only a digest that no longer matches, and this is what survives it.
 - **Coverage, reachability and status ([`ast/coverage.json`](ast/coverage.json), [`ast/reachability.json`](ast/reachability.json), [`ast/status.json`](ast/status.json))**: what the fixtures exercise, what the reference emits across the whole corpus, and the joined per-kind verdict — see [Kind status](#kind-status) below.
@@ -152,7 +154,7 @@ flowchart TD
 
     PIN -->|"names + verifies"| REL
     REL -->|"TreeKindExtractor<br/>reflection"| TK
-    REL -->|"ProjectionExtractor<br/>Reader → Lexer → Parser2"| PROJ
+    REL -->|"ProjectionExtractor<br/>Lexer → Parser2"| PROJ
     TK -.->|"supplies <code>kind</code> vocabulary"| PROJ
 ```
 
@@ -174,7 +176,7 @@ schemas/
   tokenkind.schema.json     # JSON Schema for ast/tokenkind.json
   projection.schema.json    # JSON Schema for canonical projected trees
   projection-map.schema.json # JSON Schema for consumer projection maps
-  conformance-report.schema.json # JSON Schema for the three-lane conformance report
+  conformance-report.schema.json # JSON Schema for the four-lane conformance report
   unattachable.schema.json  # JSON Schema for ast/unattachable.json
   transparency.schema.json  # JSON Schema for ast/transparency.json
   defect-ledger.schema.json # JSON Schema for defects/ledger.json
@@ -270,7 +272,9 @@ repositories {
 }
 
 dependencies {
-    implementation("io.github.wstein:flix-spec:0.76.0")
+<!-- generated: maven-coordinate -->
+    implementation("io.github.wstein:flix-spec:0.77.3")
+<!-- /generated: maven-coordinate -->
 }
 ```
 
@@ -296,7 +300,7 @@ additionally needs `credentials { username = ...; password = /* a token with rea
 ./gradlew :tools:project:validateDefects                   # Re-check defects/ledger.json against the pinned oracle
 ./gradlew :tools:project:generateDocs                      # Rewrite the generated blocks in README/CONFORMANCE/DEFECTS
 ./gradlew :tools:project:conformance --args='--actual <dir>' # Check a consumer against the fixtures
-./gradlew :tools:project:validateReport --args='<report.json>'  # Validate a three-lane conformance report
+./gradlew :tools:project:validateReport --args='<report.json>'  # Validate a four-lane conformance report
 ./gradlew test                                             # ScalaTest suite
 ./tools/project/verify.sh                                  # End-to-end verification suite
 ./gradlew spotlessApply                                    # Format Scala, scripts, workflows, JSON

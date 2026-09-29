@@ -201,7 +201,7 @@ its own numbers, or more divergences listed than counted.
 
 ## Diagnostic-kind coverage
 
-`Reader`/`Lexer`/`Parser2` can raise 24 distinct diagnostic kinds in this pipeline: 15
+`Lexer`/`Parser2` can raise 24 distinct diagnostic kinds in this pipeline: 15
 `LexerError` variants and 9 `Parser2`-raised `ParseError` variants. (Three more `ParseError`
 variants — `MissingRegion`, `NeedAtleastOne`, `MissingBinaryOperator` — are raised only by
 `Weeder2`, a phase this pipeline never runs; they are out of scope by construction, not a gap.)
@@ -290,7 +290,7 @@ tell a neutral rule from one shaped by that consumer.
 
 So the contract was tested against a second, independently-written map: `flix-jetbrains-plugin`, a
 Grammar-Kit grammar whose shape differs from the reference far more than tree-sitter's does — 30% of
-its nodes are always single-child wrappers, against 11.2% on the canonical side. Its `elide` list was
+its nodes are always single-child wrappers, against 11.1% on the canonical side. Its `elide` list was
 written before the contract existed, by someone solving a different problem.
 
 | Contract rule | Independently declared transparent by `flix-jetbrains-plugin` |
@@ -631,7 +631,7 @@ repository's CI maintains — the CLI dependency is why.
 `flix-jetbrains-plugin` is a Grammar-Kit grammar, and its shape differs from the reference far more
 than tree-sitter's does. Every expression descends through roughly seventeen precedence levels --
 `LAZY_FORCE_EXPR`, `NOT_EXPR`, `SIGN_EXPR`, `ADDITIVE_EXPR`, … -- each of which is a pass-through
-when its operator is absent. **30% of its nodes are always single-child wrappers**, against 11.2%
+when its operator is absent. **30% of its nodes are always single-child wrappers**, against 11.1%
 on the canonical side.
 
 This is why a node may appear in both `ignored` and `mappings`. `ADDITIVE_EXPR` is transparent on

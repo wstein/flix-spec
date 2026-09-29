@@ -55,6 +55,7 @@ object DocMetrics {
 
   def main(args: Array[String]): Unit = {
     val pin = Json.parseFile(Paths.get("pin.json"))
+    val corpus = Json.parseFile(Paths.get("corpus/corpus.json"))
     val status = Json.parseFile(Paths.get("ast/status.json"))
     val coverage = Json.parseFile(Paths.get("ast/coverage.json"))
     val reach = Json.parseFile(Paths.get("ast/reachability.json"))
@@ -148,6 +149,25 @@ object DocMetrics {
         s"`${up("treeHash").asString.take(8)}…`), the release asset's SHA-256 " +
         s"(`${pin("oracleArtifact")("sha256").asString.take(8)}…`)"
 
+    // Corpus counts and the package version, generated for the same reason as everything else here: both had
+    // drifted in prose, and the corpus numbers had drifted inside `corpus/corpus.json` itself, which ships in
+    // the Maven artifact and which nothing regenerates.
+    val corpusCounts = corpus("counts")
+    val corpusBlock =
+      s"**${corpusCounts("totalFlixFiles").asInt}** pinned `.flix` files " +
+        s"(**${corpusCounts("mainFlixFiles").asInt}** under `main/`, " +
+        s"**${corpusCounts("exampleFlixFiles").asInt}** under `examples/`), inclusion rules, and a " +
+        "tree-hash-verified fetch script."
+
+    val packageVersion = Files
+      .readString(Paths.get("gradle.properties"), StandardCharsets.UTF_8)
+      .linesIterator
+      .collectFirst { case l if l.startsWith("version=") => l.stripPrefix("version=").trim }
+      .getOrElse(throw new IllegalStateException("gradle.properties has no version"))
+    val versionBlock = s"""    implementation("io.github.wstein:flix-spec:$packageVersion")"""
+    val versionLineBlock =
+      s"Current: `$packageVersion`, derived from `flix/flix` ${up("tag").asString}."
+
     val rawNodes = nodesIn(Spec.RawDir)
     val normalizedNodes = nodesIn(Spec.NormalizedDir)
     val removedNodes = rawNodes - normalizedNodes
@@ -201,7 +221,10 @@ object DocMetrics {
       (Paths.get("README.md"), "roles", rolesBlock),
       (Paths.get("docs/CONFORMANCE.md"), "wrappers", wrapperBlock),
       (Paths.get("docs/CONFORMANCE.md"), "lossless", losslessBlock),
-      (Paths.get("docs/DEFECTS.md"), "defects", defectsBlock)
+      (Paths.get("docs/DEFECTS.md"), "defects", defectsBlock),
+      (Paths.get("README.md"), "corpus", corpusBlock),
+      (Paths.get("README.md"), "maven-coordinate", versionBlock),
+      (Paths.get("docs/VERSIONING.md"), "current-version", versionLineBlock)
     ).map { case (p, n, b) => (p, n, splice(p, n, b)) }
 
     edits.foreach { case (p, n, changed) => println(s"${if (changed) "updated" else "unchanged"}  $p [$n]") }
