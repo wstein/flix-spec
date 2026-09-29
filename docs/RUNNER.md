@@ -7,3 +7,32 @@ An accidental reference back to an extractor therefore fails compilation.
 
 The existing `:tools:project:conformance` task remains a compatibility entry point.
 Develop the comparison independently with `./gradlew :tools:conformance:test`.
+
+## Distribution and interface
+
+`./gradlew :tools:conformance:runnerJar` produces
+`tools/conformance/build/libs/flix-spec-runner-<version>.jar`. It includes the Scala
+runtime and needs only Java 21 or newer. The separate Maven coordinate is
+`io.github.wstein:flix-spec-runner:<version>` in the same repository as the data
+bundle; choose runner and data versions independently. `:tools:conformance:publish`
+uses `-PflixSpec.publishRepo=<repository URI>` (a local build directory by default).
+Publishing to Pages happens in CI, alongside the data artifact.
+
+```sh
+java -jar flix-spec-runner.jar --supported-schemas
+java -jar flix-spec-runner.jar --spec-root /path/to/extracted-bundle \
+  --source-root /path/to/consumer --actual /path/to/output \
+  --map /path/to/projection-map.json --report /path/to/report.json
+```
+
+Input schema versions are checked before comparison. The embedded
+`supported-schemas.json`, also available through `--supported-schemas`, declares
+the exact versions accepted and the report version emitted. Unsupported or
+malformed inputs exit **2**, conformance failures exit **1**, and success exits
+**0**. Paths supplied as options are relative to the caller's working directory;
+source paths inside projections are relative to `--source-root`, which defaults
+to `--spec-root`. No oracle, Gradle installation, or repository checkout is needed.
+
+The supported interface is the CLI plus versioned JSON, not the Scala classes.
+Run `--help` for comparison thresholds and accepted-difference options. Accepted
+sets remain consumer-owned and bound to the fixture revision.

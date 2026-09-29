@@ -184,7 +184,7 @@ jobs:
       - name: Publish
         run: |
           set -euo pipefail
-          ./gradlew :packaging:publish \
+          ./gradlew :packaging:publish :tools:conformance:publish \
             "-PflixSpec.snapshot=${{ steps.mode.outputs.snapshot }}" \
             "-PflixSpec.publishRepo=file://$(pwd)/gh-pages-worktree/maven"
 

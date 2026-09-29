@@ -987,7 +987,7 @@ object Conformance {
       val bad = mappings.values.toSet.diff(inventory).toList.sorted
       if (bad.nonEmpty) {
         System.err.println(s"FATAL: projection map targets kinds absent from the inventory: $bad")
-        sys.exit(1)
+        sys.exit(ExitCode.InvalidInput)
       }
 
       // A node removed on both lanes is a node whose recovery shape is never measured, which defeats the reason the
@@ -998,19 +998,19 @@ object Conformance {
           s"FATAL: projection map declares these as recovery markers and also flattens or ignores them, " +
             s"so their recovery shape would never be measured: $doubleDeclared"
         )
-        sys.exit(1)
+        sys.exit(ExitCode.InvalidInput)
       }
     }
 
     val expectedFiles = documents(ExpectedDir)
     if (expectedFiles.isEmpty) {
       System.err.println(s"FATAL: no expectations in $ExpectedDir/")
-      sys.exit(1)
+      sys.exit(ExitCode.InvalidInput)
     }
     val rawFiles = documents(RawDir)
     if (rawFiles.isEmpty) {
       System.err.println(s"FATAL: no raw trees in $RawDir/")
-      sys.exit(1)
+      sys.exit(ExitCode.InvalidInput)
     }
 
     val contract = Transparency.load()

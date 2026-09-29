@@ -1,0 +1,10 @@
+{
+  "pin.json": 1,
+  "corpus/corpus.json": 1,
+  "ast/treekind.json": 1,
+  "ast/tokenkind.json": 1,
+  "ast/transparency.json": 1,
+  "projection": 2,
+  "projection-map": 1,
+  "conformance-report": 7
+}
