@@ -64,6 +64,32 @@ implements the reference's *intent* instead scores as divergent. That is the cor
 **compatibility** — consumers should agree with the exact pinned behaviour — and it is not a measure
 of correctness. See [`DEFECTS.md`](DEFECTS.md), which the lanes' `caveat` fields name inline.
 
+### Baselines by identity, not by count
+
+`--baseline` and its siblings gate on how many differences a run found. That is a ratchet a
+consumer can satisfy by accident: fix one difference, introduce another, the total is unchanged and
+the new one is never seen. The numbers move the right way while the suite says less than it did.
+
+`--accepted <file>` gates on *which* differences, by identity — `fixture|path|reason`:
+
+```json
+{ "oracle_conformance": [
+    "hello.json|fixtures/positive/hello.flix.Root[0]|kind"
+] }
+```
+
+A difference outside the set fails whatever the total. An accepted one that no longer occurs is
+reported as **resolved** and never removed automatically: deciding a difference is genuinely gone is
+the consumer's judgement and belongs in the commit that fixed it, not in this tool's output.
+
+The identity is position and reason, deliberately not `expected`/`actual`. Those carry node names,
+which move whenever the canonical tree or the consumer's own vocabulary changes — an accepted
+difference keyed on them would stop matching itself at the next normalisation change and read as
+new. And the set is built from *every* divergence, not the capped display sample, or it would
+silently accept the twenty-first difference in a fixture.
+
+Both gates can run together; `--accepted` is opt-in and changes nothing when absent.
+
 ### Why diagnostics are their own lane
 
 Because they need nothing else. Accept/reject — did the consumer reject the units the reference

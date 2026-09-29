@@ -170,7 +170,13 @@ object Conformance {
         * consumer emitted nothing to disagree with. Reporting it as "1 divergence exceeds baseline 0" would name the
         * wrong thing and send a reader looking for a tree that does not exist.
         */
-      failureReason: Option[String] = None
+      failureReason: Option[String] = None,
+      /** Every divergence in this run, by identity, uncapped.
+        *
+        * `divergences` is a display sample. An identity baseline built from a sample would silently accept the
+        * twenty-first difference in a fixture, which is the opposite of what it is for.
+        */
+      divergenceIdentities: Set[String] = Set.empty
   ) {
     def fixturesCompared: Int = fixturesExpected - fixturesMissing.length
     def verdict: String =
@@ -291,12 +297,26 @@ object Conformance {
     * fixture, and that was the number the ratchet gated on. A consumer fixing thirty divergences in one fixture would
     * have watched the figure move by ten.
     */
+  /** What identifies a divergence across runs: where it is and what kind of disagreement it is.
+    *
+    * Deliberately not `expected`/`actual`. Those carry the node names, which change whenever the canonical tree or the
+    * consumer's own vocabulary moves, so an accepted difference keyed on them would stop matching itself on the next
+    * normalisation change and read as new. Position and reason are what stay put.
+    */
+  def identityOf(fixture: String, d: Divergence): String = s"$fixture|${d.path}|${d.reason}"
+
   private def record(
       out: scala.collection.mutable.Buffer[Divergence],
       stats: Stats,
-      d: Divergence
+      d: Divergence,
+      identities: scala.collection.mutable.Set[String],
+      fixture: String
   ): Unit = {
     stats.inc("divergences")
+    identities += identityOf(fixture, d)
+    // The listed set is a *sample*, capped so one pathological fixture cannot bury the rest. The identity set
+    // above is complete, because an identity-based baseline that only saw the first twenty per fixture would
+    // silently accept the twenty-first.
     if (out.length < MaxDivergencesPerFixture) out += d
   }
 
@@ -309,7 +329,9 @@ object Conformance {
       vocab: Vocabulary,
       path: String,
       out: scala.collection.mutable.Buffer[Divergence],
-      stats: Stats
+      stats: Stats,
+      identities: scala.collection.mutable.Set[String],
+      fixture: String
   ): Unit = {
 
     val actKind = vocab.mapping match {
@@ -327,7 +349,7 @@ object Conformance {
     // denominator that means "the canonical tree" rather than "wherever the walk happened to stop".
     stats.inc("compared")
     if (expected.kind != actKind) {
-      record(out, stats, Divergence(path, expected.kind, actKind, "kind"))
+      record(out, stats, Divergence(path, expected.kind, actKind, "kind"), identities, fixture)
       return // subtree shape is meaningless once the kinds disagree
     }
 
@@ -335,11 +357,13 @@ object Conformance {
       record(
         out,
         stats,
-        Divergence(path, s"${expected.children.length} children", s"${actual.children.length} children", "arity")
+        Divergence(path, s"${expected.children.length} children", s"${actual.children.length} children", "arity"),
+        identities,
+        fixture
       )
 
     expected.children.zip(actual.children).zipWithIndex.foreach { case ((e, a), i) =>
-      compare(e, a, vocab, s"$path.${expected.kind}[$i]", out, stats)
+      compare(e, a, vocab, s"$path.${expected.kind}[$i]", out, stats, identities, fixture)
     }
   }
 
@@ -526,7 +550,8 @@ object Conformance {
       fixturesAgreeing = agreeing,
       stats = stats,
       divergences = divergences.toList,
-      divergenceCount = stats.counts("divergences")
+      divergenceCount = stats.counts("divergences"),
+      divergenceIdentities = divergences.map { case (f, d) => identityOf(f, d) }.toSet
     )
   }
 
@@ -541,6 +566,7 @@ object Conformance {
   ): DerivedLane = {
     val stats = new Stats
     val divergences = scala.collection.mutable.Buffer.empty[(String, Divergence)]
+    val identities = scala.collection.mutable.Set.empty[String]
     val missing = scala.collection.mutable.Buffer.empty[String]
     var agreeing = 0
 
@@ -554,7 +580,8 @@ object Conformance {
         val found = scala.collection.mutable.Buffer.empty[Divergence]
         expUnits.foreach { case (source, expRaw) =>
           actUnits.get(source).orElse(actUnits.values.headOption) match {
-            case None => record(found, stats, Divergence(source, "tree", "nothing", "missing-unit"))
+            case None =>
+              record(found, stats, Divergence(source, "tree", "nothing", "missing-unit"), identities, name)
             case Some(actRaw) =>
               val expTree =
                 // The canonical side takes no `dropWhenEmpty`: in the structural lane it is read from
@@ -580,7 +607,7 @@ object Conformance {
                   "ignored"
                 )
               stats.counts("expected") += sizeOf(expTree)
-              compare(expTree, actTree, vocab, source, found, stats)
+              compare(expTree, actTree, vocab, source, found, stats, identities, name)
           }
         }
         if (found.nonEmpty) divergences ++= found.map(name -> _) else agreeing += 1
@@ -596,7 +623,8 @@ object Conformance {
       fixturesAgreeing = agreeing,
       stats = stats,
       divergences = divergences.toList,
-      divergenceCount = stats.counts("divergences")
+      divergenceCount = stats.counts("divergences"),
+      divergenceIdentities = identities.toSet
     )
   }
 
@@ -820,7 +848,7 @@ object Conformance {
 
   private val Usage =
     "usage: Conformance --actual <dir> [--map <file>] [--report <file>] [--baseline <n>] " +
-      "[--recovery-baseline <n>] [--depth-floor <pct>] [--recovery-depth-floor <pct>]"
+      "[--recovery-baseline <n>] [--depth-floor <pct>] [--recovery-depth-floor <pct>] [--accepted <file>]"
 
   final case class Args(
       actual: String,
@@ -830,7 +858,8 @@ object Conformance {
       recoveryBaseline: Int,
       depthFloor: Int,
       recoveryDepthFloor: Int,
-      diagnosticBaseline: Int
+      diagnosticBaseline: Int,
+      accepted: Option[String]
   )
 
   private def parseArgs(argv: Array[String]): Args = {
@@ -842,6 +871,7 @@ object Conformance {
     var depthFloor = 0
     var recoveryDepthFloor = 0
     var diagnosticBaseline = 0
+    var accepted: Option[String] = None
     var i = 0
     while (i < argv.length) {
       argv(i) match {
@@ -853,6 +883,7 @@ object Conformance {
         case "--depth-floor"          => depthFloor = argv(i + 1).toInt; i += 2
         case "--recovery-depth-floor" => recoveryDepthFloor = argv(i + 1).toInt; i += 2
         case "--diagnostic-baseline"  => diagnosticBaseline = argv(i + 1).toInt; i += 2
+        case "--accepted"             => accepted = Some(argv(i + 1)); i += 2
         case other =>
           System.err.println(s"unknown argument: $other")
           sys.exit(2)
@@ -869,7 +900,8 @@ object Conformance {
       recoveryBaseline,
       depthFloor,
       recoveryDepthFloor,
-      diagnosticBaseline
+      diagnosticBaseline,
+      accepted
     )
   }
 
@@ -1105,6 +1137,45 @@ object Conformance {
       }
     }
 
+    /** Gates a lane on the *identity* of its divergences rather than on how many there are.
+      *
+      * A count is a ratchet a consumer can satisfy by accident: fix one difference, introduce another, the total is
+      * unchanged and the new one is never seen. Identities do not net out. A difference outside the accepted set fails
+      * whatever the total; an accepted one that no longer occurs is reported as resolved and never removed
+      * automatically, because deciding a difference is genuinely gone is the consumer's judgement and belongs in their
+      * commit rather than in this tool's output.
+      */
+    lazy val acceptedByLane: Map[String, Set[String]] =
+      args.accepted
+        .map { f =>
+          Json.parseFile(Paths.get(f)).asObject.map { case (lane, v) => lane -> v.asArray.map(_.asString).toSet }
+        }
+        .getOrElse(Map.empty)
+
+    def reportAccepted(name: String, lane: DerivedLane): Boolean =
+      if (args.accepted.isEmpty || lane.notApplicable.isDefined) false
+      else {
+        val expected = acceptedByLane.getOrElse(name, Set.empty)
+        val introduced = (lane.divergenceIdentities -- expected).toList.sorted
+        val resolved = (expected -- lane.divergenceIdentities).toList.sorted
+
+        if (resolved.nonEmpty) {
+          println(s"$consumer: $name — ${resolved.length} accepted difference(s) no longer occur:")
+          resolved.take(10).foreach(r => println(s"    resolved: $r"))
+          println("  Remove them from the accepted file in the commit that fixed them.")
+        }
+        if (introduced.isEmpty) false
+        else {
+          System.err.println(s"FATAL: $name: ${introduced.length} difference(s) not in the accepted set")
+          introduced.take(10).foreach(d => System.err.println(s"  new: $d"))
+          System.err.println(
+            "  A count-based baseline would have let these through whenever an equal number of other " +
+              "differences disappeared. Fix them, or add them to the accepted file with a reason."
+          )
+          true
+        }
+      }
+
     def report(name: String, lane: DerivedLane): Boolean = {
       if (lane.fixturesMissing.nonEmpty) {
         System.err.println(
@@ -1127,10 +1198,13 @@ object Conformance {
     // Both derived lanes gate, each against its own baseline. A lane that could only ever be read and never failed
     // would be decoration, and splitting recovery out was never meant to stop measuring it.
     val oracleFailed = report("oracle_conformance", oracle) |
-      reportDepth("oracle_conformance", oracle, args.depthFloor)
+      reportDepth("oracle_conformance", oracle, args.depthFloor) |
+      reportAccepted("oracle_conformance", oracle)
     val recoveryFailed = report("recovery_conformance", recovery) |
-      reportDepth("recovery_conformance", recovery, args.recoveryDepthFloor)
-    val diagnosticsFailed = report("diagnostic_conformance", diagnostics)
+      reportDepth("recovery_conformance", recovery, args.recoveryDepthFloor) |
+      reportAccepted("recovery_conformance", recovery)
+    val diagnosticsFailed = report("diagnostic_conformance", diagnostics) |
+      reportAccepted("diagnostic_conformance", diagnostics)
 
     // The third lane gates too, and is not subject to any baseline. A ratchet exists because
     // agreement with the reference is approached incrementally, one mapping at a time; losing a
