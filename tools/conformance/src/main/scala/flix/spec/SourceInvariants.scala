@@ -273,7 +273,22 @@ object SourceInvariants {
       accountingSkip.map(_ => "the consumer's trees carry no token text, so there are no positions to check")
     )
 
-    val checks = List(shape, kindVocabulary, tokenVocabulary, accounting, positions)
+    // Source fidelity cannot establish tokenization. A whole file emitted as one token can
+    // honestly pass accounting and positions; so can a genuine one-token identifier or comment.
+    // Do not smuggle a reference-dependent lexer comparison into this independent lane, or
+    // reject valid single-token files with an arbitrary minimum token count.
+    val lexical = check(
+      "lexical-correctness",
+      "token boundaries and kind assignments are correct for the language",
+      0,
+      Nil,
+      Some(
+        "not measured: source fidelity and vocabulary membership do not validate token boundaries or kind assignments; " +
+          "even one token containing the whole source can pass those checks. A separate lexical oracle or language contract is required"
+      )
+    )
+
+    val checks = List(shape, kindVocabulary, tokenVocabulary, accounting, positions, lexical)
     val verdict =
       if (checks.exists(_.verdict == Fail)) Fail
       else if (checks.forall(_.verdict == NotApplicable)) NotApplicable

@@ -47,6 +47,7 @@ import scala.jdk.CollectionConverters._
   * closing. Run from the repository root.
   */
 object Conformance {
+  val ReportSchemaVersion = 9
 
   private val ExpectedDir = Spec.NormalizedDir
   private val RawDir = Spec.RawDir
@@ -303,9 +304,9 @@ object Conformance {
     *
     * Deliberately not `expected`/`actual`. Those carry the node names, which change whenever the canonical tree or the
     * consumer's own vocabulary moves, so an accepted difference keyed on them would stop matching itself on the next
-    * normalisation change and read as new. Position and reason are what stay put.
-    * Diagnostic paths additionally identify canonical kind, direction and occurrence: a source line alone is not
-    * a position within a diagnostic multiset. Canonical kinds are bound by the accepted file's fixture revision.
+    * normalisation change and read as new. Position and reason are what stay put. Diagnostic paths additionally
+    * identify canonical kind, direction and occurrence: a source line alone is not a position within a diagnostic
+    * multiset. Canonical kinds are bound by the accepted file's fixture revision.
     */
   def identityOf(fixture: String, d: Divergence): String = s"$fixture|${d.path}|${d.reason}"
 
@@ -862,7 +863,9 @@ object Conformance {
     // number -- and different in the direction that matters, because the old one could be raised by
     // measuring less. A version-7 depth and a version-8 depth are not comparable, and the precedent for
     // saying so with a bump rather than a footnote is version 7 itself.
-    sb.append("  \"schemaVersion\": 8,\n")
+    // 9: explicitly reports lexical correctness as unmeasured; diagnostic identities preserve
+    // kind, direction and multiplicity, and partially mapped diagnostics no longer disable known kinds.
+    sb.append(s"  \"schemaVersion\": $ReportSchemaVersion,\n")
     sb.append("  \"generatedBy\": \"flix.spec.Conformance\",\n")
     sb.append(s"""  "consumer": "${esc(consumer)}",\n""")
 
@@ -893,7 +896,7 @@ object Conformance {
     sb.append(
       """      "claim": "properties of the consumer's own output, checked against its input rather than against the reference",
         |      "authority": "independent",
-        |      "caveat": "a failure here is a defect in the consumer regardless of what the reference does; a pass is not evidence of structural agreement.",
+        |      "caveat": "a failure here is a defect in the consumer regardless of what the reference does; a pass is not evidence of structural agreement or lexical correctness. Source fidelity does not establish correct token boundaries or kind assignments.",
         |""".stripMargin
     )
     sb.append("      \"checks\": [\n")

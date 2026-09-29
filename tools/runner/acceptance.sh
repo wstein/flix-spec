@@ -17,7 +17,9 @@ if jar tf runner.jar | grep -q '^ca/uwaterloo/'; then
   echo "FATAL: runner contains oracle classes" >&2
   exit 1
 fi
-java -jar runner.jar --supported-schemas | jq -e '.projection == 2 and .["conformance-report"] == 7' >/dev/null
+java -jar runner.jar --supported-schemas > supported.json
+jq -e '.projection == 2 and (.["conformance-report"] | type == "number")' supported.json >/dev/null
+REPORT_VERSION="$(jq -r '.["conformance-report"]' supported.json)"
 bash adapter.sh "$WORK/spec" actual map.json
 
 expect_exit() {
@@ -37,8 +39,21 @@ run() {
 }
 expect_exit 0 run
 jq -e '[.lanes[].verdict] | all(. == "pass")' report.json >/dev/null
+jq -e --argjson version "$REPORT_VERSION" '.schemaVersion == $version and
+  any(.lanes.source_invariants.checks[]; .id == "lexical-correctness" and .verdict == "not-applicable")' report.json >/dev/null
 expect_exit 0 java -jar runner.jar render --report report.json --html report.html
 grep -q 'oracle_conformance: pass' report.html
+
+# An unknown diagnostic must not disable the known diagnostic's wrong-line check.
+cp actual/trailing-dot.json original-diagnostic.json
+jq '.units[0].diagnostics[0].line += 1 |
+    .units[0].diagnostics += [{kind:"ConsumerOnly",line:1,col:1,message:"unmapped"}]' \
+  original-diagnostic.json > actual/trailing-dot.json
+expect_exit 1 run
+jq -e 'any(.lanes.diagnostic_conformance.divergences[]; .reason == "diagnostic")' report.json >/dev/null
+expect_exit 0 java -jar runner.jar render --report report.json --html diagnostic-failure.html
+grep -q 'Partial diagnostic comparability' diagnostic-failure.html
+cp original-diagnostic.json actual/trailing-dot.json
 
 # A real structural mutation, with an otherwise valid document, must fail.
 cp actual/hello.json original.json

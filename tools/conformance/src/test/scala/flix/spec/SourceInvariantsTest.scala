@@ -135,7 +135,8 @@ class SourceInvariantsTest extends AnyFunSuite with Matchers {
     withOutput("def f", WellFormed) { files =>
       val lane = run(files, mapped = false)
       lane.verdict shouldBe "pass"
-      lane.checks.map(_.verdict).distinct shouldBe List("pass")
+      lane.checks.filterNot(_.id == "lexical-correctness").map(_.verdict).distinct shouldBe List("pass")
+      verdictOf(lane, "lexical-correctness") shouldBe "not-applicable"
     }
   }
 
@@ -147,6 +148,31 @@ class SourceInvariantsTest extends AnyFunSuite with Matchers {
       lane.verdict shouldBe "fail"
       verdictOf(lane, "token-accounting") shouldBe "fail"
       verdictOf(lane, "document-shape") shouldBe "pass"
+    }
+  }
+
+  test("a whole-file token establishes source fidelity but never lexical correctness") {
+    val tree = """{"kind":"Root","children":[{"token":"Ident","text":"def f",
+      "start":{"line":1,"col":1},"end":{"line":1,"col":6}}]}"""
+    withOutput("def f", tree) { files =>
+      val lane = run(files, mapped = false)
+      verdictOf(lane, "token-vocabulary") shouldBe "pass"
+      verdictOf(lane, "token-accounting") shouldBe "pass"
+      verdictOf(lane, "token-positions") shouldBe "pass"
+      val lexical = lane.checks.find(_.id == "lexical-correctness").get
+      lexical.verdict shouldBe "not-applicable"
+      lexical.checked shouldBe 0
+      lexical.detail should include("one token containing the whole source")
+    }
+  }
+
+  test("a legitimate one-token source is not rejected to close the whole-file-token loophole") {
+    val tree = """{"kind":"Root","children":[{"token":"Ident","text":"hello",
+      "start":{"line":1,"col":1},"end":{"line":1,"col":6}}]}"""
+    withOutput("hello", tree) { files =>
+      val lane = run(files, mapped = false)
+      lane.verdict shouldBe "pass"
+      verdictOf(lane, "lexical-correctness") shouldBe "not-applicable"
     }
   }
 

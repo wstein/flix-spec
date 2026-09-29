@@ -165,6 +165,17 @@ failure for not modelling recovery at all.
 
 ### The independent lane
 
+Source fidelity is **not lexical correctness**. A consumer can emit a whole file
+as one token and still reproduce every byte at the correct positions; conversely,
+a single identifier, comment or literal may legitimately occupy an entire file.
+Token counts cannot distinguish those cases. `token-vocabulary` checks only name
+membership, not whether a token received the right name.
+
+Reports therefore include `lexical-correctness: not-applicable` with zero checked
+items and an explicit explanation. Neither the `tokens` capability nor a passing
+source-invariants lane claims correct tokenization. Validating boundaries and kind
+assignments requires a separate lexical oracle/contract; it is not performed here.
+
 The third lane consults no expected tree at all. It asks whether the consumer's output is
 self-consistent and faithful to the source it was produced from:
 
@@ -463,6 +474,12 @@ divergence. "We have not mapped this yet" is a different fact from "we disagree 
 reference", and collapsing the two would make an incomplete map look like a broken parser.
 
 ## Running it
+
+Report schema **9** makes that unmeasured lexical property explicit, preserves
+diagnostic multiplicity in accepted identities, and retains known-kind checks in
+partially mapped diagnostic output. Update report readers from schema 8 and review
+old line-only diagnostic acceptances before re-recording them. No automatic
+baseline migration is performed.
 
 ```sh
 # Identity: the expectations must agree with themselves.

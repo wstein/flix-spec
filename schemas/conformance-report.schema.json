@@ -6,7 +6,7 @@
   "type": "object",
   "required": ["schemaVersion", "generatedBy", "consumer", "provenance", "lanes"],
   "properties": {
-    "schemaVersion": { "type": "integer", "minimum": 8 },
+    "schemaVersion": { "type": "integer", "enum": [9] },
     "generatedBy": { "type": "string", "minLength": 1 },
     "consumer": { "type": "string", "minLength": 1 },
     "provenance": { "$ref": "#/definitions/Provenance" },
@@ -218,7 +218,7 @@
       "properties": {
         "id": {
           "type": "string",
-          "enum": ["document-shape", "kind-vocabulary", "token-vocabulary", "token-accounting", "token-positions"]
+          "enum": ["document-shape", "kind-vocabulary", "token-vocabulary", "token-accounting", "token-positions", "lexical-correctness"]
         },
         "verdict": { "type": "string", "enum": ["pass", "fail", "not-applicable"] },
         "claim": { "type": "string", "minLength": 1 },

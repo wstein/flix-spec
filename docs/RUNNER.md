@@ -58,7 +58,7 @@ java -jar flix-spec-runner.jar render --report report.json --html report.html
 ```
 
 Rendering is a separate command, so it works for failed comparisons as well as
-passing ones. It validates report schema version 7 and writes self-contained,
+passing ones. It validates the report version declared by `--supported-schemas` and writes self-contained,
 offline HTML with no JavaScript or external resources. All consumer content is
 escaped. Each lane retains its verdict, caveats, missing fixtures, unmapped names,
 checks and divergence sample; capped samples are labelled explicitly. The HTML
