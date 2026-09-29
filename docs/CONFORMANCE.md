@@ -108,6 +108,13 @@ derived signal a consumer without a structural model can produce at all. Kind an
 and need the names to be readable as the reference's, via `diagnosticMappings` or because they
 already are; without that the lane compares accept/reject alone and records that it did.
 
+Comparability is per diagnostic kind, not a global switch. Unmapped native kinds
+do not disable checks for known kinds elsewhere (or in the same unit). In a mixed
+vocabulary, kinds established by observed canonical names or explicit mappings
+remain gated; the caveat states how many reference diagnostics could not be
+compared, and `unmapped` lists the unknown names. An accept/reject-only or partial
+pass is not full diagnostic agreement.
+
 This lane is new. `docs/PROJECTION.md` had described diagnostics as gated on class and line since
 the contract was written, and nothing gated them: they were extracted, schema-checked, published
 and compared to nothing. The diagnostic-kind coverage counted below was, until this lane existed, a

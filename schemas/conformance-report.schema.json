@@ -182,7 +182,7 @@
         "path": { "type": "string" },
         "expected": { "type": "string" },
         "actual": { "type": "string" },
-        "reason": { "type": "string", "enum": ["kind", "arity", "missing-unit"] }
+        "reason": { "type": "string", "enum": ["kind", "arity", "missing-unit", "accept-reject", "diagnostic"] }
       },
       "additionalProperties": false
     },

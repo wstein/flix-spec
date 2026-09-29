@@ -416,7 +416,7 @@ object Conformance {
     * and failing it here would penalise a permitted decision while passing it would claim a property nothing
     * established -- the same argument the source-invariants lane already makes for token text.
     */
-  private def runDiagnosticLane(
+  private[spec] def runDiagnosticLane(
       expectedFiles: List[String],
       actualDir: String,
       vocab: Vocabulary,
@@ -446,9 +446,18 @@ object Conformance {
 
     // Does the consumer model diagnostics at all, and can its names be read as the reference's?
     val actualKinds = pairs.flatMap(_._3.values.flatMap(u => diagnosticsOf(u, Map.empty).map(_.kind))).toSet
-    val referenceKinds = pairs.flatMap(_._2.values.flatMap(u => diagnosticsOf(u, Map.empty).map(_.kind))).toSet
+    // Missing consumer files must not shrink the reference vocabulary.
+    val referenceKinds = expectedFiles
+      .flatMap(f => unitsWithDiagnostics(f).values.flatMap(u => diagnosticsOf(u, Map.empty).map(_.kind)))
+      .toSet
     val translated = actualKinds.map(k => vocab.diagnosticMappings.getOrElse(k, k))
-    val compareKinds = actualKinds.isEmpty || translated.subsetOf(referenceKinds)
+    val unmappedKinds = translated -- referenceKinds
+    // With a partially native vocabulary, only claim kinds we can identify. Explicit mappings
+    // establish comparability even when that kind is missing from this run's output.
+    val comparableKinds =
+      if (unmappedKinds.isEmpty) referenceKinds
+      else (translated ++ vocab.diagnosticMappings.values).intersect(referenceKinds)
+    var skippedExpected = 0
 
     if (actualKinds.isEmpty && vocab.capabilities.contains("diagnostics"))
       return DerivedLane(
@@ -513,35 +522,45 @@ object Conformance {
                 )
               ))
             }
-            // (2) gated kind and line, when the two vocabularies can be read as one.
-            if (compareKinds) {
-              stats.counts("diagnosticsCompared") += exp.length
-              val missingD = exp.diff(act)
-              val extraD = act.diff(exp)
-              (missingD.map(d => (d, true)) ++ extraD.map(d => (d, false))).foreach { case (d, isMissing) =>
-                ok = false
-                stats.inc("divergences")
-                divergences += ((
-                  name,
-                  Divergence(
-                    s"$source:${d.line}",
-                    if (isMissing) s"${d.kind}@${d.line}" else "nothing",
-                    if (isMissing) "nothing" else s"${d.kind}@${d.line}",
-                    "diagnostic"
-                  )
-                ))
+            // (2) Keep every identifiable kind gated. One unknown diagnostic must not disarm
+            // checks for known kinds in this unit or in any other fixture.
+            val comparableExp = exp.filter(d => comparableKinds(d.kind))
+            val comparableAct = act.filter(d => comparableKinds(d.kind))
+            skippedExpected += exp.length - comparableExp.length
+            act
+              .filterNot(d => comparableKinds(d.kind))
+              .foreach { d =>
+                stats.unmapped(d.kind) += 1
+                stats.inc("unmapped")
               }
-            } else act.foreach(d => stats.unmapped(d.kind) += 1)
+            stats.counts("diagnosticsCompared") += comparableExp.length
+            val missingD = comparableExp.diff(comparableAct)
+            val extraD = comparableAct.diff(comparableExp)
+            (missingD.map(d => (d, true)) ++ extraD.map(d => (d, false))).foreach { case (d, isMissing) =>
+              ok = false
+              stats.inc("divergences")
+              divergences += ((
+                name,
+                Divergence(
+                  s"$source:${d.line}",
+                  if (isMissing) s"${d.kind}@${d.line}" else "nothing",
+                  if (isMissing) "nothing" else s"${d.kind}@${d.line}",
+                  "diagnostic"
+                )
+              ))
+            }
         }
       }
       if (ok) agreeing += 1
     }
 
     val caveat =
-      if (compareKinds) caveatBase
+      if (unmappedKinds.isEmpty) caveatBase
       else
-        caveatBase + " Kind and line stood down for this consumer: its diagnostic names are not the reference's " +
-          "and no `diagnosticMappings` translates them, so only accept/reject was compared."
+        caveatBase + s" Partial diagnostic comparability: kind and line were checked for ${comparableKinds.toList.sorted.mkString(", ")}. " +
+          s"$skippedExpected reference diagnostic(s) could not be assigned to a comparable kind; " +
+          s"unmapped consumer kinds: ${unmappedKinds.toList.sorted.mkString(", ")}. " +
+          "Accept/reject was still checked for every available unit. Agreement here is not full diagnostic agreement."
 
     DerivedLane(
       claim = claim,
