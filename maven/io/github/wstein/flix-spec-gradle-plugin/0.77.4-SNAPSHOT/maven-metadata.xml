@@ -3,26 +3,26 @@
   <groupId>io.github.wstein</groupId>
   <artifactId>flix-spec-gradle-plugin</artifactId>
   <versioning>
-    <lastUpdated>20261024160435</lastUpdated>
+    <lastUpdated>20261024162534</lastUpdated>
     <snapshot>
-      <timestamp>20261024.160435</timestamp>
-      <buildNumber>5</buildNumber>
+      <timestamp>20261024.162534</timestamp>
+      <buildNumber>6</buildNumber>
     </snapshot>
     <snapshotVersions>
       <snapshotVersion>
         <extension>module</extension>
-        <value>0.77.4-20261024.160435-5</value>
-        <updated>20261024160435</updated>
+        <value>0.77.4-20261024.162534-6</value>
+        <updated>20261024162534</updated>
       </snapshotVersion>
       <snapshotVersion>
         <extension>jar</extension>
-        <value>0.77.4-20261024.160435-5</value>
-        <updated>20261024160435</updated>
+        <value>0.77.4-20261024.162534-6</value>
+        <updated>20261024162534</updated>
       </snapshotVersion>
       <snapshotVersion>
         <extension>pom</extension>
-        <value>0.77.4-20261024.160435-5</value>
-        <updated>20261024160435</updated>
+        <value>0.77.4-20261024.162534-6</value>
+        <updated>20261024162534</updated>
       </snapshotVersion>
     </snapshotVersions>
   </versioning>
