@@ -30,6 +30,8 @@ object SchemaValidator {
     "maximum",
     "minLength",
     "minItems",
+    "maxItems",
+    "minProperties",
     "uniqueItems",
     "pattern",
     // annotations, carried for readers and deliberately not enforced
@@ -123,6 +125,16 @@ object SchemaValidator {
         errors.add(s"$path: ${items.length} item(s), fewer than minItems ${min.asInt}")
       case _ =>
     }
+    (schema.get("maxItems"), obj) match {
+      case (Some(max), JArray(items)) if items.length > max.asInt =>
+        errors.add(s"$path: ${items.length} item(s), more than maxItems ${max.asInt}")
+      case _ =>
+    }
+    (schema.get("minProperties"), obj) match {
+      case (Some(min), JObject(fields)) if fields.size < min.asInt =>
+        errors.add(s"$path: ${fields.size} properties, fewer than minProperties ${min.asInt}")
+      case _ =>
+    }
     (schema.get("minLength"), obj) match {
       case (Some(min), JString(value)) if value.codePointCount(0, value.length) < min.asInt =>
         errors.add(s"$path: shorter than minLength ${min.asInt}")
@@ -140,8 +152,15 @@ object SchemaValidator {
         schema.get("required").map(_.asArray).getOrElse(Nil).foreach { req =>
           if (!fields.contains(req.asString)) errors.add(s"$path: missing required key '${req.asString}'")
         }
-        if (schema.get("additionalProperties").contains(JBool(false)))
-          fields.keys.foreach(key => if (!props.contains(key)) errors.add(s"$path: unexpected key '$key'"))
+        schema.get("additionalProperties").foreach {
+          case JBool(false) =>
+            fields.keys.foreach(key => if (!props.contains(key)) errors.add(s"$path: unexpected key '$key'"))
+          case extra @ JObject(_) =>
+            fields.foreach { case (key, value) =>
+              if (!props.contains(key)) check(value, extra, root, s"$path.$key", errors)
+            }
+          case _ =>
+        }
         props.foreach { case (key, spec) =>
           fields.get(key).foreach(value => check(value, spec, root, s"$path.$key", errors))
         }
