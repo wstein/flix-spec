@@ -3,10 +3,11 @@
   <groupId>io.github.wstein</groupId>
   <artifactId>flix-spec-gradle-plugin</artifactId>
   <versioning>
-    <latest>0.77.4-SNAPSHOT</latest>
+    <latest>0.79.0-SNAPSHOT</latest>
     <versions>
       <version>0.77.4-SNAPSHOT</version>
+      <version>0.79.0-SNAPSHOT</version>
     </versions>
-    <lastUpdated>20261107161544</lastUpdated>
+    <lastUpdated>20261108013728</lastUpdated>
   </versioning>
 </metadata>
