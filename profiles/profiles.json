@@ -1,0 +1,786 @@
+{
+  "schemaVersion": 1,
+  "scope": "bounded-parser-cases",
+  "profiles": [
+    {
+      "version": "0.75.0",
+      "tag": "v0.75.0",
+      "commit": "c9e6a6ce5bcbf200a61dc173fc5853d3b6177648",
+      "sources": {
+        "main/src/ca/uwaterloo/flix/language/ast/SyntaxTree.scala": "32dcd76aabeb081432fe7cba91b85b0c17b6e5c5",
+        "main/src/ca/uwaterloo/flix/language/ast/TokenKind.scala": "5ebbb5dc7e3a9b5d7483391300c07729642d0e9d",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala": "a4dd215bebdb47b18778003ba6c5e33f3fec0a20",
+        "main/src/ca/uwaterloo/flix/language/phase/Lexer.scala": "f8bafb4bc954ce54b1c665e9289837057b35ec2c"
+      },
+      "oracleUrl": "https://github.com/flix/flix/releases/download/v0.75.0/flix.jar",
+      "oracleSha256": "664f42bcb42405efaf4438f67427c2eec16adf0c5b37236b0debf743c66b457b",
+      "cases": [
+        {
+          "id": "baseline",
+          "source": "profiles/sources/baseline.flix",
+          "sourceSha256": "bfda4c560ab56a24dc81995e3654a79e836b4fcc9ee6b6c6aa837d816a3a7dbf",
+          "expected": "profiles/expected/0.75.0/baseline.json",
+          "expectedSha256": "093f145dbeb1b1339421d5f1dd94afb18db0bb1fd1a10320a70d0e7cc5fbf48d"
+        },
+        {
+          "id": "comments",
+          "source": "profiles/sources/comments.flix",
+          "sourceSha256": "78079fb78af41c027affed0053505524d112e7927009147425740517ca0e1654",
+          "expected": "profiles/expected/0.75.0/comments.json",
+          "expectedSha256": "b170225c949439bb46232867c8cccf372feac204998744607b6b9f260e331b97"
+        },
+        {
+          "id": "complex-row-tail",
+          "source": "profiles/sources/complex-row-tail.flix",
+          "sourceSha256": "e74aa2fd1525e7dce72a8cc2eb1b93bc87b7a2f149c57b54bf2639a4845f2373",
+          "expected": "profiles/expected/0.75.0/complex-row-tail.json",
+          "expectedSha256": "d8a27e3d717963618ca8033d8710934fdb20353d898bc0a2373ffd92a46d3802"
+        },
+        {
+          "id": "effect-type-parameter",
+          "source": "profiles/sources/effect-type-parameter.flix",
+          "sourceSha256": "e1b4ad105235d24b5cbe6fb4a650e62e6cf75e7a3c6379608b1091aa973baff1",
+          "expected": "profiles/expected/0.75.0/effect-type-parameter.json",
+          "expectedSha256": "ea8be7eb3398c2e452da813d9779a9368de83bb0c9dfb735530ca003059aafd7"
+        },
+        {
+          "id": "invalid-lexer",
+          "source": "profiles/sources/invalid-lexer.flix",
+          "sourceSha256": "f8e7dd44de3ed8af796c7eac1acc43d98724318f53e700195894a4d7d2e03525",
+          "expected": "profiles/expected/0.75.0/invalid-lexer.json",
+          "expectedSha256": "cc936eabeabd4f1c82dd3a467b0fa9578c50ae88e0715648c13da882bfb4ed6d"
+        },
+        {
+          "id": "invalid-parser",
+          "source": "profiles/sources/invalid-parser.flix",
+          "sourceSha256": "54e751e9468b08f4d63e4e5c7299dd4fc9ff33dabd9b35529e7b5f2677b9297c",
+          "expected": "profiles/expected/0.75.0/invalid-parser.json",
+          "expectedSha256": "3b10dd8989cbbd366ab3fc1172e97e03af850ea1047bd0da679b21c373c2c562"
+        },
+        {
+          "id": "law",
+          "source": "profiles/sources/law.flix",
+          "sourceSha256": "a214199973744d8eb6674291e4eb0c6f9a27b9d6331ed68b14b5e06f85bdbda1",
+          "expected": "profiles/expected/0.75.0/law.json",
+          "expectedSha256": "59d69a83a050e87ff3555116bad1cfdef2ce962903a0d0d008628051f496e1ad"
+        },
+        {
+          "id": "lawful",
+          "source": "profiles/sources/lawful.flix",
+          "sourceSha256": "569f3fdcc7f117ef1eb4e51feedd59d0eba429fe414bcb93303f9afc4cf7ef9b",
+          "expected": "profiles/expected/0.75.0/lawful.json",
+          "expectedSha256": "580e0002929548aaaab1735ac9c8a31221ee6aba91c698316e7556a4cd950128"
+        },
+        {
+          "id": "tight-use",
+          "source": "profiles/sources/tight-use.flix",
+          "sourceSha256": "0a87846d9a94b9c726c9802b157504f16f6f482d29f512d78e082ef21060c0c1",
+          "expected": "profiles/expected/0.75.0/tight-use.json",
+          "expectedSha256": "84069974c1dc19356e48f928d606ead83cc26fbe4541dd0f30a28b8562b1ab8f"
+        }
+      ]
+    },
+    {
+      "version": "0.75.1",
+      "tag": "v0.75.1",
+      "commit": "318bb51a953c58a8785251a80fad8aea005f729f",
+      "sources": {
+        "main/src/ca/uwaterloo/flix/language/ast/SyntaxTree.scala": "32dcd76aabeb081432fe7cba91b85b0c17b6e5c5",
+        "main/src/ca/uwaterloo/flix/language/ast/TokenKind.scala": "5ebbb5dc7e3a9b5d7483391300c07729642d0e9d",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala": "90f22e4241b755658ee50aab9aebc5ed378c5fbb",
+        "main/src/ca/uwaterloo/flix/language/phase/Lexer.scala": "f8bafb4bc954ce54b1c665e9289837057b35ec2c"
+      },
+      "oracleUrl": "https://github.com/flix/flix/releases/download/v0.75.1/flix.jar",
+      "oracleSha256": "e3177700aead8a22a42c910e73bfb8a326fefdbab4e3eaeaf6d55c328a6bd938",
+      "cases": [
+        {
+          "id": "baseline",
+          "source": "profiles/sources/baseline.flix",
+          "sourceSha256": "bfda4c560ab56a24dc81995e3654a79e836b4fcc9ee6b6c6aa837d816a3a7dbf",
+          "expected": "profiles/expected/0.75.1/baseline.json",
+          "expectedSha256": "093f145dbeb1b1339421d5f1dd94afb18db0bb1fd1a10320a70d0e7cc5fbf48d"
+        },
+        {
+          "id": "comments",
+          "source": "profiles/sources/comments.flix",
+          "sourceSha256": "78079fb78af41c027affed0053505524d112e7927009147425740517ca0e1654",
+          "expected": "profiles/expected/0.75.1/comments.json",
+          "expectedSha256": "b170225c949439bb46232867c8cccf372feac204998744607b6b9f260e331b97"
+        },
+        {
+          "id": "complex-row-tail",
+          "source": "profiles/sources/complex-row-tail.flix",
+          "sourceSha256": "e74aa2fd1525e7dce72a8cc2eb1b93bc87b7a2f149c57b54bf2639a4845f2373",
+          "expected": "profiles/expected/0.75.1/complex-row-tail.json",
+          "expectedSha256": "d8a27e3d717963618ca8033d8710934fdb20353d898bc0a2373ffd92a46d3802"
+        },
+        {
+          "id": "effect-type-parameter",
+          "source": "profiles/sources/effect-type-parameter.flix",
+          "sourceSha256": "e1b4ad105235d24b5cbe6fb4a650e62e6cf75e7a3c6379608b1091aa973baff1",
+          "expected": "profiles/expected/0.75.1/effect-type-parameter.json",
+          "expectedSha256": "ea8be7eb3398c2e452da813d9779a9368de83bb0c9dfb735530ca003059aafd7"
+        },
+        {
+          "id": "invalid-lexer",
+          "source": "profiles/sources/invalid-lexer.flix",
+          "sourceSha256": "f8e7dd44de3ed8af796c7eac1acc43d98724318f53e700195894a4d7d2e03525",
+          "expected": "profiles/expected/0.75.1/invalid-lexer.json",
+          "expectedSha256": "cc936eabeabd4f1c82dd3a467b0fa9578c50ae88e0715648c13da882bfb4ed6d"
+        },
+        {
+          "id": "invalid-parser",
+          "source": "profiles/sources/invalid-parser.flix",
+          "sourceSha256": "54e751e9468b08f4d63e4e5c7299dd4fc9ff33dabd9b35529e7b5f2677b9297c",
+          "expected": "profiles/expected/0.75.1/invalid-parser.json",
+          "expectedSha256": "3b10dd8989cbbd366ab3fc1172e97e03af850ea1047bd0da679b21c373c2c562"
+        },
+        {
+          "id": "law",
+          "source": "profiles/sources/law.flix",
+          "sourceSha256": "a214199973744d8eb6674291e4eb0c6f9a27b9d6331ed68b14b5e06f85bdbda1",
+          "expected": "profiles/expected/0.75.1/law.json",
+          "expectedSha256": "59d69a83a050e87ff3555116bad1cfdef2ce962903a0d0d008628051f496e1ad"
+        },
+        {
+          "id": "lawful",
+          "source": "profiles/sources/lawful.flix",
+          "sourceSha256": "569f3fdcc7f117ef1eb4e51feedd59d0eba429fe414bcb93303f9afc4cf7ef9b",
+          "expected": "profiles/expected/0.75.1/lawful.json",
+          "expectedSha256": "580e0002929548aaaab1735ac9c8a31221ee6aba91c698316e7556a4cd950128"
+        },
+        {
+          "id": "tight-use",
+          "source": "profiles/sources/tight-use.flix",
+          "sourceSha256": "0a87846d9a94b9c726c9802b157504f16f6f482d29f512d78e082ef21060c0c1",
+          "expected": "profiles/expected/0.75.1/tight-use.json",
+          "expectedSha256": "84069974c1dc19356e48f928d606ead83cc26fbe4541dd0f30a28b8562b1ab8f"
+        }
+      ]
+    },
+    {
+      "version": "0.75.2",
+      "tag": "v0.75.2",
+      "commit": "40949531b4d42e5eaf2e4b9997537eaf793c24e7",
+      "sources": {
+        "main/src/ca/uwaterloo/flix/language/ast/SyntaxTree.scala": "e90b106616ad8a6f59970f02f9c85051c9e9aaf4",
+        "main/src/ca/uwaterloo/flix/language/ast/TokenKind.scala": "7749491631d8b048c8b84cfe13b951c610baf7b3",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala": "5ca8746ebd3f4ee780f8aad49d244b292b405e03",
+        "main/src/ca/uwaterloo/flix/language/phase/Lexer.scala": "a87b9c58a8766823ebe970c11b070c67c959ff57"
+      },
+      "oracleUrl": "https://github.com/flix/flix/releases/download/v0.75.2/flix.jar",
+      "oracleSha256": "a2697d875725a0dde6e793b8d54cb220e86167a6d49ec5f0ccb0832966c8c15a",
+      "cases": [
+        {
+          "id": "baseline",
+          "source": "profiles/sources/baseline.flix",
+          "sourceSha256": "bfda4c560ab56a24dc81995e3654a79e836b4fcc9ee6b6c6aa837d816a3a7dbf",
+          "expected": "profiles/expected/0.75.2/baseline.json",
+          "expectedSha256": "093f145dbeb1b1339421d5f1dd94afb18db0bb1fd1a10320a70d0e7cc5fbf48d"
+        },
+        {
+          "id": "comments",
+          "source": "profiles/sources/comments.flix",
+          "sourceSha256": "78079fb78af41c027affed0053505524d112e7927009147425740517ca0e1654",
+          "expected": "profiles/expected/0.75.2/comments.json",
+          "expectedSha256": "b170225c949439bb46232867c8cccf372feac204998744607b6b9f260e331b97"
+        },
+        {
+          "id": "complex-row-tail",
+          "source": "profiles/sources/complex-row-tail.flix",
+          "sourceSha256": "e74aa2fd1525e7dce72a8cc2eb1b93bc87b7a2f149c57b54bf2639a4845f2373",
+          "expected": "profiles/expected/0.75.2/complex-row-tail.json",
+          "expectedSha256": "d8a27e3d717963618ca8033d8710934fdb20353d898bc0a2373ffd92a46d3802"
+        },
+        {
+          "id": "effect-type-parameter",
+          "source": "profiles/sources/effect-type-parameter.flix",
+          "sourceSha256": "e1b4ad105235d24b5cbe6fb4a650e62e6cf75e7a3c6379608b1091aa973baff1",
+          "expected": "profiles/expected/0.75.2/effect-type-parameter.json",
+          "expectedSha256": "ea8be7eb3398c2e452da813d9779a9368de83bb0c9dfb735530ca003059aafd7"
+        },
+        {
+          "id": "invalid-lexer",
+          "source": "profiles/sources/invalid-lexer.flix",
+          "sourceSha256": "f8e7dd44de3ed8af796c7eac1acc43d98724318f53e700195894a4d7d2e03525",
+          "expected": "profiles/expected/0.75.2/invalid-lexer.json",
+          "expectedSha256": "cc936eabeabd4f1c82dd3a467b0fa9578c50ae88e0715648c13da882bfb4ed6d"
+        },
+        {
+          "id": "invalid-parser",
+          "source": "profiles/sources/invalid-parser.flix",
+          "sourceSha256": "54e751e9468b08f4d63e4e5c7299dd4fc9ff33dabd9b35529e7b5f2677b9297c",
+          "expected": "profiles/expected/0.75.2/invalid-parser.json",
+          "expectedSha256": "3b10dd8989cbbd366ab3fc1172e97e03af850ea1047bd0da679b21c373c2c562"
+        },
+        {
+          "id": "law",
+          "source": "profiles/sources/law.flix",
+          "sourceSha256": "a214199973744d8eb6674291e4eb0c6f9a27b9d6331ed68b14b5e06f85bdbda1",
+          "expected": "profiles/expected/0.75.2/law.json",
+          "expectedSha256": "ea734eed8b8ed0e9aac42ef824bc51ece4841235102d23ab2e8fcf654752e838"
+        },
+        {
+          "id": "lawful",
+          "source": "profiles/sources/lawful.flix",
+          "sourceSha256": "569f3fdcc7f117ef1eb4e51feedd59d0eba429fe414bcb93303f9afc4cf7ef9b",
+          "expected": "profiles/expected/0.75.2/lawful.json",
+          "expectedSha256": "eede551c1902b2e26f6be6999770c8813ec5963b67275c9ddc68f02c41862927"
+        },
+        {
+          "id": "tight-use",
+          "source": "profiles/sources/tight-use.flix",
+          "sourceSha256": "0a87846d9a94b9c726c9802b157504f16f6f482d29f512d78e082ef21060c0c1",
+          "expected": "profiles/expected/0.75.2/tight-use.json",
+          "expectedSha256": "84069974c1dc19356e48f928d606ead83cc26fbe4541dd0f30a28b8562b1ab8f"
+        }
+      ]
+    },
+    {
+      "version": "0.75.3",
+      "tag": "v0.75.3",
+      "commit": "0e1a1ffa6f1f853a5b834d007e0c826215ee0c3d",
+      "sources": {
+        "main/src/ca/uwaterloo/flix/language/ast/SyntaxTree.scala": "e90b106616ad8a6f59970f02f9c85051c9e9aaf4",
+        "main/src/ca/uwaterloo/flix/language/ast/TokenKind.scala": "7749491631d8b048c8b84cfe13b951c610baf7b3",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala": "5ca8746ebd3f4ee780f8aad49d244b292b405e03",
+        "main/src/ca/uwaterloo/flix/language/phase/Lexer.scala": "a87b9c58a8766823ebe970c11b070c67c959ff57"
+      },
+      "oracleUrl": "https://github.com/flix/flix/releases/download/v0.75.3/flix.jar",
+      "oracleSha256": "bf123cdb6494d6e0cbff6399bf185314d332bbe97bfd776e4abc03a5d39dd954",
+      "cases": [
+        {
+          "id": "baseline",
+          "source": "profiles/sources/baseline.flix",
+          "sourceSha256": "bfda4c560ab56a24dc81995e3654a79e836b4fcc9ee6b6c6aa837d816a3a7dbf",
+          "expected": "profiles/expected/0.75.3/baseline.json",
+          "expectedSha256": "093f145dbeb1b1339421d5f1dd94afb18db0bb1fd1a10320a70d0e7cc5fbf48d"
+        },
+        {
+          "id": "comments",
+          "source": "profiles/sources/comments.flix",
+          "sourceSha256": "78079fb78af41c027affed0053505524d112e7927009147425740517ca0e1654",
+          "expected": "profiles/expected/0.75.3/comments.json",
+          "expectedSha256": "b170225c949439bb46232867c8cccf372feac204998744607b6b9f260e331b97"
+        },
+        {
+          "id": "complex-row-tail",
+          "source": "profiles/sources/complex-row-tail.flix",
+          "sourceSha256": "e74aa2fd1525e7dce72a8cc2eb1b93bc87b7a2f149c57b54bf2639a4845f2373",
+          "expected": "profiles/expected/0.75.3/complex-row-tail.json",
+          "expectedSha256": "d8a27e3d717963618ca8033d8710934fdb20353d898bc0a2373ffd92a46d3802"
+        },
+        {
+          "id": "effect-type-parameter",
+          "source": "profiles/sources/effect-type-parameter.flix",
+          "sourceSha256": "e1b4ad105235d24b5cbe6fb4a650e62e6cf75e7a3c6379608b1091aa973baff1",
+          "expected": "profiles/expected/0.75.3/effect-type-parameter.json",
+          "expectedSha256": "ea8be7eb3398c2e452da813d9779a9368de83bb0c9dfb735530ca003059aafd7"
+        },
+        {
+          "id": "invalid-lexer",
+          "source": "profiles/sources/invalid-lexer.flix",
+          "sourceSha256": "f8e7dd44de3ed8af796c7eac1acc43d98724318f53e700195894a4d7d2e03525",
+          "expected": "profiles/expected/0.75.3/invalid-lexer.json",
+          "expectedSha256": "cc936eabeabd4f1c82dd3a467b0fa9578c50ae88e0715648c13da882bfb4ed6d"
+        },
+        {
+          "id": "invalid-parser",
+          "source": "profiles/sources/invalid-parser.flix",
+          "sourceSha256": "54e751e9468b08f4d63e4e5c7299dd4fc9ff33dabd9b35529e7b5f2677b9297c",
+          "expected": "profiles/expected/0.75.3/invalid-parser.json",
+          "expectedSha256": "3b10dd8989cbbd366ab3fc1172e97e03af850ea1047bd0da679b21c373c2c562"
+        },
+        {
+          "id": "law",
+          "source": "profiles/sources/law.flix",
+          "sourceSha256": "a214199973744d8eb6674291e4eb0c6f9a27b9d6331ed68b14b5e06f85bdbda1",
+          "expected": "profiles/expected/0.75.3/law.json",
+          "expectedSha256": "ea734eed8b8ed0e9aac42ef824bc51ece4841235102d23ab2e8fcf654752e838"
+        },
+        {
+          "id": "lawful",
+          "source": "profiles/sources/lawful.flix",
+          "sourceSha256": "569f3fdcc7f117ef1eb4e51feedd59d0eba429fe414bcb93303f9afc4cf7ef9b",
+          "expected": "profiles/expected/0.75.3/lawful.json",
+          "expectedSha256": "eede551c1902b2e26f6be6999770c8813ec5963b67275c9ddc68f02c41862927"
+        },
+        {
+          "id": "tight-use",
+          "source": "profiles/sources/tight-use.flix",
+          "sourceSha256": "0a87846d9a94b9c726c9802b157504f16f6f482d29f512d78e082ef21060c0c1",
+          "expected": "profiles/expected/0.75.3/tight-use.json",
+          "expectedSha256": "84069974c1dc19356e48f928d606ead83cc26fbe4541dd0f30a28b8562b1ab8f"
+        }
+      ]
+    },
+    {
+      "version": "0.76.0",
+      "tag": "v0.76.0",
+      "commit": "f2d4678c20bff1242f4cad5e23144db91027b762",
+      "sources": {
+        "main/src/ca/uwaterloo/flix/language/ast/SyntaxTree.scala": "e90b106616ad8a6f59970f02f9c85051c9e9aaf4",
+        "main/src/ca/uwaterloo/flix/language/ast/TokenKind.scala": "7749491631d8b048c8b84cfe13b951c610baf7b3",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala": "aa41acec39e81dd7c2e1ae7367f5e93f51dcd8de",
+        "main/src/ca/uwaterloo/flix/language/phase/Lexer.scala": "8d2d1c44152c5a0dec9a7a98830ee3777fd3978a"
+      },
+      "oracleUrl": "https://github.com/flix/flix/releases/download/v0.76.0/flix.jar",
+      "oracleSha256": "d8d9a3870e199c03ed6364ea9430f56f67bfd38c332c411628a6a7cb88b2b0b4",
+      "cases": [
+        {
+          "id": "baseline",
+          "source": "profiles/sources/baseline.flix",
+          "sourceSha256": "bfda4c560ab56a24dc81995e3654a79e836b4fcc9ee6b6c6aa837d816a3a7dbf",
+          "expected": "profiles/expected/0.76.0/baseline.json",
+          "expectedSha256": "093f145dbeb1b1339421d5f1dd94afb18db0bb1fd1a10320a70d0e7cc5fbf48d"
+        },
+        {
+          "id": "comments",
+          "source": "profiles/sources/comments.flix",
+          "sourceSha256": "78079fb78af41c027affed0053505524d112e7927009147425740517ca0e1654",
+          "expected": "profiles/expected/0.76.0/comments.json",
+          "expectedSha256": "b170225c949439bb46232867c8cccf372feac204998744607b6b9f260e331b97"
+        },
+        {
+          "id": "complex-row-tail",
+          "source": "profiles/sources/complex-row-tail.flix",
+          "sourceSha256": "e74aa2fd1525e7dce72a8cc2eb1b93bc87b7a2f149c57b54bf2639a4845f2373",
+          "expected": "profiles/expected/0.76.0/complex-row-tail.json",
+          "expectedSha256": "d8a27e3d717963618ca8033d8710934fdb20353d898bc0a2373ffd92a46d3802"
+        },
+        {
+          "id": "effect-type-parameter",
+          "source": "profiles/sources/effect-type-parameter.flix",
+          "sourceSha256": "e1b4ad105235d24b5cbe6fb4a650e62e6cf75e7a3c6379608b1091aa973baff1",
+          "expected": "profiles/expected/0.76.0/effect-type-parameter.json",
+          "expectedSha256": "0e6e78773f928aaa084afcc0aa87ae66ebbbc6ef551b19540b43655273357863"
+        },
+        {
+          "id": "invalid-lexer",
+          "source": "profiles/sources/invalid-lexer.flix",
+          "sourceSha256": "f8e7dd44de3ed8af796c7eac1acc43d98724318f53e700195894a4d7d2e03525",
+          "expected": "profiles/expected/0.76.0/invalid-lexer.json",
+          "expectedSha256": "cc936eabeabd4f1c82dd3a467b0fa9578c50ae88e0715648c13da882bfb4ed6d"
+        },
+        {
+          "id": "invalid-parser",
+          "source": "profiles/sources/invalid-parser.flix",
+          "sourceSha256": "54e751e9468b08f4d63e4e5c7299dd4fc9ff33dabd9b35529e7b5f2677b9297c",
+          "expected": "profiles/expected/0.76.0/invalid-parser.json",
+          "expectedSha256": "3b10dd8989cbbd366ab3fc1172e97e03af850ea1047bd0da679b21c373c2c562"
+        },
+        {
+          "id": "law",
+          "source": "profiles/sources/law.flix",
+          "sourceSha256": "a214199973744d8eb6674291e4eb0c6f9a27b9d6331ed68b14b5e06f85bdbda1",
+          "expected": "profiles/expected/0.76.0/law.json",
+          "expectedSha256": "ea734eed8b8ed0e9aac42ef824bc51ece4841235102d23ab2e8fcf654752e838"
+        },
+        {
+          "id": "lawful",
+          "source": "profiles/sources/lawful.flix",
+          "sourceSha256": "569f3fdcc7f117ef1eb4e51feedd59d0eba429fe414bcb93303f9afc4cf7ef9b",
+          "expected": "profiles/expected/0.76.0/lawful.json",
+          "expectedSha256": "eede551c1902b2e26f6be6999770c8813ec5963b67275c9ddc68f02c41862927"
+        },
+        {
+          "id": "tight-use",
+          "source": "profiles/sources/tight-use.flix",
+          "sourceSha256": "0a87846d9a94b9c726c9802b157504f16f6f482d29f512d78e082ef21060c0c1",
+          "expected": "profiles/expected/0.76.0/tight-use.json",
+          "expectedSha256": "84069974c1dc19356e48f928d606ead83cc26fbe4541dd0f30a28b8562b1ab8f"
+        }
+      ]
+    },
+    {
+      "version": "0.76.1",
+      "tag": "v0.76.1",
+      "commit": "0832e818521c524bacef1cd3c046e2f3f0db9db9",
+      "sources": {
+        "main/src/ca/uwaterloo/flix/language/ast/SyntaxTree.scala": "e90b106616ad8a6f59970f02f9c85051c9e9aaf4",
+        "main/src/ca/uwaterloo/flix/language/ast/TokenKind.scala": "7749491631d8b048c8b84cfe13b951c610baf7b3",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala": "aa41acec39e81dd7c2e1ae7367f5e93f51dcd8de",
+        "main/src/ca/uwaterloo/flix/language/phase/Lexer.scala": "8d2d1c44152c5a0dec9a7a98830ee3777fd3978a"
+      },
+      "oracleUrl": "https://github.com/flix/flix/releases/download/v0.76.1/flix.jar",
+      "oracleSha256": "b2ed2b7f49902e2dfe1b4f10e23d9a5cb085461e7e8c64909ca2b3abfa566e74",
+      "cases": [
+        {
+          "id": "baseline",
+          "source": "profiles/sources/baseline.flix",
+          "sourceSha256": "bfda4c560ab56a24dc81995e3654a79e836b4fcc9ee6b6c6aa837d816a3a7dbf",
+          "expected": "profiles/expected/0.76.1/baseline.json",
+          "expectedSha256": "093f145dbeb1b1339421d5f1dd94afb18db0bb1fd1a10320a70d0e7cc5fbf48d"
+        },
+        {
+          "id": "comments",
+          "source": "profiles/sources/comments.flix",
+          "sourceSha256": "78079fb78af41c027affed0053505524d112e7927009147425740517ca0e1654",
+          "expected": "profiles/expected/0.76.1/comments.json",
+          "expectedSha256": "b170225c949439bb46232867c8cccf372feac204998744607b6b9f260e331b97"
+        },
+        {
+          "id": "complex-row-tail",
+          "source": "profiles/sources/complex-row-tail.flix",
+          "sourceSha256": "e74aa2fd1525e7dce72a8cc2eb1b93bc87b7a2f149c57b54bf2639a4845f2373",
+          "expected": "profiles/expected/0.76.1/complex-row-tail.json",
+          "expectedSha256": "d8a27e3d717963618ca8033d8710934fdb20353d898bc0a2373ffd92a46d3802"
+        },
+        {
+          "id": "effect-type-parameter",
+          "source": "profiles/sources/effect-type-parameter.flix",
+          "sourceSha256": "e1b4ad105235d24b5cbe6fb4a650e62e6cf75e7a3c6379608b1091aa973baff1",
+          "expected": "profiles/expected/0.76.1/effect-type-parameter.json",
+          "expectedSha256": "0e6e78773f928aaa084afcc0aa87ae66ebbbc6ef551b19540b43655273357863"
+        },
+        {
+          "id": "invalid-lexer",
+          "source": "profiles/sources/invalid-lexer.flix",
+          "sourceSha256": "f8e7dd44de3ed8af796c7eac1acc43d98724318f53e700195894a4d7d2e03525",
+          "expected": "profiles/expected/0.76.1/invalid-lexer.json",
+          "expectedSha256": "cc936eabeabd4f1c82dd3a467b0fa9578c50ae88e0715648c13da882bfb4ed6d"
+        },
+        {
+          "id": "invalid-parser",
+          "source": "profiles/sources/invalid-parser.flix",
+          "sourceSha256": "54e751e9468b08f4d63e4e5c7299dd4fc9ff33dabd9b35529e7b5f2677b9297c",
+          "expected": "profiles/expected/0.76.1/invalid-parser.json",
+          "expectedSha256": "3b10dd8989cbbd366ab3fc1172e97e03af850ea1047bd0da679b21c373c2c562"
+        },
+        {
+          "id": "law",
+          "source": "profiles/sources/law.flix",
+          "sourceSha256": "a214199973744d8eb6674291e4eb0c6f9a27b9d6331ed68b14b5e06f85bdbda1",
+          "expected": "profiles/expected/0.76.1/law.json",
+          "expectedSha256": "ea734eed8b8ed0e9aac42ef824bc51ece4841235102d23ab2e8fcf654752e838"
+        },
+        {
+          "id": "lawful",
+          "source": "profiles/sources/lawful.flix",
+          "sourceSha256": "569f3fdcc7f117ef1eb4e51feedd59d0eba429fe414bcb93303f9afc4cf7ef9b",
+          "expected": "profiles/expected/0.76.1/lawful.json",
+          "expectedSha256": "eede551c1902b2e26f6be6999770c8813ec5963b67275c9ddc68f02c41862927"
+        },
+        {
+          "id": "tight-use",
+          "source": "profiles/sources/tight-use.flix",
+          "sourceSha256": "0a87846d9a94b9c726c9802b157504f16f6f482d29f512d78e082ef21060c0c1",
+          "expected": "profiles/expected/0.76.1/tight-use.json",
+          "expectedSha256": "84069974c1dc19356e48f928d606ead83cc26fbe4541dd0f30a28b8562b1ab8f"
+        }
+      ]
+    },
+    {
+      "version": "0.76.2",
+      "tag": "v0.76.2",
+      "commit": "6d9188363c6288b562252fc30d9294691d74257b",
+      "sources": {
+        "main/src/ca/uwaterloo/flix/language/ast/SyntaxTree.scala": "83b4e7e885d053085ae56bb9236d75e516feaf30",
+        "main/src/ca/uwaterloo/flix/language/ast/TokenKind.scala": "678417d94bc2fa5de393c93806183e96fbfbf0a8",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala": "b36a31f1db919396b4b796c2bcfc9a83b18303cd",
+        "main/src/ca/uwaterloo/flix/language/phase/Lexer.scala": "f075814f9aed5e5490e4138606506b171f0d6578"
+      },
+      "oracleUrl": "https://github.com/flix/flix/releases/download/v0.76.2/flix.jar",
+      "oracleSha256": "be06d8c0cc3afdf676981f48d743354151c7060f6fe8e689720226682a80c8ae",
+      "cases": [
+        {
+          "id": "baseline",
+          "source": "profiles/sources/baseline.flix",
+          "sourceSha256": "bfda4c560ab56a24dc81995e3654a79e836b4fcc9ee6b6c6aa837d816a3a7dbf",
+          "expected": "profiles/expected/0.76.2/baseline.json",
+          "expectedSha256": "093f145dbeb1b1339421d5f1dd94afb18db0bb1fd1a10320a70d0e7cc5fbf48d"
+        },
+        {
+          "id": "comments",
+          "source": "profiles/sources/comments.flix",
+          "sourceSha256": "78079fb78af41c027affed0053505524d112e7927009147425740517ca0e1654",
+          "expected": "profiles/expected/0.76.2/comments.json",
+          "expectedSha256": "b170225c949439bb46232867c8cccf372feac204998744607b6b9f260e331b97"
+        },
+        {
+          "id": "complex-row-tail",
+          "source": "profiles/sources/complex-row-tail.flix",
+          "sourceSha256": "e74aa2fd1525e7dce72a8cc2eb1b93bc87b7a2f149c57b54bf2639a4845f2373",
+          "expected": "profiles/expected/0.76.2/complex-row-tail.json",
+          "expectedSha256": "d8a27e3d717963618ca8033d8710934fdb20353d898bc0a2373ffd92a46d3802"
+        },
+        {
+          "id": "effect-type-parameter",
+          "source": "profiles/sources/effect-type-parameter.flix",
+          "sourceSha256": "e1b4ad105235d24b5cbe6fb4a650e62e6cf75e7a3c6379608b1091aa973baff1",
+          "expected": "profiles/expected/0.76.2/effect-type-parameter.json",
+          "expectedSha256": "0e6e78773f928aaa084afcc0aa87ae66ebbbc6ef551b19540b43655273357863"
+        },
+        {
+          "id": "invalid-lexer",
+          "source": "profiles/sources/invalid-lexer.flix",
+          "sourceSha256": "f8e7dd44de3ed8af796c7eac1acc43d98724318f53e700195894a4d7d2e03525",
+          "expected": "profiles/expected/0.76.2/invalid-lexer.json",
+          "expectedSha256": "cc936eabeabd4f1c82dd3a467b0fa9578c50ae88e0715648c13da882bfb4ed6d"
+        },
+        {
+          "id": "invalid-parser",
+          "source": "profiles/sources/invalid-parser.flix",
+          "sourceSha256": "54e751e9468b08f4d63e4e5c7299dd4fc9ff33dabd9b35529e7b5f2677b9297c",
+          "expected": "profiles/expected/0.76.2/invalid-parser.json",
+          "expectedSha256": "3b10dd8989cbbd366ab3fc1172e97e03af850ea1047bd0da679b21c373c2c562"
+        },
+        {
+          "id": "law",
+          "source": "profiles/sources/law.flix",
+          "sourceSha256": "a214199973744d8eb6674291e4eb0c6f9a27b9d6331ed68b14b5e06f85bdbda1",
+          "expected": "profiles/expected/0.76.2/law.json",
+          "expectedSha256": "ea734eed8b8ed0e9aac42ef824bc51ece4841235102d23ab2e8fcf654752e838"
+        },
+        {
+          "id": "lawful",
+          "source": "profiles/sources/lawful.flix",
+          "sourceSha256": "569f3fdcc7f117ef1eb4e51feedd59d0eba429fe414bcb93303f9afc4cf7ef9b",
+          "expected": "profiles/expected/0.76.2/lawful.json",
+          "expectedSha256": "eede551c1902b2e26f6be6999770c8813ec5963b67275c9ddc68f02c41862927"
+        },
+        {
+          "id": "tight-use",
+          "source": "profiles/sources/tight-use.flix",
+          "sourceSha256": "0a87846d9a94b9c726c9802b157504f16f6f482d29f512d78e082ef21060c0c1",
+          "expected": "profiles/expected/0.76.2/tight-use.json",
+          "expectedSha256": "482813c36f9ce158ebc72b32e1f2e254aa5a640970793d42c8eea0cee47068d1"
+        }
+      ]
+    },
+    {
+      "version": "0.77.0",
+      "tag": "v0.77.0",
+      "commit": "4a5b60a31ac03bb762f68b554a0fc2b6f4d982b9",
+      "sources": {
+        "main/src/ca/uwaterloo/flix/language/ast/SyntaxTree.scala": "e4e935451ffbef32fafd2077cb4ef21bfc154b71",
+        "main/src/ca/uwaterloo/flix/language/ast/TokenKind.scala": "52c944f77c53a0c4a4d8d96ab07153cf7915b84f",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala": "a70923a8491b87b1c3f8615347d1b517d1eae04c",
+        "main/src/ca/uwaterloo/flix/language/phase/Lexer.scala": "23053c3e66fdf4f376458895a0ca144283d0cecd"
+      },
+      "oracleUrl": "https://github.com/flix/flix/releases/download/v0.77.0/flix.jar",
+      "oracleSha256": "20007d79f97b696ba388113e2a4235227691d33a00bfa669f2316b37a7b14201",
+      "cases": [
+        {
+          "id": "baseline",
+          "source": "profiles/sources/baseline.flix",
+          "sourceSha256": "bfda4c560ab56a24dc81995e3654a79e836b4fcc9ee6b6c6aa837d816a3a7dbf",
+          "expected": "profiles/expected/0.77.0/baseline.json",
+          "expectedSha256": "093f145dbeb1b1339421d5f1dd94afb18db0bb1fd1a10320a70d0e7cc5fbf48d"
+        },
+        {
+          "id": "comments",
+          "source": "profiles/sources/comments.flix",
+          "sourceSha256": "78079fb78af41c027affed0053505524d112e7927009147425740517ca0e1654",
+          "expected": "profiles/expected/0.77.0/comments.json",
+          "expectedSha256": "b170225c949439bb46232867c8cccf372feac204998744607b6b9f260e331b97"
+        },
+        {
+          "id": "complex-row-tail",
+          "source": "profiles/sources/complex-row-tail.flix",
+          "sourceSha256": "e74aa2fd1525e7dce72a8cc2eb1b93bc87b7a2f149c57b54bf2639a4845f2373",
+          "expected": "profiles/expected/0.77.0/complex-row-tail.json",
+          "expectedSha256": "d8a27e3d717963618ca8033d8710934fdb20353d898bc0a2373ffd92a46d3802"
+        },
+        {
+          "id": "effect-type-parameter",
+          "source": "profiles/sources/effect-type-parameter.flix",
+          "sourceSha256": "e1b4ad105235d24b5cbe6fb4a650e62e6cf75e7a3c6379608b1091aa973baff1",
+          "expected": "profiles/expected/0.77.0/effect-type-parameter.json",
+          "expectedSha256": "0e6e78773f928aaa084afcc0aa87ae66ebbbc6ef551b19540b43655273357863"
+        },
+        {
+          "id": "invalid-lexer",
+          "source": "profiles/sources/invalid-lexer.flix",
+          "sourceSha256": "f8e7dd44de3ed8af796c7eac1acc43d98724318f53e700195894a4d7d2e03525",
+          "expected": "profiles/expected/0.77.0/invalid-lexer.json",
+          "expectedSha256": "cc936eabeabd4f1c82dd3a467b0fa9578c50ae88e0715648c13da882bfb4ed6d"
+        },
+        {
+          "id": "invalid-parser",
+          "source": "profiles/sources/invalid-parser.flix",
+          "sourceSha256": "54e751e9468b08f4d63e4e5c7299dd4fc9ff33dabd9b35529e7b5f2677b9297c",
+          "expected": "profiles/expected/0.77.0/invalid-parser.json",
+          "expectedSha256": "3b10dd8989cbbd366ab3fc1172e97e03af850ea1047bd0da679b21c373c2c562"
+        },
+        {
+          "id": "law",
+          "source": "profiles/sources/law.flix",
+          "sourceSha256": "a214199973744d8eb6674291e4eb0c6f9a27b9d6331ed68b14b5e06f85bdbda1",
+          "expected": "profiles/expected/0.77.0/law.json",
+          "expectedSha256": "ea734eed8b8ed0e9aac42ef824bc51ece4841235102d23ab2e8fcf654752e838"
+        },
+        {
+          "id": "lawful",
+          "source": "profiles/sources/lawful.flix",
+          "sourceSha256": "569f3fdcc7f117ef1eb4e51feedd59d0eba429fe414bcb93303f9afc4cf7ef9b",
+          "expected": "profiles/expected/0.77.0/lawful.json",
+          "expectedSha256": "eede551c1902b2e26f6be6999770c8813ec5963b67275c9ddc68f02c41862927"
+        },
+        {
+          "id": "tight-use",
+          "source": "profiles/sources/tight-use.flix",
+          "sourceSha256": "0a87846d9a94b9c726c9802b157504f16f6f482d29f512d78e082ef21060c0c1",
+          "expected": "profiles/expected/0.77.0/tight-use.json",
+          "expectedSha256": "482813c36f9ce158ebc72b32e1f2e254aa5a640970793d42c8eea0cee47068d1"
+        }
+      ]
+    },
+    {
+      "version": "0.78.0",
+      "tag": "v0.78.0",
+      "commit": "86e304dbe1d59afa114cd470621847aec3164d3c",
+      "sources": {
+        "main/src/ca/uwaterloo/flix/language/ast/SyntaxTree.scala": "e4e935451ffbef32fafd2077cb4ef21bfc154b71",
+        "main/src/ca/uwaterloo/flix/language/ast/TokenKind.scala": "52c944f77c53a0c4a4d8d96ab07153cf7915b84f",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala": "c3624bb44405afc726a161ef8dfaa6be511ca143",
+        "main/src/ca/uwaterloo/flix/language/phase/Lexer.scala": "23053c3e66fdf4f376458895a0ca144283d0cecd"
+      },
+      "oracleUrl": "https://github.com/flix/flix/releases/download/v0.78.0/flix.jar",
+      "oracleSha256": "f6a8297a1fe269751aea6255ddd1549f64e74d80b5c6a99ac2a56201a7330957",
+      "cases": [
+        {
+          "id": "baseline",
+          "source": "profiles/sources/baseline.flix",
+          "sourceSha256": "bfda4c560ab56a24dc81995e3654a79e836b4fcc9ee6b6c6aa837d816a3a7dbf",
+          "expected": "profiles/expected/0.78.0/baseline.json",
+          "expectedSha256": "093f145dbeb1b1339421d5f1dd94afb18db0bb1fd1a10320a70d0e7cc5fbf48d"
+        },
+        {
+          "id": "comments",
+          "source": "profiles/sources/comments.flix",
+          "sourceSha256": "78079fb78af41c027affed0053505524d112e7927009147425740517ca0e1654",
+          "expected": "profiles/expected/0.78.0/comments.json",
+          "expectedSha256": "b170225c949439bb46232867c8cccf372feac204998744607b6b9f260e331b97"
+        },
+        {
+          "id": "complex-row-tail",
+          "source": "profiles/sources/complex-row-tail.flix",
+          "sourceSha256": "e74aa2fd1525e7dce72a8cc2eb1b93bc87b7a2f149c57b54bf2639a4845f2373",
+          "expected": "profiles/expected/0.78.0/complex-row-tail.json",
+          "expectedSha256": "c9391f292156d2ead06c90af15b60cb1fe9bac6b39f2568764bf25dd6a36ce74"
+        },
+        {
+          "id": "effect-type-parameter",
+          "source": "profiles/sources/effect-type-parameter.flix",
+          "sourceSha256": "e1b4ad105235d24b5cbe6fb4a650e62e6cf75e7a3c6379608b1091aa973baff1",
+          "expected": "profiles/expected/0.78.0/effect-type-parameter.json",
+          "expectedSha256": "0e6e78773f928aaa084afcc0aa87ae66ebbbc6ef551b19540b43655273357863"
+        },
+        {
+          "id": "invalid-lexer",
+          "source": "profiles/sources/invalid-lexer.flix",
+          "sourceSha256": "f8e7dd44de3ed8af796c7eac1acc43d98724318f53e700195894a4d7d2e03525",
+          "expected": "profiles/expected/0.78.0/invalid-lexer.json",
+          "expectedSha256": "cc936eabeabd4f1c82dd3a467b0fa9578c50ae88e0715648c13da882bfb4ed6d"
+        },
+        {
+          "id": "invalid-parser",
+          "source": "profiles/sources/invalid-parser.flix",
+          "sourceSha256": "54e751e9468b08f4d63e4e5c7299dd4fc9ff33dabd9b35529e7b5f2677b9297c",
+          "expected": "profiles/expected/0.78.0/invalid-parser.json",
+          "expectedSha256": "3b10dd8989cbbd366ab3fc1172e97e03af850ea1047bd0da679b21c373c2c562"
+        },
+        {
+          "id": "law",
+          "source": "profiles/sources/law.flix",
+          "sourceSha256": "a214199973744d8eb6674291e4eb0c6f9a27b9d6331ed68b14b5e06f85bdbda1",
+          "expected": "profiles/expected/0.78.0/law.json",
+          "expectedSha256": "ea734eed8b8ed0e9aac42ef824bc51ece4841235102d23ab2e8fcf654752e838"
+        },
+        {
+          "id": "lawful",
+          "source": "profiles/sources/lawful.flix",
+          "sourceSha256": "569f3fdcc7f117ef1eb4e51feedd59d0eba429fe414bcb93303f9afc4cf7ef9b",
+          "expected": "profiles/expected/0.78.0/lawful.json",
+          "expectedSha256": "eede551c1902b2e26f6be6999770c8813ec5963b67275c9ddc68f02c41862927"
+        },
+        {
+          "id": "tight-use",
+          "source": "profiles/sources/tight-use.flix",
+          "sourceSha256": "0a87846d9a94b9c726c9802b157504f16f6f482d29f512d78e082ef21060c0c1",
+          "expected": "profiles/expected/0.78.0/tight-use.json",
+          "expectedSha256": "482813c36f9ce158ebc72b32e1f2e254aa5a640970793d42c8eea0cee47068d1"
+        }
+      ]
+    },
+    {
+      "version": "0.79.0",
+      "tag": "v0.79.0",
+      "commit": "36d923ca325dc466b28c63419667e6026a80f920",
+      "sources": {
+        "main/src/ca/uwaterloo/flix/language/ast/SyntaxTree.scala": "e43039427839f1cd97269f6d10784e4c0c7ec681",
+        "main/src/ca/uwaterloo/flix/language/ast/TokenKind.scala": "5cf5595053e8d53a16f42f4b9eff80fbd3c37741",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala": "ac84be3315d7f6a3c37f82b8fc8868a56242e249",
+        "main/src/ca/uwaterloo/flix/language/phase/Lexer.scala": "23053c3e66fdf4f376458895a0ca144283d0cecd"
+      },
+      "oracleUrl": "https://github.com/flix/flix/releases/download/v0.79.0/flix.jar",
+      "oracleSha256": "8fad2aa09567a7edabcc43f4101fa6199131df2c22929e001c87659d764f6dcf",
+      "cases": [
+        {
+          "id": "baseline",
+          "source": "profiles/sources/baseline.flix",
+          "sourceSha256": "bfda4c560ab56a24dc81995e3654a79e836b4fcc9ee6b6c6aa837d816a3a7dbf",
+          "expected": "profiles/expected/0.79.0/baseline.json",
+          "expectedSha256": "21ad82d1cc1ae0a91f50b65a737be41a3ff4513b9973c4e5098127703f40c9ec"
+        },
+        {
+          "id": "comments",
+          "source": "profiles/sources/comments.flix",
+          "sourceSha256": "78079fb78af41c027affed0053505524d112e7927009147425740517ca0e1654",
+          "expected": "profiles/expected/0.79.0/comments.json",
+          "expectedSha256": "d054a8d9943389dba095fdf025bedc30a0e6bdd4dd4b325f8973c7af78f9b94d"
+        },
+        {
+          "id": "complex-row-tail",
+          "source": "profiles/sources/complex-row-tail.flix",
+          "sourceSha256": "e74aa2fd1525e7dce72a8cc2eb1b93bc87b7a2f149c57b54bf2639a4845f2373",
+          "expected": "profiles/expected/0.79.0/complex-row-tail.json",
+          "expectedSha256": "b6bd8dc79978ddfb7a68803e128a0feab2ebf75cf33856b334b93660a2e3f50e"
+        },
+        {
+          "id": "effect-type-parameter",
+          "source": "profiles/sources/effect-type-parameter.flix",
+          "sourceSha256": "e1b4ad105235d24b5cbe6fb4a650e62e6cf75e7a3c6379608b1091aa973baff1",
+          "expected": "profiles/expected/0.79.0/effect-type-parameter.json",
+          "expectedSha256": "0a005079cc9a47a9280f3b82134234244f3c299d37aef2577776a791c026c952"
+        },
+        {
+          "id": "invalid-lexer",
+          "source": "profiles/sources/invalid-lexer.flix",
+          "sourceSha256": "f8e7dd44de3ed8af796c7eac1acc43d98724318f53e700195894a4d7d2e03525",
+          "expected": "profiles/expected/0.79.0/invalid-lexer.json",
+          "expectedSha256": "ba6cbf53db5f9aa7cedc91e392485f35edc5795f037b4d63d7b5692f16712c41"
+        },
+        {
+          "id": "invalid-parser",
+          "source": "profiles/sources/invalid-parser.flix",
+          "sourceSha256": "54e751e9468b08f4d63e4e5c7299dd4fc9ff33dabd9b35529e7b5f2677b9297c",
+          "expected": "profiles/expected/0.79.0/invalid-parser.json",
+          "expectedSha256": "42ca46d7d24b194499e26d300f7d7e0987295ead54258d7e8e39bc7033e6cc22"
+        },
+        {
+          "id": "law",
+          "source": "profiles/sources/law.flix",
+          "sourceSha256": "a214199973744d8eb6674291e4eb0c6f9a27b9d6331ed68b14b5e06f85bdbda1",
+          "expected": "profiles/expected/0.79.0/law.json",
+          "expectedSha256": "4c145b8fefa5b468f1103d017b4f7af7939252d14e414ecf0e043d64fe317a80"
+        },
+        {
+          "id": "lawful",
+          "source": "profiles/sources/lawful.flix",
+          "sourceSha256": "569f3fdcc7f117ef1eb4e51feedd59d0eba429fe414bcb93303f9afc4cf7ef9b",
+          "expected": "profiles/expected/0.79.0/lawful.json",
+          "expectedSha256": "10afa2964ecdf6b6cf1167dbd0e30d74bc265343e8e45888e1826c3f3f942e44"
+        },
+        {
+          "id": "tight-use",
+          "source": "profiles/sources/tight-use.flix",
+          "sourceSha256": "0a87846d9a94b9c726c9802b157504f16f6f482d29f512d78e082ef21060c0c1",
+          "expected": "profiles/expected/0.79.0/tight-use.json",
+          "expectedSha256": "74766ca953d772faaaa7f292d96ab46be86398223138d8aff4e8893b93e46a97"
+        }
+      ]
+    }
+  ]
+}
