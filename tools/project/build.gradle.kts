@@ -228,6 +228,20 @@ tasks.register<JavaExec>("generateStatus") {
     workingDir = rootProject.projectDir
 }
 
+tasks.register<JavaExec>("checkSyntaxCoverage") {
+    description = "Checks source-cited syntax variants and their fixture witnesses."
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("flix.spec.SyntaxCoverage")
+    workingDir = rootProject.projectDir
+}
+
+tasks.register<JavaExec>("syntaxProfiles") {
+    description = "Validates versioned syntax profiles; optional oracle probes run in separate JVMs."
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("flix.spec.SyntaxProfiles")
+    workingDir = rootProject.projectDir
+}
+
 tasks.register<JavaExec>("generateDocs") {
     description =
         "Rewrites the '<!-- generated: ... -->' blocks in README.md and docs/CONFORMANCE.md from ast/*.json, " +
@@ -288,6 +302,7 @@ tasks.withType<Test> {
     inputs.dir(rootProject.file("schemas"))
     inputs.dir(rootProject.file("fixtures"))
     inputs.dir(rootProject.file("defects"))
+    inputs.dir(rootProject.file("profiles"))
     inputs.file(rootProject.file("corpus/corpus.json"))
     // README.md and docs/ carry generated blocks that generateDocs rewrites and CI diffs, and the
     // suite asserts over them. Omitting them left exactly the doc-drift tests reporting stale passes.

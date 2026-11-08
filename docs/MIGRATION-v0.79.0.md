@@ -62,6 +62,16 @@ and four fixture-only TreeKinds, six structurally unattachable TreeKinds, and no
 corpus-only kinds. Token status has 152 reachable-covered, six fixture-only and one unattachable
 sentinel, with no unknown or corpus-only entries.
 
+The historical profiles also correct the earlier v0.77.0 migration's release attribution:
+Reader/Input disappear at v0.76.1, and `UsesOrImports.Package`/`ColonColonTight` first appear at
+v0.76.2. That earlier repository migration had compared the v0.76.0 pin directly with v0.77.0;
+its aggregate delta was correct, but it had attributed intervening changes to the target release.
+
+The historical support is ten release profiles with inventories and nine targeted parser probes per
+release. Those 90 observations cover selected historical boundaries; they are not historical corpus
+snapshots or evidence of complete grammar conformance. The current 21-variant catalogue is also
+bounded and is checked against this pin's fixtures separately.
+
 ## Consumer migration
 
 Update the exact pin and artifact digest, update comment mappings, and accept full type trees in

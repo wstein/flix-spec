@@ -92,6 +92,12 @@ echo "== validating the reference-compiler defect ledger =="
 # into folklore. Entries also expire; docs/DEFECTS.md records what that time-based gate costs.
 ./gradlew -q :tools:project:validateDefects
 
+echo "== checking source-cited syntax variants =="
+./gradlew -q :tools:project:checkSyntaxCoverage
+
+echo "== validating historical syntax profiles =="
+./gradlew -q :tools:project:syntaxProfiles --args=validate
+
 echo "== regenerating the generated doc blocks =="
 # Prose counts were the one class of generated fact CI never diffed, and they drifted: 134 fixtures
 # against 136, 184 covered kinds against 186, and a "coverage equals reachability" claim that had

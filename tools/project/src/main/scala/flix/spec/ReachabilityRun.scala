@@ -71,7 +71,7 @@ object ReachabilityRun {
     flix.threadPool = new ca.uwaterloo.flix.util.ThreadPool(1)
     try {
 
-      // v0.77.0 deleted the Reader phase, and with it the one thing that reported a file as
+      // v0.76.1 deleted the Reader phase, and with it the one thing that reported a file as
       // unreadable. The corpus counts those deliberately -- `filesUnreadable` in
       // ast/reachability.json -- so the failure has to be caught here instead of inferred from a
       // phase that no longer runs. Anything the filesystem or the charset decoder rejects is

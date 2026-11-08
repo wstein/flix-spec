@@ -229,6 +229,14 @@ The shape is `schemas/conformance-report.schema.json`, and
 including the relationships a schema cannot express, such as a verdict that does not follow from
 its own numbers, or more divergences listed than counted.
 
+## Production variants
+
+Vocabulary coverage does not distinguish syntax forms sharing a kind. The separate
+[syntax variant catalogue](SYNTAX-COVERAGE.md) binds each declared variant to a source citation,
+fixture, structured tree predicate and diagnostic identities. Its 21 current variants are a bounded
+catalogue, not a claim about the fraction of the grammar covered. Historical probes and their exact
+oracle selection are described in [syntax profiles](SYNTAX-PROFILES.md).
+
 ## Diagnostic-kind coverage
 
 At v0.79.0 the pipeline retains the 15 lexer diagnostic kinds and the parser's visible-token
@@ -295,7 +303,7 @@ What a consumer still declares, and must:
 | `flatten` | its own pure grouping nodes, spliced at any arity | its side |
 | `recoveryMarkers` | its own error-recovery nodes | its side, in the structural lane only |
 
-### Historical triangulation at v0.75.1
+### Historical triangulation before v0.79.0
 
 This is the design's one structural weakness, and it cannot be argued away — only measured. Every
 rule in `ast/transparency.json` is justified from the reference's own source, but the rules were
