@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "generatedBy": "flix.spec.TreeKindExtractor",
   "toolVersion": "1.0.0",
-  "upstreamCommit": "4a5b60a31ac03bb762f68b554a0fc2b6f4d982b9",
-  "oracleSha256": "20007d79f97b696ba388113e2a4235227691d33a00bfa669f2316b37a7b14201",
+  "upstreamCommit": "36d923ca325dc466b28c63419667e6026a80f920",
+  "oracleSha256": "8fad2aa09567a7edabcc43f4101fa6199131df2c22929e001c87659d764f6dcf",
   "treeKindCount": 192,
-  "treeKindDigest": "3080221809bc0a3501d36727c782934f6cd5a3981ac768ae68752cb8c84c5526",
+  "treeKindDigest": "92a8f27acd9eaa1b8f4b346d9a0059b5c67b13e264485b0df412cfc2b32b247b",
   "kinds": [
     {
       "name": "AnnotationList",
@@ -34,11 +34,6 @@
     },
     {
       "name": "CaseBody",
-      "extends": "TreeKind",
-      "form": "case-object"
-    },
-    {
-      "name": "CommentList",
       "extends": "TreeKind",
       "form": "case-object"
     },
@@ -123,7 +118,7 @@
       "form": "case-object"
     },
     {
-      "name": "Doc",
+      "name": "DocComment",
       "extends": "TreeKind",
       "form": "case-object"
     },
@@ -710,6 +705,11 @@
     {
       "name": "Pattern.Variable",
       "extends": "Pattern",
+      "form": "case-object"
+    },
+    {
+      "name": "PlainComment",
+      "extends": "TreeKind",
       "form": "case-object"
     },
     {

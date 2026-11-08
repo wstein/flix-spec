@@ -231,32 +231,16 @@ its own numbers, or more divergences listed than counted.
 
 ## Diagnostic-kind coverage
 
-`Lexer`/`Parser2` can raise 24 distinct diagnostic kinds in this pipeline: 15
-`LexerError` variants and 9 `Parser2`-raised `ParseError` variants. (Three more `ParseError`
-variants — `MissingRegion`, `NeedAtleastOne`, `MissingBinaryOperator` — are raised only by
-`Weeder2`, a phase this pipeline never runs; they are out of scope by construction, not a gap.)
-Fixtures now exercise 23 of those 24.
+At v0.79.0 the pipeline retains the 15 lexer diagnostic kinds and the parser's visible-token
+errors. Comments are absent from `State.visible`, so `expect` and its variants cannot receive
+comment tokens. The old `MisplacedComments` branches have been removed from Parser2.
 
-**The 24th, `ParseError.MisplacedComments`, is not merely unreproduced — it is unreachable by
-construction**, and the reason is worth recording precisely rather than leaving as "we couldn't
-trigger it":
-
-- `expect`/`expectAny`/`expectAnyOpt` each call `open()` before inspecting `nth(0)` to classify a
-  failure, and each has a match arm mapping a leading `CommentLine`/`CommentBlock` to
-  `MisplacedComments`.
-- `open()` unconditionally calls `comments()`, which unconditionally consumes any run of leading
-  comments (doc or not) and wraps them in a `CommentList` node, *before returning*.
-- So by the time `expect` et al. inspect `nth(0)`, any leading `CommentLine`/`CommentBlock` has
-  already been consumed by `open()`'s own call. Those two match arms can never fire: `nth(0)`
-  cannot be a plain comment at that point.
-
-`ParseError.MisplacedDocComments`, by contrast, *is* reachable — but not through that same dead
-code. It comes from a second, independent check inside `comments()` itself: after consuming a run
-of comments, if the last one was a doc comment (`CommentDoc`) and the token now at `nth(0)` is not
-`isDocumentable` (cannot start a declaration or `case`), the doc comment is "dangling" and
-`comments()` raises `MisplacedDocComments` directly — no `expect()` call involved.
-`fixtures/negative/declarations__doc-comment-misplaced-before-paren.flix` exercises exactly this:
-a doc comment immediately before `(`, which is not documentable.
+`MisplacedDocComments` remains reachable and is now reported while rebuilding the tree
+(`Parser2.scala:374–380`). A doc run is misplaced when it is trailing on the previous visible
+token's line, or when there is no documentable node starting at the next visible token. The
+negative `comments__misplaced-inline-doc`, `comments__orphan-doc-at-eof` and
+`comments__doc-inside-expression` fixtures distinguish those cases. Comment tokens remain in
+`PlainComment` nodes even when diagnosed; normalization preserves them and their diagnostics.
 
 ## Transparency, and why it is symmetric
 
@@ -269,7 +253,7 @@ The exact figure is **generated**, not written here: `ast/coverage.json` carries
 `generateCoverage` whenever fixtures change.
 
 <!-- generated: wrappers -->
-At this pin that is **498 of 4484 nodes (11.1%)**, across 147 fixtures.
+At this pin that is **552 of 4619 nodes (12.0%)**, across 163 fixtures.
 Read [`ast/coverage.json`](../ast/coverage.json) for the per-kind `alwaysSingleChildWrapper`
 breakdown; this paragraph is regenerated from it rather than retyped.
 <!-- /generated: wrappers -->
@@ -311,7 +295,7 @@ What a consumer still declares, and must:
 | `flatten` | its own pure grouping nodes, spliced at any arity | its side |
 | `recoveryMarkers` | its own error-recovery nodes | its side, in the structural lane only |
 
-### Triangulation: does the contract describe the reference, or one consumer?
+### Historical triangulation at v0.75.1
 
 This is the design's one structural weakness, and it cannot be argued away — only measured. Every
 rule in `ast/transparency.json` is justified from the reference's own source, but the rules were
@@ -425,8 +409,8 @@ found it; that is what the corpus is for. Narrowing the `$` exclusion to exactly
 behaviour is what closed them.
 
 <!-- generated: lossless -->
-It now holds on **all 147 fixtures and all 892
-cleanly-parsed corpus files** — 892 of the 893 corpus files parse without error, and the
+It now holds on **all 163 fixtures and all 893
+cleanly-parsed corpus files** — 893 of the 894 corpus files parse without error, and the
 remainder are excluded rather than failing (see below).
 <!-- /generated: lossless -->
 
