@@ -77,7 +77,7 @@ class SyntaxProfilesTest extends AnyFunSuite with Matchers {
   }
   test("mutation: an eleventh release profile is rejected") {
     mutated(r => manifest(r)(entries => entries :+ entries.head))(
-      _.getMessage should include("exact ten ordered release profiles")
+      _.getMessage should include("profiles/profiles.json.profiles: 11 item(s), more than maxItems 10")
     )
   }
   test("mutation: a missing source identity is rejected") {
@@ -88,7 +88,7 @@ class SyntaxProfilesTest extends AnyFunSuite with Matchers {
         Json.JObject(first.asObject.updated("sources", Json.JObject(sources))) :: entries.tail
       })
     )(
-      _.getMessage should include("exact four vocabulary source identities")
+      _.getMessage should include(".sources: 3 properties, fewer than minProperties 4")
     )
   }
   test("mutation: an extra source identity is rejected") {
@@ -108,7 +108,7 @@ class SyntaxProfilesTest extends AnyFunSuite with Matchers {
         val sources = first("sources").asObject.updated(key, Json.JString("not-a-blob"))
         Json.JObject(first.asObject.updated("sources", Json.JObject(sources))) :: entries.tail
       })
-    )(_.getMessage should include("invalid source blob identity"))
+    )(_.getMessage should include("SyntaxTree.scala: 'not-a-blob' does not match ^[0-9a-f]{40}$"))
   }
   test("mutation: cross-profile snapshots cannot replace a historical expectation") {
     mutated(r =>
