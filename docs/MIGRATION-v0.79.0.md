@@ -55,7 +55,7 @@ v0.77.0 scope; this migration does not claim a new search or change their filing
 The corpus changes from 893 files (713 main, 180 examples) to 894 (717 main, 177 examples).
 893 parse without error, and all 893 clean parses are lossless. The remaining file is the
 upstream resiliency input `main/test/flix/resiliency/ford-fulkerson-prefix.flix`, an intentionally
-truncated declaration (`def maximumFlow(g: Graph) =`). It reports `UnexpectedToken` at lines 10
+truncated qualified expression (`let g4 = FordFulkerson.`). It reports `UnexpectedToken` at lines 10
 and 11. Its source is unchanged from v0.77.0, whose corpus already had one non-clean parse;
 this is existing malformed test input, not a claim that the full corpus parses cleanly. Status has 182 reachable-covered
 and four fixture-only TreeKinds, six structurally unattachable TreeKinds, and no unknown or
