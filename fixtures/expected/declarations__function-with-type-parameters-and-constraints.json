@@ -3,8 +3,8 @@
   "generatedBy": "flix.spec.ProjectionExtractor",
   "toolVersion": "2.0.0",
   "form": "normalized",
-  "upstreamCommit": "4a5b60a31ac03bb762f68b554a0fc2b6f4d982b9",
-  "oracleSha256": "20007d79f97b696ba388113e2a4235227691d33a00bfa669f2316b37a7b14201",
+  "upstreamCommit": "36d923ca325dc466b28c63419667e6026a80f920",
+  "oracleSha256": "8fad2aa09567a7edabcc43f4101fa6199131df2c22929e001c87659d764f6dcf",
   "units": [
     {
       "source": "fixtures/positive/declarations__function-with-type-parameters-and-constraints.flix",
