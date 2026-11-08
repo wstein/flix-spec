@@ -8,11 +8,11 @@ The official [release artifact](https://github.com/flix/flix/releases/tag/v0.77.
 and is 39,157,744 bytes. The artifact remains recorded as digest-only; this migration does not
 establish build provenance linking its bytes to the source commit.
 
-## The Reader phase is gone
+## The Reader phase is gone (since v0.76.1)
 
 This is the only breaking change, and it is in the API rather than the vocabulary.
 
-v0.77.0 deletes `language/ast/shared/Input.scala` and `language/phase/Reader.scala`. The compiler
+The intervening v0.76.1 deletes `language/ast/shared/Input.scala` and `language/phase/Reader.scala`. The compiler
 now builds its `ReadAst.Root` directly from `Source` values, as `Flix.scala` does with
 `ReadAst.Root(getSources.map(src => src -> ()).toMap)`. `Input`, `Reader.run` and
 `AvailableClasses.empty` no longer exist, and this repository drove all three: the parser adapter
@@ -30,7 +30,8 @@ from a phase that no longer runs would silently become zero.
 
 ## Vocabulary
 
-Purely additive. Nothing was removed or re-parented.
+Purely additive over the previous v0.76.0 pin. Nothing was removed or re-parented.
+Both additions first appear in the intervening v0.76.2 release.
 
 - **`UsesOrImports.Package`** (TreeKind 191 → 192). `use()` now recognises a package path:
   `use flixball::Game.Board` and `use flixball::{Game, Board}`.

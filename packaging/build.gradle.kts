@@ -58,6 +58,7 @@ val assembleArtifacts = tasks.register<Sync>("assembleArtifacts") {
     // The ledger travels with the fixtures on purpose: a consumer comparing against them needs to
     // know which divergences are known reference defects rather than faults in their own parser.
     into("defects") { from(rootProject.file("defects")) }
+    into("profiles") { from(rootProject.file("profiles")) }
 }
 
 // A marker whose *name* carries the pin: visible in `jar tf`, greppable, and

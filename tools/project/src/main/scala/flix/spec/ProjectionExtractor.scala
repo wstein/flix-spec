@@ -11,7 +11,7 @@ import java.nio.file.{Files, Path, Paths}
 /** Emits projected concrete syntax trees for `.flix` files, conforming to `schemas/projection.schema.json`
   * (implementation plan section 3.1).
   *
-  * Drives `Reader.run -> Lexer.run -> Parser2.run` directly rather than `Flix.check()`. The public route returns the
+  * Drives `ReadAst.Root -> Lexer.run -> Parser2.run` directly rather than `Flix.check()`. The public route returns the
   * CST for the entire compilation, standard library included -- roughly a million nodes for a one-line fixture -- so
   * every expectation would embed the stdlib. The phase pipeline parses exactly the inputs it is given.
   *
@@ -116,7 +116,7 @@ object ProjectionExtractor {
     flix.threadPool = new ca.uwaterloo.flix.util.ThreadPool(1)
     try {
 
-      // v0.77.0 deleted the Reader phase and `shared.Input` with it: the compiler now builds its
+      // v0.76.1 deleted the Reader phase and `shared.Input` with it: the compiler now builds its
       // `ReadAst.Root` directly from `Source` values (`Flix.scala`, `ReadAst.Root(getSources...)`).
       // This reproduces exactly what the deleted Reader did for a real file -- read the bytes with
       // the compiler's own default charset and wrap them in a `Source` named by path -- so the
