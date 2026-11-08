@@ -1,0 +1,1269 @@
+{
+  "schemaVersion": 1,
+  "upstreamCommit": "36d923ca325dc466b28c63419667e6026a80f920",
+  "upstreamTag": "v0.79.0",
+  "scope": "Bounded catalogue: three row-tail productions and selected comment placement/documentation cases. All other syntax remains outside this catalogue.",
+  "variants": [
+    {
+      "id": "row-tail.extensible.variable",
+      "production": "extensibleType",
+      "description": "variable tail after the bar in Type.Extensible",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3779-3793",
+      "evidence": [
+        {
+          "fixture": "fixtures/positive/types__extensible-tail-variable.flix",
+          "form": "raw",
+          "diagnostics": [],
+          "matches": [
+            {
+              "kind": "Type.Extensible",
+              "children": [
+                {
+                  "token": "HashBar",
+                  "text": "#|"
+                },
+                {
+                  "kind": "Type.PredicateWithTypes"
+                },
+                {
+                  "token": "Bar",
+                  "text": "|"
+                },
+                {
+                  "kind": "Type.Type",
+                  "children": [
+                    {
+                      "kind": "Type.Variable",
+                      "children": [
+                        {
+                          "token": "NameLowercase",
+                          "text": "r"
+                        }
+                      ],
+                      "exactChildren": true
+                    }
+                  ],
+                  "exactChildren": true
+                },
+                {
+                  "token": "BarHash",
+                  "text": "|#"
+                }
+              ],
+              "exactChildren": true
+            }
+          ],
+          "absent": []
+        }
+      ]
+    },
+    {
+      "id": "row-tail.extensible.complex",
+      "production": "extensibleType",
+      "description": "complex tail after the bar in Type.Extensible",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3779-3793",
+      "evidence": [
+        {
+          "fixture": "fixtures/positive/types__extensible-tail-complex.flix",
+          "form": "raw",
+          "diagnostics": [],
+          "matches": [
+            {
+              "kind": "Type.Extensible",
+              "children": [
+                {
+                  "token": "HashBar",
+                  "text": "#|"
+                },
+                {
+                  "kind": "Type.PredicateWithTypes"
+                },
+                {
+                  "token": "Bar",
+                  "text": "|"
+                },
+                {
+                  "kind": "Type.Type",
+                  "children": [
+                    {
+                      "kind": "Type.Apply",
+                      "children": [
+                        {
+                          "kind": "Type.Type",
+                          "descendants": [
+                            {
+                              "token": "NameUppercase",
+                              "text": "List"
+                            }
+                          ]
+                        },
+                        {
+                          "kind": "Type.ArgumentList",
+                          "children": [
+                            {
+                              "token": "BracketL"
+                            },
+                            {
+                              "kind": "Type.Argument",
+                              "descendants": [
+                                {
+                                  "kind": "Type.Variable",
+                                  "children": [
+                                    {
+                                      "token": "NameLowercase",
+                                      "text": "r"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "token": "BracketR"
+                            }
+                          ],
+                          "exactChildren": true
+                        }
+                      ],
+                      "exactChildren": true
+                    }
+                  ],
+                  "exactChildren": true
+                },
+                {
+                  "token": "BarHash",
+                  "text": "|#"
+                }
+              ],
+              "exactChildren": true
+            }
+          ],
+          "absent": []
+        }
+      ]
+    },
+    {
+      "id": "row-tail.extensible.missing",
+      "production": "extensibleType",
+      "description": "missing tail after the bar in Type.Extensible",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3779-3793",
+      "evidence": [
+        {
+          "fixture": "fixtures/negative/types__missing-extensible-tail.flix",
+          "form": "raw",
+          "diagnostics": [
+            {
+              "kind": "UnexpectedToken",
+              "line": 1
+            }
+          ],
+          "matches": [
+            {
+              "kind": "Type.Extensible",
+              "children": [
+                {
+                  "token": "HashBar",
+                  "text": "#|"
+                },
+                {
+                  "kind": "Type.PredicateWithTypes"
+                },
+                {
+                  "token": "Bar",
+                  "text": "|"
+                },
+                {
+                  "kind": "Type.Type",
+                  "children": [
+                    {
+                      "kind": "ErrorTree",
+                      "children": [],
+                      "exactChildren": true
+                    }
+                  ],
+                  "exactChildren": true
+                },
+                {
+                  "token": "BarHash",
+                  "text": "|#"
+                }
+              ],
+              "exactChildren": true
+            }
+          ],
+          "absent": []
+        }
+      ]
+    },
+    {
+      "id": "row-tail.schema.variable",
+      "production": "schemaType",
+      "description": "variable tail after the bar in Type.Schema",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3795-3809",
+      "evidence": [
+        {
+          "fixture": "fixtures/positive/types__schema-tail-variable.flix",
+          "form": "raw",
+          "diagnostics": [],
+          "matches": [
+            {
+              "kind": "Type.Schema",
+              "children": [
+                {
+                  "token": "HashCurlyL",
+                  "text": "#{"
+                },
+                {
+                  "kind": "Type.PredicateWithTypes"
+                },
+                {
+                  "token": "Bar",
+                  "text": "|"
+                },
+                {
+                  "kind": "Type.Type",
+                  "children": [
+                    {
+                      "kind": "Type.Variable",
+                      "children": [
+                        {
+                          "token": "NameLowercase",
+                          "text": "r"
+                        }
+                      ],
+                      "exactChildren": true
+                    }
+                  ],
+                  "exactChildren": true
+                },
+                {
+                  "token": "CurlyR",
+                  "text": "}"
+                }
+              ],
+              "exactChildren": true
+            }
+          ],
+          "absent": []
+        },
+        {
+          "fixture": "fixtures/positive/types__schema-tail-variable.flix",
+          "form": "normalized",
+          "diagnostics": [],
+          "matches": [
+            {
+              "kind": "Type.Schema",
+              "children": [
+                {
+                  "token": "HashCurlyL",
+                  "text": "#{"
+                },
+                {
+                  "kind": "Type.PredicateWithTypes"
+                },
+                {
+                  "token": "Bar",
+                  "text": "|"
+                },
+                {
+                  "kind": "Type.Variable",
+                  "children": [
+                    {
+                      "token": "NameLowercase",
+                      "text": "r"
+                    }
+                  ],
+                  "exactChildren": true
+                },
+                {
+                  "token": "CurlyR",
+                  "text": "}"
+                }
+              ],
+              "exactChildren": true
+            }
+          ],
+          "absent": []
+        }
+      ]
+    },
+    {
+      "id": "row-tail.schema.complex",
+      "production": "schemaType",
+      "description": "complex tail after the bar in Type.Schema",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3795-3809",
+      "evidence": [
+        {
+          "fixture": "fixtures/positive/types__schema-tail-complex.flix",
+          "form": "raw",
+          "diagnostics": [],
+          "matches": [
+            {
+              "kind": "Type.Schema",
+              "children": [
+                {
+                  "token": "HashCurlyL",
+                  "text": "#{"
+                },
+                {
+                  "kind": "Type.PredicateWithTypes"
+                },
+                {
+                  "token": "Bar",
+                  "text": "|"
+                },
+                {
+                  "kind": "Type.Type",
+                  "children": [
+                    {
+                      "kind": "Type.Apply",
+                      "children": [
+                        {
+                          "kind": "Type.Type",
+                          "descendants": [
+                            {
+                              "token": "NameUppercase",
+                              "text": "List"
+                            }
+                          ]
+                        },
+                        {
+                          "kind": "Type.ArgumentList",
+                          "children": [
+                            {
+                              "token": "BracketL"
+                            },
+                            {
+                              "kind": "Type.Argument",
+                              "descendants": [
+                                {
+                                  "kind": "Type.Variable",
+                                  "children": [
+                                    {
+                                      "token": "NameLowercase",
+                                      "text": "r"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "token": "BracketR"
+                            }
+                          ],
+                          "exactChildren": true
+                        }
+                      ],
+                      "exactChildren": true
+                    }
+                  ],
+                  "exactChildren": true
+                },
+                {
+                  "token": "CurlyR",
+                  "text": "}"
+                }
+              ],
+              "exactChildren": true
+            }
+          ],
+          "absent": []
+        }
+      ]
+    },
+    {
+      "id": "row-tail.schema.missing",
+      "production": "schemaType",
+      "description": "missing tail after the bar in Type.Schema",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3795-3809",
+      "evidence": [
+        {
+          "fixture": "fixtures/negative/types__missing-schema-tail.flix",
+          "form": "raw",
+          "diagnostics": [
+            {
+              "kind": "UnexpectedToken",
+              "line": 1
+            }
+          ],
+          "matches": [
+            {
+              "kind": "Type.Schema",
+              "children": [
+                {
+                  "token": "HashCurlyL",
+                  "text": "#{"
+                },
+                {
+                  "kind": "Type.PredicateWithTypes"
+                },
+                {
+                  "token": "Bar",
+                  "text": "|"
+                },
+                {
+                  "kind": "Type.Type",
+                  "children": [
+                    {
+                      "kind": "ErrorTree",
+                      "children": [],
+                      "exactChildren": true
+                    }
+                  ],
+                  "exactChildren": true
+                },
+                {
+                  "token": "CurlyR",
+                  "text": "}"
+                }
+              ],
+              "exactChildren": true
+            }
+          ],
+          "absent": []
+        }
+      ]
+    },
+    {
+      "id": "row-tail.schema-row.variable",
+      "production": "schemaRowType",
+      "description": "variable tail after the bar in Type.SchemaRow",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3811-3824",
+      "evidence": [
+        {
+          "fixture": "fixtures/positive/types__schema-row-tail-variable.flix",
+          "form": "raw",
+          "diagnostics": [],
+          "matches": [
+            {
+              "kind": "Type.SchemaRow",
+              "children": [
+                {
+                  "token": "HashParenL",
+                  "text": "#("
+                },
+                {
+                  "kind": "Type.PredicateWithTypes"
+                },
+                {
+                  "token": "Bar",
+                  "text": "|"
+                },
+                {
+                  "kind": "Type.Type",
+                  "children": [
+                    {
+                      "kind": "Type.Variable",
+                      "children": [
+                        {
+                          "token": "NameLowercase",
+                          "text": "r"
+                        }
+                      ],
+                      "exactChildren": true
+                    }
+                  ],
+                  "exactChildren": true
+                },
+                {
+                  "token": "ParenR",
+                  "text": ")"
+                }
+              ],
+              "exactChildren": true
+            }
+          ],
+          "absent": []
+        }
+      ]
+    },
+    {
+      "id": "row-tail.schema-row.complex",
+      "production": "schemaRowType",
+      "description": "complex tail after the bar in Type.SchemaRow",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3811-3824",
+      "evidence": [
+        {
+          "fixture": "fixtures/positive/types__schema-row-tail-complex.flix",
+          "form": "raw",
+          "diagnostics": [],
+          "matches": [
+            {
+              "kind": "Type.SchemaRow",
+              "children": [
+                {
+                  "token": "HashParenL",
+                  "text": "#("
+                },
+                {
+                  "kind": "Type.PredicateWithTypes"
+                },
+                {
+                  "token": "Bar",
+                  "text": "|"
+                },
+                {
+                  "kind": "Type.Type",
+                  "children": [
+                    {
+                      "kind": "Type.Apply",
+                      "children": [
+                        {
+                          "kind": "Type.Type",
+                          "descendants": [
+                            {
+                              "token": "NameUppercase",
+                              "text": "List"
+                            }
+                          ]
+                        },
+                        {
+                          "kind": "Type.ArgumentList",
+                          "children": [
+                            {
+                              "token": "BracketL"
+                            },
+                            {
+                              "kind": "Type.Argument",
+                              "descendants": [
+                                {
+                                  "kind": "Type.Variable",
+                                  "children": [
+                                    {
+                                      "token": "NameLowercase",
+                                      "text": "r"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "token": "BracketR"
+                            }
+                          ],
+                          "exactChildren": true
+                        }
+                      ],
+                      "exactChildren": true
+                    }
+                  ],
+                  "exactChildren": true
+                },
+                {
+                  "token": "ParenR",
+                  "text": ")"
+                }
+              ],
+              "exactChildren": true
+            }
+          ],
+          "absent": []
+        }
+      ]
+    },
+    {
+      "id": "row-tail.schema-row.missing",
+      "production": "schemaRowType",
+      "description": "missing tail after the bar in Type.SchemaRow",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3811-3824",
+      "evidence": [
+        {
+          "fixture": "fixtures/negative/types__missing-schema-row-tail.flix",
+          "form": "raw",
+          "diagnostics": [
+            {
+              "kind": "UnexpectedToken",
+              "line": 1
+            }
+          ],
+          "matches": [
+            {
+              "kind": "Type.SchemaRow",
+              "children": [
+                {
+                  "token": "HashParenL",
+                  "text": "#("
+                },
+                {
+                  "kind": "Type.PredicateWithTypes"
+                },
+                {
+                  "token": "Bar",
+                  "text": "|"
+                },
+                {
+                  "kind": "Type.Type",
+                  "children": [
+                    {
+                      "kind": "ErrorTree",
+                      "children": [],
+                      "exactChildren": true
+                    }
+                  ],
+                  "exactChildren": true
+                },
+                {
+                  "token": "ParenR",
+                  "text": ")"
+                }
+              ],
+              "exactChildren": true
+            }
+          ],
+          "absent": []
+        }
+      ]
+    },
+    {
+      "id": "comment.leading-between-trailing-eof",
+      "production": "buildTree/placeComments",
+      "description": "Plain comments before the first declaration, after an expression, between declarations, and at EOF retain root sibling order",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:168-183",
+      "evidence": [
+        {
+          "fixture": "fixtures/positive/comments__leading-trailing-and-eof.flix",
+          "form": "raw",
+          "diagnostics": [],
+          "matches": [
+            {
+              "kind": "Root",
+              "children": [
+                {
+                  "kind": "UsesOrImports.UseOrImportList"
+                },
+                {
+                  "kind": "PlainComment",
+                  "children": [
+                    {
+                      "token": "CommentLine",
+                      "text": "// before first token"
+                    }
+                  ]
+                },
+                {
+                  "kind": "Decl.Def",
+                  "children": [
+                    {
+                      "kind": "Ident",
+                      "children": [
+                        {
+                          "token": "NameLowercase",
+                          "text": "f"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "PlainComment",
+                  "children": [
+                    {
+                      "token": "CommentLine",
+                      "text": "// trailing expression"
+                    }
+                  ]
+                },
+                {
+                  "kind": "PlainComment",
+                  "children": [
+                    {
+                      "token": "CommentBlock",
+                      "text": "/* before second declaration */"
+                    }
+                  ]
+                },
+                {
+                  "kind": "Decl.Def",
+                  "children": [
+                    {
+                      "kind": "Ident",
+                      "children": [
+                        {
+                          "token": "NameLowercase",
+                          "text": "g"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "PlainComment",
+                  "children": [
+                    {
+                      "token": "CommentLine",
+                      "text": "// end of file"
+                    }
+                  ]
+                }
+              ],
+              "exactChildren": true
+            }
+          ],
+          "absent": [
+            {
+              "kind": "DocComment"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "comment.qualified-name",
+      "production": "buildTree/placeComments",
+      "description": "A block comment remains inside QName between Foo and the dot",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:168-183",
+      "evidence": [
+        {
+          "fixture": "fixtures/positive/comments__between-qualified-name-and-operator.flix",
+          "form": "raw",
+          "diagnostics": [],
+          "matches": [
+            {
+              "kind": "QName",
+              "children": [
+                {
+                  "kind": "Ident",
+                  "children": [
+                    {
+                      "token": "NameUppercase",
+                      "text": "Foo"
+                    }
+                  ]
+                },
+                {
+                  "kind": "PlainComment",
+                  "children": [
+                    {
+                      "token": "CommentBlock",
+                      "text": "/* path */"
+                    }
+                  ]
+                },
+                {
+                  "token": "Dot",
+                  "text": "."
+                },
+                {
+                  "kind": "Ident",
+                  "children": [
+                    {
+                      "token": "NameLowercase",
+                      "text": "bar"
+                    }
+                  ]
+                }
+              ],
+              "exactChildren": true
+            }
+          ],
+          "absent": []
+        }
+      ]
+    },
+    {
+      "id": "comment.binary-operator",
+      "production": "buildTree/placeComments",
+      "description": "Comments immediately before and after an operator remain ordered within Expr.Binary",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:168-183",
+      "evidence": [
+        {
+          "fixture": "fixtures/positive/comments__between-qualified-name-and-operator.flix",
+          "form": "raw",
+          "diagnostics": [],
+          "matches": [
+            {
+              "kind": "Expr.Binary",
+              "children": [
+                {
+                  "kind": "Expr.Expr",
+                  "descendants": [
+                    {
+                      "token": "LiteralInt",
+                      "text": "1"
+                    }
+                  ]
+                },
+                {
+                  "kind": "PlainComment",
+                  "children": [
+                    {
+                      "token": "CommentBlock",
+                      "text": "/* left */"
+                    }
+                  ]
+                },
+                {
+                  "kind": "Operator",
+                  "children": [
+                    {
+                      "token": "Plus",
+                      "text": "+"
+                    }
+                  ]
+                },
+                {
+                  "kind": "PlainComment",
+                  "children": [
+                    {
+                      "token": "CommentBlock",
+                      "text": "/* right */"
+                    }
+                  ]
+                },
+                {
+                  "kind": "Expr.Expr",
+                  "descendants": [
+                    {
+                      "token": "LiteralInt",
+                      "text": "2"
+                    }
+                  ]
+                }
+              ],
+              "exactChildren": true
+            }
+          ],
+          "absent": []
+        }
+      ]
+    },
+    {
+      "id": "comment.parameter-type",
+      "production": "buildTree/placeComments",
+      "description": "Comments on both sides of a parameter colon stay in Parameter",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:168-183",
+      "evidence": [
+        {
+          "fixture": "fixtures/positive/comments__inside-type-and-arguments.flix",
+          "form": "raw",
+          "diagnostics": [],
+          "matches": [
+            {
+              "kind": "Parameter",
+              "children": [
+                {
+                  "kind": "Ident",
+                  "children": [
+                    {
+                      "token": "NameLowercase",
+                      "text": "x"
+                    }
+                  ]
+                },
+                {
+                  "kind": "PlainComment",
+                  "children": [
+                    {
+                      "token": "CommentBlock",
+                      "text": "/* name */"
+                    }
+                  ]
+                },
+                {
+                  "token": "Colon"
+                },
+                {
+                  "kind": "PlainComment",
+                  "children": [
+                    {
+                      "token": "CommentBlock",
+                      "text": "/* type */"
+                    }
+                  ]
+                },
+                {
+                  "kind": "Type.Type"
+                }
+              ],
+              "exactChildren": true
+            }
+          ],
+          "absent": []
+        }
+      ]
+    },
+    {
+      "id": "comment.type-application",
+      "production": "buildTree/placeComments",
+      "description": "A comment between List and its type argument list belongs to Type.Apply",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:168-183",
+      "evidence": [
+        {
+          "fixture": "fixtures/positive/comments__inside-type-and-arguments.flix",
+          "form": "raw",
+          "diagnostics": [],
+          "matches": [
+            {
+              "kind": "Type.Apply",
+              "children": [
+                {
+                  "kind": "Type.Type",
+                  "descendants": [
+                    {
+                      "token": "NameUppercase",
+                      "text": "List"
+                    }
+                  ]
+                },
+                {
+                  "kind": "PlainComment",
+                  "children": [
+                    {
+                      "token": "CommentBlock",
+                      "text": "/* application */"
+                    }
+                  ]
+                },
+                {
+                  "kind": "Type.ArgumentList"
+                }
+              ],
+              "exactChildren": true
+            }
+          ],
+          "absent": []
+        }
+      ]
+    },
+    {
+      "id": "comment.argument-separator",
+      "production": "buildTree/placeComments",
+      "description": "Comments after the opening parenthesis and argument separator stay in ArgumentList",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:168-183",
+      "evidence": [
+        {
+          "fixture": "fixtures/positive/comments__inside-type-and-arguments.flix",
+          "form": "raw",
+          "diagnostics": [],
+          "matches": [
+            {
+              "kind": "ArgumentList",
+              "children": [
+                {
+                  "token": "ParenL"
+                },
+                {
+                  "kind": "PlainComment",
+                  "children": [
+                    {
+                      "token": "CommentBlock",
+                      "text": "/* arg */"
+                    }
+                  ]
+                },
+                {
+                  "kind": "Argument",
+                  "descendants": [
+                    {
+                      "token": "NameLowercase",
+                      "text": "x"
+                    }
+                  ]
+                },
+                {
+                  "token": "Comma"
+                },
+                {
+                  "kind": "PlainComment",
+                  "children": [
+                    {
+                      "token": "CommentBlock",
+                      "text": "/* separator */"
+                    }
+                  ]
+                },
+                {
+                  "kind": "Argument",
+                  "descendants": [
+                    {
+                      "token": "LiteralInt",
+                      "text": "2"
+                    }
+                  ]
+                },
+                {
+                  "token": "ParenR"
+                }
+              ],
+              "exactChildren": true
+            }
+          ],
+          "absent": []
+        }
+      ]
+    },
+    {
+      "id": "documentation.def-attachment",
+      "production": "buildTree/placeComments",
+      "description": "Documentation is the first child of the named def; declaration metadata stays on that declaration",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:168-183",
+      "evidence": [
+        {
+          "fixture": "fixtures/positive/comments__documentation-attachment.flix",
+          "form": "raw",
+          "diagnostics": [],
+          "matches": [
+            {
+              "kind": "Decl.Def",
+              "firstChild": {
+                "kind": "DocComment",
+                "children": [
+                  {
+                    "token": "CommentDoc",
+                    "text": "/// documents f"
+                  },
+                  {
+                    "token": "CommentLine",
+                    "text": "//// retained with documentation"
+                  }
+                ],
+                "exactChildren": true
+              },
+              "children": [
+                {
+                  "kind": "DocComment"
+                },
+                {
+                  "kind": "AnnotationList",
+                  "descendants": [
+                    {
+                      "token": "Annotation",
+                      "text": "@Deprecated"
+                    }
+                  ]
+                },
+                {
+                  "kind": "ModifierList",
+                  "children": [
+                    {
+                      "token": "KeywordPub",
+                      "text": "pub"
+                    }
+                  ]
+                },
+                {
+                  "kind": "Ident",
+                  "children": [
+                    {
+                      "token": "NameLowercase",
+                      "text": "f"
+                    }
+                  ],
+                  "exactChildren": true
+                }
+              ]
+            }
+          ],
+          "absent": []
+        }
+      ]
+    },
+    {
+      "id": "documentation.struct-attachment",
+      "production": "buildTree/placeComments",
+      "description": "Documentation is the first child of the named struct; declaration metadata stays on that declaration",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:168-183",
+      "evidence": [
+        {
+          "fixture": "fixtures/positive/comments__documentation-attachment.flix",
+          "form": "raw",
+          "diagnostics": [],
+          "matches": [
+            {
+              "kind": "Decl.Struct",
+              "firstChild": {
+                "kind": "DocComment",
+                "children": [
+                  {
+                    "token": "CommentDoc",
+                    "text": "/// documents field"
+                  }
+                ],
+                "exactChildren": true
+              },
+              "children": [
+                {
+                  "kind": "DocComment"
+                },
+                {
+                  "kind": "Ident",
+                  "children": [
+                    {
+                      "token": "NameUppercase",
+                      "text": "S"
+                    }
+                  ],
+                  "exactChildren": true
+                }
+              ]
+            }
+          ],
+          "absent": []
+        }
+      ]
+    },
+    {
+      "id": "documentation.field-attachment",
+      "production": "buildTree/placeComments",
+      "description": "Documentation is the first child of the named field; declaration metadata stays on that declaration",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:168-183",
+      "evidence": [
+        {
+          "fixture": "fixtures/positive/comments__documentation-attachment.flix",
+          "form": "raw",
+          "diagnostics": [],
+          "matches": [
+            {
+              "kind": "StructField",
+              "firstChild": {
+                "kind": "DocComment",
+                "children": [
+                  {
+                    "token": "CommentDoc",
+                    "text": "/// documents x"
+                  }
+                ],
+                "exactChildren": true
+              },
+              "children": [
+                {
+                  "kind": "DocComment"
+                },
+                {
+                  "kind": "Ident",
+                  "children": [
+                    {
+                      "token": "NameLowercase",
+                      "text": "x"
+                    }
+                  ],
+                  "exactChildren": true
+                }
+              ]
+            }
+          ],
+          "absent": []
+        }
+      ]
+    },
+    {
+      "id": "documentation.misplaced-inline-doc",
+      "production": "reportMisplacedDocComments",
+      "description": "A doc comment without a documentable target remains plain and reports MisplacedDocComments",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:371-380",
+      "evidence": [
+        {
+          "fixture": "fixtures/negative/comments__misplaced-inline-doc.flix",
+          "form": "raw",
+          "diagnostics": [
+            {
+              "kind": "MisplacedDocComments",
+              "line": 1
+            }
+          ],
+          "matches": [
+            {
+              "kind": "Root",
+              "children": [
+                {
+                  "kind": "PlainComment",
+                  "children": [
+                    {
+                      "token": "CommentDoc",
+                      "text": "/// trailing doc"
+                    }
+                  ],
+                  "exactChildren": true
+                }
+              ]
+            }
+          ],
+          "absent": [
+            {
+              "kind": "DocComment"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "documentation.orphan-doc-at-eof",
+      "production": "reportMisplacedDocComments",
+      "description": "A doc comment without a documentable target remains plain and reports MisplacedDocComments",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:371-380",
+      "evidence": [
+        {
+          "fixture": "fixtures/negative/comments__orphan-doc-at-eof.flix",
+          "form": "raw",
+          "diagnostics": [
+            {
+              "kind": "MisplacedDocComments",
+              "line": 2
+            }
+          ],
+          "matches": [
+            {
+              "kind": "Root",
+              "children": [
+                {
+                  "kind": "PlainComment",
+                  "children": [
+                    {
+                      "token": "CommentDoc",
+                      "text": "/// orphan"
+                    }
+                  ],
+                  "exactChildren": true
+                }
+              ]
+            }
+          ],
+          "absent": [
+            {
+              "kind": "DocComment"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "documentation.doc-inside-expression",
+      "production": "reportMisplacedDocComments",
+      "description": "A doc comment without a documentable target remains plain and reports MisplacedDocComments",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:371-380",
+      "evidence": [
+        {
+          "fixture": "fixtures/negative/comments__doc-inside-expression.flix",
+          "form": "raw",
+          "diagnostics": [
+            {
+              "kind": "MisplacedDocComments",
+              "line": 2
+            }
+          ],
+          "matches": [
+            {
+              "kind": "Expr.Block",
+              "children": [
+                {
+                  "kind": "PlainComment",
+                  "children": [
+                    {
+                      "token": "CommentDoc",
+                      "text": "/// expression is not documentable"
+                    }
+                  ],
+                  "exactChildren": true
+                }
+              ]
+            }
+          ],
+          "absent": [
+            {
+              "kind": "DocComment"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
