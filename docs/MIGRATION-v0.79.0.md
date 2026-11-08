@@ -67,7 +67,7 @@ Reader/Input disappear at v0.76.1, and `UsesOrImports.Package`/`ColonColonTight`
 v0.76.2. That earlier repository migration had compared the v0.76.0 pin directly with v0.77.0;
 its aggregate delta was correct, but it had attributed intervening changes to the target release.
 
-The historical support is ten release profiles with inventories and nine targeted parser probes per
+The historical support is ten release profiles with vocabulary source identities and nine targeted parser probes per
 release. Those 90 observations cover selected historical boundaries; they are not historical corpus
 snapshots or evidence of complete grammar conformance. The current 21-variant catalogue is also
 bounded and is checked against this pin's fixtures separately.

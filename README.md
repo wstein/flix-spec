@@ -81,7 +81,7 @@ across v0.77.0–v0.79.0. See [the migration notes](docs/MIGRATION-v0.79.0.md).
 The [syntax variant catalogue](docs/SYNTAX-COVERAGE.md) checks 21 declared production variants
 against specific fixture trees, token identities and diagnostics. It is bounded evidence, not a
 percentage of grammar completeness. [Historical syntax profiles](docs/SYNTAX-PROFILES.md) retain
-ten separate oracle identities, inventories and nine targeted probes per release; selecting a profile
+ten separate oracle identities, vocabulary source identities and nine targeted probes per release; selecting a profile
 never relabels the current fixtures. These probes do not establish full historical grammar or corpus conformance.
 
 ### Kind status
