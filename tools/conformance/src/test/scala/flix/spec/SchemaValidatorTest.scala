@@ -68,6 +68,52 @@ class SchemaValidatorTest extends AnyFunSuite with Matchers {
     errors("-1", bounded, bounded) should not be empty
   }
 
+  test("maxItems enforces inclusive bounds through referenced and inline schemas") {
+    val root = Json.parse(
+      """{"definitions":{"Small":{"maxItems":1}},"type":"object","properties":{"values":{"$ref":"#/definitions/Small"}}}"""
+    )
+    errors("""{"values":[]}""", root, root) shouldBe Nil
+    errors("""{"values":[1]}""", root, root) shouldBe Nil
+    errors("""{"values":[1,2]}""", root, root).exists(_.contains("maxItems")) shouldBe true
+    val zero = Json.parse("""{"maxItems":0}""")
+    errors("[]", zero, zero) shouldBe Nil
+    errors("[1]", zero, zero) should not be empty
+    errors("{}", zero, zero) shouldBe Nil
+    val alternatives = Json.parse("""{"oneOf":[{"type":"array","maxItems":1},{"type":"string"}]}""")
+    errors("[1,2]", alternatives, alternatives) should not be empty
+  }
+
+  test("minProperties counts every own key and enforces zero and exact boundaries") {
+    val schema = Json.parse("""{"minProperties":2,"properties":{"known":{"type":"integer"}}}""")
+    errors("""{"known":1,"additional":2}""", schema, schema) shouldBe Nil
+    errors("""{"known":1}""", schema, schema).exists(_.contains("minProperties")) shouldBe true
+    errors("{}", schema, schema) should not be empty
+    errors("[]", schema, schema) shouldBe Nil
+    val zero = Json.parse("""{"minProperties":0}""")
+    errors("{}", zero, zero) shouldBe Nil
+    val nested = Json.parse("""{"type":"array","items":{"minProperties":1}}""")
+    errors("[{}]", nested, nested) should not be empty
+    errors("""[{"a":null}]""", nested, nested) shouldBe Nil
+  }
+
+  test("schema-form additionalProperties validates only undeclared values recursively") {
+    val schema = Json.parse(
+      """{"type":"object","properties":{"known":{"type":"integer"}},"additionalProperties":{"type":"string","pattern":"^[0-9a-f]{40}$"}}"""
+    )
+    val digest = "a" * 40
+    errors(s"""{"known":1,"blob":"$digest"}""", schema, schema) shouldBe Nil
+    errors("""{"known":1,"blob":"bad"}""", schema, schema).exists(_.contains("document.blob")) shouldBe true
+    errors("""{"known":"wrong"}""", schema, schema) should not be empty
+    val nested = Json.parse(
+      """{"additionalProperties":{"type":"object","required":["value"],"properties":{"value":{"type":"integer"}},"additionalProperties":false}}"""
+    )
+    errors("""{"extra":{"value":1}}""", nested, nested) shouldBe Nil
+    errors("""{"extra":{"value":"wrong"}}""", nested, nested) should not be empty
+    errors("""{"extra":{"value":1,"unexpected":2}}""", nested, nested) should not be empty
+    val allowed = Json.parse("""{"additionalProperties":true}""")
+    errors("""{"extra":null}""", allowed, allowed) shouldBe Nil
+  }
+
   test("uniqueItems is enforced, not merely declared") {
     val schema = Json.parse("""{"type":"array","uniqueItems":true}""")
     errors("""["a","b"]""", schema, schema) shouldBe Nil
