@@ -67,7 +67,7 @@
     "elide": {
       "type": "array",
       "deprecated": true,
-      "description": "DEPRECATED. Canonical TreeKind names this consumer legitimately does not produce, skipped when matching. Only a node with at most one child may be elided -- eliding a branching node would discard structure rather than a wrapper. Superseded by ast/transparency.json, which removes these nodes from fixtures/expected/ before any consumer sees them: doing it once, in the reference's repository, with a reason argued from the reference's own structure, is neutral in a way that doing it per consumer never was. Every entry here that names a kind ast/transparency.json already removes is dead weight and should be deleted. What remains admissible is a consumer-specific extra -- a canonical kind that consumer genuinely cannot produce but that is not transparent in the reference -- and each one is evidence about that consumer, not about the canonical tree.",
+      "description": "DEPRECATED. Canonical TreeKind names this consumer does not produce, skipped only at arity at most one, counting nodes and tokens. Canonical transparency is conditional per occurrence, so contract membership alone does not make an entry redundant. validateProjectionMap measures fixtures/expected: a covered entry is removable only if no surviving occurrence has arity at most one. If the kind survives, advice also conservatively retains it when the map declares any other canonical elide or flattenCanonical rule, because those rules can remove children first. Advice applies to this fixture suite, not all possible inputs. Consumer-specific extras remain permitted; every value must exist in ast/treekind.json.",
       "items": {
         "type": "string",
         "minLength": 1
@@ -95,7 +95,7 @@
       "items": {
         "type": "string"
       },
-      "description": "DEPRECATED. Canonical TreeKind names whose children are spliced into the parent at any arity -- the mirror of `flatten`, which does the same on the consumer's side. Needed when the reference groups members the consumer makes direct children: `UsesOrImports.UseOrImportList` holds every use in one node, and `elide` cannot remove it because elision only fires at arity <= 1. Superseded by ast/transparency.json's `splice` rule for the error vocabulary, which is the one case where splicing a canonical node is a fact about the reference rather than about a consumer. Retained for consumer-specific extras; every value must exist in ast/treekind.json."
+      "description": "DEPRECATED. Canonical TreeKind names whose children are spliced into the parent at any arity -- the mirror of `flatten`, which does the same on the consumer's side. Needed when the reference groups members the consumer makes direct children: `UsesOrImports.UseOrImportList` holds every use in one node, and `elide` cannot remove it because elision only fires at arity <= 1. Superseded by ast/transparency.json's `splice` rule for the error vocabulary, which is the one case where splicing a canonical node is a fact about the reference rather than about a consumer. Retained for consumer-specific extras; every value must exist in ast/treekind.json. validateProjectionMap advises removal of a covered entry only when no occurrence survives in fixtures/expected; contract membership alone is insufficient. This advice applies to the measured fixture suite, not all possible inputs."
     }
   },
   "additionalProperties": false

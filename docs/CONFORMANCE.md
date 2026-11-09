@@ -675,11 +675,16 @@ declare your own wrappers transparent in `ignored`; declare your own error nodes
 `recoveryMarkers`; leave the rest unmapped rather than guessing, because a wrong mapping reports as
 agreement and is worse than a gap.
 
-Do **not** add `elide` or `flattenCanonical` entries for canonical wrappers. They are deprecated:
-`fixtures/expected` already has those nodes removed, so an entry naming one is dead weight, and an
-entry naming a canonical kind that is *not* transparent in the reference is a claim about the
-reference that belongs in `ast/transparency.json` with an argument behind it — not in a consumer's
-map, where nothing can check it.
+`elide` and `flattenCanonical` are deprecated, but canonical transparency applies per occurrence.
+A contract entry can therefore leave canonical wrappers that still need consumer-specific rules.
+`validateProjectionMap` measures `fixtures/expected` before advising removal of a covered entry:
+`elide` requires no surviving occurrence with at most one child, counting nodes and tokens;
+`flattenCanonical` requires no surviving occurrence at all. If an `elide` kind survives, the
+validator also conservatively retains it when the map declares another canonical `elide` or
+`flattenCanonical` rule, because removing children first can make a branching occurrence singular.
+The advice applies to the measured fixture suite, not to every possible input. Retain needed
+consumer-specific extras; propose neutral reference rules in `ast/transparency.json` with an
+argument from the reference's structure. See [PROJECTION.md](PROJECTION.md#4-consumer-projection-maps).
 
 `mappings` values are validated against `ast/treekind.json`, so a typo or a stale kind name fails
 immediately instead of silently never matching. `validateProjectionMap` also rejects a node declared
