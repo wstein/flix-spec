@@ -1766,6 +1766,198 @@
           "absent": []
         }
       ]
+    },
+    {
+      "id": "type.arrow.right-associative",
+      "production": "Type.ttype / typeAndEffect",
+      "description": "arrow nests on the right and both binary nodes keep their Operator child",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3444-3487",
+      "evidence": [
+        {
+          "fixture": "fixtures/positive/types__arrow-types-are-right-associative.flix",
+          "form": "raw",
+          "diagnostics": [],
+          "matches": [
+            {
+              "kind": "Type.Binary",
+              "children": [
+                {
+                  "kind": "Type.Type",
+                  "children": [
+                    {
+                      "kind": "Type.Variable",
+                      "children": [
+                        {
+                          "token": "NameLowercase",
+                          "text": "a"
+                        }
+                      ],
+                      "exactChildren": true
+                    }
+                  ],
+                  "exactChildren": true
+                },
+                {
+                  "kind": "Operator",
+                  "children": [
+                    {
+                      "token": "ArrowThinRWhitespace",
+                      "text": "->"
+                    }
+                  ],
+                  "exactChildren": true
+                },
+                {
+                  "kind": "Type.Type",
+                  "children": [
+                    {
+                      "kind": "Type.Binary",
+                      "children": [
+                        {
+                          "kind": "Type.Type",
+                          "children": [
+                            {
+                              "kind": "Type.Variable",
+                              "children": [
+                                {
+                                  "token": "NameLowercase",
+                                  "text": "b"
+                                }
+                              ],
+                              "exactChildren": true
+                            }
+                          ],
+                          "exactChildren": true
+                        },
+                        {
+                          "kind": "Operator",
+                          "children": [
+                            {
+                              "token": "ArrowThinRWhitespace",
+                              "text": "->"
+                            }
+                          ],
+                          "exactChildren": true
+                        },
+                        {
+                          "kind": "Type.Type",
+                          "children": [
+                            {
+                              "kind": "Type.Variable",
+                              "children": [
+                                {
+                                  "token": "NameLowercase",
+                                  "text": "c"
+                                }
+                              ],
+                              "exactChildren": true
+                            }
+                          ],
+                          "exactChildren": true
+                        }
+                      ],
+                      "exactChildren": true
+                    }
+                  ],
+                  "exactChildren": true
+                }
+              ],
+              "exactChildren": true
+            }
+          ],
+          "absent": []
+        }
+      ]
+    },
+    {
+      "id": "type.arrow.result-effect",
+      "production": "Type.ttype / typeAndEffect",
+      "description": "the arrow binary keeps its Operator, result type, backslash and effect in order",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3444-3487",
+      "evidence": [
+        {
+          "fixture": "fixtures/positive/types__effect-annotation-binds-to-the-arrow-result.flix",
+          "form": "raw",
+          "diagnostics": [],
+          "matches": [
+            {
+              "kind": "Type.Binary",
+              "children": [
+                {
+                  "kind": "Type.Type",
+                  "children": [
+                    {
+                      "kind": "Type.Variable",
+                      "children": [
+                        {
+                          "token": "NameLowercase",
+                          "text": "a"
+                        }
+                      ],
+                      "exactChildren": true
+                    }
+                  ],
+                  "exactChildren": true
+                },
+                {
+                  "kind": "Operator",
+                  "children": [
+                    {
+                      "token": "ArrowThinRWhitespace",
+                      "text": "->"
+                    }
+                  ],
+                  "exactChildren": true
+                },
+                {
+                  "kind": "Type.Type",
+                  "children": [
+                    {
+                      "kind": "Type.Variable",
+                      "children": [
+                        {
+                          "token": "NameLowercase",
+                          "text": "b"
+                        }
+                      ],
+                      "exactChildren": true
+                    }
+                  ],
+                  "exactChildren": true
+                },
+                {
+                  "token": "Backslash",
+                  "text": "\\"
+                },
+                {
+                  "kind": "Type.Effect",
+                  "children": [
+                    {
+                      "kind": "Type.Type",
+                      "children": [
+                        {
+                          "kind": "Type.Variable",
+                          "children": [
+                            {
+                              "token": "NameLowercase",
+                              "text": "ef"
+                            }
+                          ],
+                          "exactChildren": true
+                        }
+                      ],
+                      "exactChildren": true
+                    }
+                  ],
+                  "exactChildren": true
+                }
+              ],
+              "exactChildren": true
+            }
+          ],
+          "absent": []
+        }
+      ]
     }
   ]
 }

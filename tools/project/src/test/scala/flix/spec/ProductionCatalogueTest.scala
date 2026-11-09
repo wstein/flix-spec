@@ -51,4 +51,7 @@ class ProductionCatalogueTest extends AnyFunSuite with Matchers {
   test("annotation and modifier evidence keeps non-singular lists on the declaration") {
     List("declaration.prefix.single", "declaration.prefix.multiple").foreach(witness)
   }
+  test("current consumer type-arrow divergences retain right nesting and effect binding") {
+    List("type.arrow.right-associative", "type.arrow.result-effect").foreach(witness)
+  }
 }
