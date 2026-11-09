@@ -89,7 +89,10 @@ object ProjectionMapValidator {
       val doc = Json.parseFile(Paths.get(path))
       doc.asObject.keySet.intersect(deprecatedKeys).toList.sorted.map { key =>
         val entries = doc.get(key).map(_.asArray.map(_.asString)).getOrElse(Nil).sorted
-        val redundant = removableEntries(key, entries, contract, occurrences)
+        val canonicalRules = List("elide", "flattenCanonical").flatMap { rule =>
+          doc.get(rule).map(_.asArray.map(_.asString)).getOrElse(Nil)
+        }.toSet
+        val redundant = removableEntries(key, entries, contract, occurrences, canonicalRules)
         val remaining = entries.filterNot(redundant.toSet)
         val detail =
           if (entries.isEmpty) "no entries; the key can be removed"
@@ -116,16 +119,21 @@ object ProjectionMapValidator {
 
   /** A deprecated entry can go only if the contract covers it and it acts on no surviving occurrence. Count all
     * children, including tokens: a one-token list still carries its token's role. This measures the committed fixture
-    * suite, not every possible Flix input.
+    * suite, not every possible Flix input. Other canonical rules can remove children first and make a branching
+    * occurrence singular. Conservatively retain surviving kinds whenever another canonical rule is declared; without
+    * simulating the full conformance transformation, original arities cannot prove those entries inert.
     */
   private[spec] def removableEntries(
       key: String,
       entries: List[String],
       contract: Transparency.Contract,
-      occurrences: Map[String, List[Int]]
+      occurrences: Map[String, List[Int]],
+      canonicalRules: Set[String] = Set.empty
   ): List[String] = entries.filter { kind =>
     contract.all.contains(kind) && (key match {
-      case "elide"            => !occurrences.getOrElse(kind, Nil).exists(_ <= 1)
+      case "elide" =>
+        !occurrences.contains(kind) ||
+        (!occurrences(kind).exists(_ <= 1) && (canonicalRules ++ entries - kind).isEmpty)
       case "flattenCanonical" => !occurrences.contains(kind)
       case _                  => false
     })

@@ -42,6 +42,18 @@ class ProjectionMapTest extends AnyFunSuite with Matchers {
     }
   }
 
+  private def runTool(main: String, args: String*): (Int, String) = {
+    val classpath = List(
+      ProjectionMapValidator.getClass.getProtectionDomain.getCodeSource.getLocation,
+      classOf[scala.Option[_]].getProtectionDomain.getCodeSource.getLocation
+    ).map(url => Paths.get(url.toURI).toString).mkString(java.io.File.pathSeparator)
+    val command =
+      List(Paths.get(System.getProperty("java.home"), "bin", "java").toString, "-cp", classpath, main) ++ args
+    val process = new ProcessBuilder(command: _*).directory(repoRoot.toFile).redirectErrorStream(true).start()
+    val output = new String(process.getInputStream.readAllBytes(), StandardCharsets.UTF_8)
+    (process.waitFor(), output)
+  }
+
   private val valid =
     """{
       |  "schemaVersion": 1,
@@ -194,11 +206,94 @@ class ProjectionMapTest extends AnyFunSuite with Matchers {
     val occurrences = Map("QName" -> List(2, 3), "ModifierList" -> List(0, 1, 2), "ErrorTree" -> List(1))
     val entries = List("QName", "ModifierList", "ErrorTree", "Type.Type", "Unknown.Kind", "Decl.Def")
     ProjectionMapValidator.removableEntries("elide", entries, contract, occurrences) shouldBe
-      List("QName", "Type.Type")
+      List("Type.Type")
     ProjectionMapValidator.removableEntries("flattenCanonical", entries, contract, occurrences) shouldBe
       List("Type.Type")
     ProjectionMapValidator.removableEntries("flattenCanonical", List("ErrorTree"), contract, Map.empty) shouldBe
       List("ErrorTree")
+    ProjectionMapValidator.removableEntries("elide", List("QName"), contract, occurrences) shouldBe List("QName")
+  }
+
+  test("deprecation advice retains QName when Ident elision can change its arity") {
+    val occurrences = ProjectionMapValidator.canonicalOccurrences(repoRoot.resolve("fixtures/expected"))
+    occurrences("QName").forall(_ >= 2) shouldBe true
+    occurrences("Ident") should contain(1)
+    val file = Files.createTempFile("projection-map-real-composition", ".json")
+    val report = Files.createTempFile("projection-map-real-report", ".json")
+    try {
+      val mappings = occurrences.keys.toList.sorted.map(k => s""""${Json.esc(k)}":"${Json.esc(k)}"""").mkString(",")
+      def measure(elide: String): Int = {
+        Files.writeString(
+          file,
+          s"""{"schemaVersion":1,"consumer":"composition","mappings":{$mappings},"ignored":["Ident","QName"],"elide":[$elide]}"""
+        )
+        val (exit, output) = runTool(
+          "flix.spec.Conformance",
+          "--actual",
+          "fixtures/expected",
+          "--map",
+          file.toString,
+          "--report",
+          report.toString
+        )
+        withClue(output) { Files.size(report) should be > 0L }
+        val divergences = Json.parseFile(report)("lanes")("oracle_conformance")("divergenceCount").asInt
+        withClue(output) { exit shouldBe (if (divergences == 0) 0 else 1) }
+        divergences
+      }
+      measure("\"Ident\",\"QName\"") shouldBe 0
+      measure("\"Ident\"") should be > 0
+    } finally {
+      Files.deleteIfExists(file)
+      Files.deleteIfExists(report)
+    }
+    ProjectionMapValidator.removableEntries("elide", List("Ident", "QName"), contract, occurrences) shouldBe empty
+  }
+
+  test("deprecation advice accounts for canonical rules under the other deprecated key") {
+    val occurrences = Map("QName" -> List(2))
+    ProjectionMapValidator.removableEntries(
+      "elide",
+      List("QName"),
+      contract,
+      occurrences,
+      Set("QName")
+    ) shouldBe List("QName")
+    ProjectionMapValidator.removableEntries(
+      "elide",
+      List("QName"),
+      contract,
+      occurrences,
+      Set("QName", "Ident")
+    ) shouldBe empty
+    ProjectionMapValidator.removableEntries(
+      "elide",
+      List("QName", "Type.Type"),
+      contract,
+      occurrences,
+      Set("QName", "Ident", "Type.Type")
+    ) shouldBe List("Type.Type")
+    ProjectionMapValidator.removableEntries(
+      "flattenCanonical",
+      List("QName", "ErrorTree"),
+      contract,
+      occurrences,
+      Set("QName", "Ident", "ErrorTree")
+    ) shouldBe List("ErrorTree")
+  }
+
+  test("CLI advice retains a surviving elide entry when flattenCanonical can change its children") {
+    val file = Files.createTempFile("projection-map-composition", ".json")
+    try {
+      Files.writeString(
+        file,
+        """{"schemaVersion":1,"consumer":"composition","mappings":{},"elide":["QName"],"flattenCanonical":["Ident"]}"""
+      )
+      val (exit, output) = runTool("flix.spec.ProjectionMapValidator", file.toString)
+      exit shouldBe 0
+      output should include("still yours:   QName")
+      output should not include "removable now: QName"
+    } finally Files.deleteIfExists(file)
   }
 
 }

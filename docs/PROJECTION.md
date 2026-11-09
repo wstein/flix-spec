@@ -179,9 +179,11 @@ reference's own structure rather than re-derived per consumer with each one's gr
 into it. Conditional rules can leave canonical occurrences that still need a consumer-specific extra.
 `validateProjectionMap` measures `fixtures/expected` before advising that an entry is "removable
 now". For a kind covered by `ast/transparency.json`, an `elide` entry is removable only when no
-surviving occurrence has at most one child, counting both nodes and tokens; a `flattenCanonical`
-entry is removable only when no occurrence survives at all. A single-token `AnnotationList` or
-`ModifierList` therefore still needs consumer elision, and a branching
+surviving occurrence has at most one child, counting both nodes and tokens. If the kind survives,
+the validator also retains it whenever the map declares another canonical `elide` or
+`flattenCanonical` rule: removing children first can make a branching occurrence singular.
+A `flattenCanonical` entry is removable only when no occurrence survives at all. A single-token
+`AnnotationList` or `ModifierList` therefore still needs consumer elision, and a branching
 `UsesOrImports.UseOrImportList` still needs consumer flattening when that consumer has no matching
 wrapper. The advice applies to the committed fixture suite, not to every possible input.
 
