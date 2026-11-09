@@ -1648,6 +1648,124 @@
           "absent": []
         }
       ]
+    },
+    {
+      "id": "declaration.prefix.single",
+      "production": "Decl.declaration / annotations / modifiers",
+      "description": "one annotation and modifier remain ordered singleton lists on their named declaration",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1430-1445",
+      "evidence": [
+        {
+          "fixture": "fixtures/positive/declarations__annotations-precede-modifiers.flix",
+          "form": "normalized",
+          "diagnostics": [],
+          "matches": [
+            {
+              "kind": "Decl.Def",
+              "children": [
+                {
+                  "kind": "AnnotationList",
+                  "children": [
+                    {
+                      "token": "Annotation",
+                      "text": "@Test"
+                    }
+                  ],
+                  "exactChildren": true
+                },
+                {
+                  "kind": "ModifierList",
+                  "children": [
+                    {
+                      "token": "KeywordPub",
+                      "text": "pub"
+                    }
+                  ],
+                  "exactChildren": true
+                },
+                {
+                  "token": "KeywordDef",
+                  "text": "def"
+                },
+                {
+                  "kind": "Ident",
+                  "children": [
+                    {
+                      "token": "NameLowercase",
+                      "text": "testAdd"
+                    }
+                  ],
+                  "exactChildren": true
+                }
+              ]
+            }
+          ],
+          "absent": []
+        }
+      ]
+    },
+    {
+      "id": "declaration.prefix.multiple",
+      "production": "Decl.declaration / annotations / modifiers",
+      "description": "multiple annotations and modifiers retain two ordered non-singular lists on their declaration",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1430-1445",
+      "evidence": [
+        {
+          "fixture": "fixtures/positive/declarations__multiple-prefixes.flix",
+          "form": "normalized",
+          "diagnostics": [],
+          "matches": [
+            {
+              "kind": "Decl.Trait",
+              "children": [
+                {
+                  "kind": "AnnotationList",
+                  "children": [
+                    {
+                      "token": "Annotation",
+                      "text": "@Deprecated"
+                    },
+                    {
+                      "token": "Annotation",
+                      "text": "@Test"
+                    }
+                  ],
+                  "exactChildren": true
+                },
+                {
+                  "kind": "ModifierList",
+                  "children": [
+                    {
+                      "token": "KeywordPub",
+                      "text": "pub"
+                    },
+                    {
+                      "token": "KeywordSealed",
+                      "text": "sealed"
+                    }
+                  ],
+                  "exactChildren": true
+                },
+                {
+                  "token": "KeywordTrait",
+                  "text": "trait"
+                },
+                {
+                  "kind": "Ident",
+                  "children": [
+                    {
+                      "token": "NameUppercase",
+                      "text": "Prefixes"
+                    }
+                  ],
+                  "exactChildren": true
+                }
+              ]
+            }
+          ],
+          "absent": []
+        }
+      ]
     }
   ]
 }

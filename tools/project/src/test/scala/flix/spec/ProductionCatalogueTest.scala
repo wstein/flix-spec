@@ -48,4 +48,7 @@ class ProductionCatalogueTest extends AnyFunSuite with Matchers {
   test("interpolation evidence distinguishes nested and adjacent expression boundaries") {
     List("interpolation.nested", "interpolation.adjacent").foreach(witness)
   }
+  test("annotation and modifier evidence keeps non-singular lists on the declaration") {
+    List("declaration.prefix.single", "declaration.prefix.multiple").foreach(witness)
+  }
 }
