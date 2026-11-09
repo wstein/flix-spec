@@ -179,4 +179,26 @@ class ProjectionMapTest extends AnyFunSuite with Matchers {
     )
     errors.exists(_.contains("no_such_node")) shouldBe true
   }
+  test("deprecation advice retains surviving scalar token wrappers and branching lists") {
+    val occurrences = ProjectionMapValidator.canonicalOccurrences(repoRoot.resolve("fixtures/expected"))
+    List("AnnotationList", "ModifierList").foreach { kind =>
+      occurrences(kind) should contain(1)
+      ProjectionMapValidator.removableEntries("elide", List(kind), contract, occurrences) shouldBe empty
+    }
+    val kind = "UsesOrImports.UseOrImportList"
+    occurrences(kind).exists(_ >= 2) shouldBe true
+    ProjectionMapValidator.removableEntries("flattenCanonical", List(kind), contract, occurrences) shouldBe empty
+  }
+
+  test("deprecation advice distinguishes elision arity from unconditional flattening") {
+    val occurrences = Map("QName" -> List(2, 3), "ModifierList" -> List(0, 1, 2), "ErrorTree" -> List(1))
+    val entries = List("QName", "ModifierList", "ErrorTree", "Type.Type", "Unknown.Kind", "Decl.Def")
+    ProjectionMapValidator.removableEntries("elide", entries, contract, occurrences) shouldBe
+      List("QName", "Type.Type")
+    ProjectionMapValidator.removableEntries("flattenCanonical", entries, contract, occurrences) shouldBe
+      List("Type.Type")
+    ProjectionMapValidator.removableEntries("flattenCanonical", List("ErrorTree"), contract, Map.empty) shouldBe
+      List("ErrorTree")
+  }
+
 }
