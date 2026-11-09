@@ -45,4 +45,7 @@ class ProductionCatalogueTest extends AnyFunSuite with Matchers {
       "expression.associativity.subtract-left"
     ).foreach(witness)
   }
+  test("interpolation evidence distinguishes nested and adjacent expression boundaries") {
+    List("interpolation.nested", "interpolation.adjacent").foreach(witness)
+  }
 }

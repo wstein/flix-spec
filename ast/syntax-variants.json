@@ -1498,6 +1498,156 @@
           "absent": []
         }
       ]
+    },
+    {
+      "id": "interpolation.nested",
+      "production": "Expression.interpolatedStringExpr",
+      "description": "nested opener belongs to an inner StringInterpolation, not the adjacent-interpolation path",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3275-3314",
+      "evidence": [
+        {
+          "fixture": "fixtures/positive/lexical__nested-string-interpolation.flix",
+          "form": "raw",
+          "diagnostics": [],
+          "matches": [
+            {
+              "kind": "Expr.StringInterpolation",
+              "children": [
+                {
+                  "token": "LiteralStringInterpolationL",
+                  "text": "\"${"
+                },
+                {
+                  "kind": "Expr.Expr",
+                  "children": [
+                    {
+                      "kind": "Expr.StringInterpolation",
+                      "children": [
+                        {
+                          "token": "LiteralStringInterpolationL",
+                          "text": "\"${"
+                        },
+                        {
+                          "kind": "Expr.Expr",
+                          "children": [
+                            {
+                              "kind": "QName",
+                              "children": [
+                                {
+                                  "kind": "Ident",
+                                  "children": [
+                                    {
+                                      "token": "NameLowercase",
+                                      "text": "x"
+                                    }
+                                  ],
+                                  "exactChildren": true
+                                }
+                              ],
+                              "exactChildren": true
+                            }
+                          ],
+                          "exactChildren": true
+                        },
+                        {
+                          "token": "LiteralStringInterpolationR",
+                          "text": "}\""
+                        }
+                      ],
+                      "exactChildren": true
+                    }
+                  ],
+                  "exactChildren": true
+                },
+                {
+                  "token": "LiteralStringInterpolationR",
+                  "text": "}\""
+                }
+              ],
+              "exactChildren": true
+            }
+          ],
+          "absent": []
+        }
+      ]
+    },
+    {
+      "id": "interpolation.adjacent",
+      "production": "Expression.interpolatedStringExpr",
+      "description": "a single }${ token separates two sibling expressions",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3275-3314",
+      "evidence": [
+        {
+          "fixture": "fixtures/positive/lexical__adjacent-string-interpolation.flix",
+          "form": "raw",
+          "diagnostics": [],
+          "matches": [
+            {
+              "kind": "Expr.StringInterpolation",
+              "children": [
+                {
+                  "token": "LiteralStringInterpolationL",
+                  "text": "\"${"
+                },
+                {
+                  "kind": "Expr.Expr",
+                  "children": [
+                    {
+                      "kind": "QName",
+                      "children": [
+                        {
+                          "kind": "Ident",
+                          "children": [
+                            {
+                              "token": "NameLowercase",
+                              "text": "x"
+                            }
+                          ],
+                          "exactChildren": true
+                        }
+                      ],
+                      "exactChildren": true
+                    }
+                  ],
+                  "exactChildren": true
+                },
+                {
+                  "token": "LiteralStringInterpolationL",
+                  "text": "}${"
+                },
+                {
+                  "kind": "Expr.Expr",
+                  "children": [
+                    {
+                      "kind": "QName",
+                      "children": [
+                        {
+                          "kind": "Ident",
+                          "children": [
+                            {
+                              "token": "NameLowercase",
+                              "text": "y"
+                            }
+                          ],
+                          "exactChildren": true
+                        }
+                      ],
+                      "exactChildren": true
+                    }
+                  ],
+                  "exactChildren": true
+                },
+                {
+                  "token": "LiteralStringInterpolationR",
+                  "text": "}\""
+                }
+              ],
+              "exactChildren": true
+            }
+          ],
+          "absent": []
+        }
+      ]
     }
   ]
 }
