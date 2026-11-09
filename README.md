@@ -78,7 +78,7 @@ across v0.77.0–v0.79.0. See [the migration notes](docs/MIGRATION-v0.79.0.md).
   | [`release.yml`](.github/workflows/release.yml) | `v*` tag | Verify, then publish the artifact bundle with `SHA256SUMS` |
   | [`pages.yml`](.github/workflows/pages.yml) | push to `main`, `v*` tag | Verify, then publish the Maven package (see "Consuming as a Maven package" below) |
 
-The [syntax variant catalogue](docs/SYNTAX-COVERAGE.md) checks 21 declared production variants
+The [syntax variant catalogue](docs/SYNTAX-COVERAGE.md) checks 32 declared production variants
 against specific fixture trees, token identities and diagnostics. It is bounded evidence, not a
 percentage of grammar completeness. [Historical syntax profiles](docs/SYNTAX-PROFILES.md) retain
 ten separate oracle identities, vocabulary source identities and nine targeted probes per release; selecting a profile

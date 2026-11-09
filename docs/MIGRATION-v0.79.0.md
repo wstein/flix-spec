@@ -69,7 +69,7 @@ its aggregate delta was correct, but it had attributed intervening changes to th
 
 The historical support is ten release profiles with vocabulary source identities and nine targeted parser probes per
 release. Those 90 observations cover selected historical boundaries; they are not historical corpus
-snapshots or evidence of complete grammar conformance. The current 21-variant catalogue is also
+snapshots or evidence of complete grammar conformance. The current 32-variant catalogue is also
 bounded and is checked against this pin's fixtures separately.
 
 ## Consumer migration
