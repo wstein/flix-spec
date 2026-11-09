@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "upstreamCommit": "36d923ca325dc466b28c63419667e6026a80f920",
   "upstreamTag": "v0.79.0",
-  "scope": "Bounded catalogue: row tails, comment placement/documentation and selected consumer-motivated operator decisions. All other syntax remains outside this catalogue.",
+  "scope": "Bounded catalogue: row tails, selected comments/documentation, expression and type operators, interpolation boundaries, declaration prefixes and two recovery paths. All other syntax remains outside this catalogue.",
   "variants": [
     {
       "id": "row-tail.extensible.variable",
@@ -1953,6 +1953,164 @@
                 }
               ],
               "exactChildren": true
+            }
+          ],
+          "absent": []
+        }
+      ]
+    },
+    {
+      "id": "recovery.operator-gap",
+      "production": "Expression.statement",
+      "description": "missing infix operator creates OperatorError inside Operator while parse diagnostics remain empty until weeding",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1510-1545",
+      "evidence": [
+        {
+          "fixture": "fixtures/negative/operator-error.flix",
+          "form": "raw",
+          "diagnostics": [],
+          "matches": [
+            {
+              "kind": "Expr.Binary",
+              "children": [
+                {
+                  "kind": "Expr.Expr",
+                  "children": [
+                    {
+                      "kind": "Expr.Literal",
+                      "children": [
+                        {
+                          "token": "LiteralInt",
+                          "text": "1"
+                        }
+                      ],
+                      "exactChildren": true
+                    }
+                  ],
+                  "exactChildren": true
+                },
+                {
+                  "kind": "Operator",
+                  "children": [
+                    {
+                      "kind": "OperatorError",
+                      "children": [],
+                      "exactChildren": true
+                    }
+                  ],
+                  "exactChildren": true
+                },
+                {
+                  "kind": "Expr.Expr",
+                  "children": [
+                    {
+                      "kind": "Expr.Literal",
+                      "children": [
+                        {
+                          "token": "LiteralInt",
+                          "text": "2"
+                        }
+                      ],
+                      "exactChildren": true
+                    }
+                  ],
+                  "exactChildren": true
+                }
+              ],
+              "exactChildren": true
+            }
+          ],
+          "absent": []
+        }
+      ]
+    },
+    {
+      "id": "recovery.interpolation-eof",
+      "production": "root / Expression.interpolatedStringExpr",
+      "description": "unterminated interpolation keeps an inner recovery node and a distinct top-level synthetic Err at EOF",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:897-946",
+      "evidence": [
+        {
+          "fixture": "fixtures/negative/lexical__unterminated-string-interpolation.flix",
+          "form": "raw",
+          "diagnostics": [
+            {
+              "kind": "UnterminatedStringInterpolation",
+              "line": 1
+            }
+          ],
+          "matches": [
+            {
+              "kind": "Root",
+              "firstChild": {
+                "kind": "UsesOrImports.UseOrImportList",
+                "children": [],
+                "exactChildren": true
+              },
+              "children": [
+                {
+                  "kind": "Decl.Def",
+                  "descendants": [
+                    {
+                      "kind": "Expr.StringInterpolation",
+                      "children": [
+                        {
+                          "token": "LiteralStringInterpolationL",
+                          "text": "\"${"
+                        },
+                        {
+                          "kind": "Expr.Expr",
+                          "children": [
+                            {
+                              "kind": "QName",
+                              "children": [
+                                {
+                                  "kind": "Ident",
+                                  "children": [
+                                    {
+                                      "token": "NameLowercase",
+                                      "text": "x"
+                                    }
+                                  ],
+                                  "exactChildren": true
+                                }
+                              ],
+                              "exactChildren": true
+                            }
+                          ],
+                          "exactChildren": true
+                        },
+                        {
+                          "kind": "ErrorTree",
+                          "children": [],
+                          "exactChildren": true
+                        }
+                      ],
+                      "exactChildren": true
+                    }
+                  ]
+                },
+                {
+                  "kind": "ErrorTree",
+                  "children": [
+                    {
+                      "kind": "AnnotationList",
+                      "children": [],
+                      "exactChildren": true
+                    },
+                    {
+                      "kind": "ModifierList",
+                      "children": [],
+                      "exactChildren": true
+                    },
+                    {
+                      "token": "Err",
+                      "text": "\n"
+                    }
+                  ],
+                  "exactChildren": true
+                }
+              ]
             }
           ],
           "absent": []

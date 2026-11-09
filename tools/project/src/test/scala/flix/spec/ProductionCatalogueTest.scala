@@ -54,4 +54,7 @@ class ProductionCatalogueTest extends AnyFunSuite with Matchers {
   test("current consumer type-arrow divergences retain right nesting and effect binding") {
     List("type.arrow.right-associative", "type.arrow.result-effect").foreach(witness)
   }
+  test("recovery evidence retains missing-operator and synthetic EOF structure") {
+    List("recovery.operator-gap", "recovery.interpolation-eof").foreach(witness)
+  }
 }
