@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "upstreamCommit": "36d923ca325dc466b28c63419667e6026a80f920",
   "upstreamTag": "v0.79.0",
-  "scope": "Bounded catalogue: three row-tail productions and selected comment placement/documentation cases. All other syntax remains outside this catalogue.",
+  "scope": "Bounded catalogue: row tails, comment placement/documentation and selected consumer-motivated operator decisions. All other syntax remains outside this catalogue.",
   "variants": [
     {
       "id": "row-tail.extensible.variable",
@@ -1262,6 +1262,240 @@
               "kind": "DocComment"
             }
           ]
+        }
+      ]
+    },
+    {
+      "id": "expression.precedence.multiply-in-add",
+      "production": "Expression.expression / Op.rightBindsTighter",
+      "description": "multiplication is the right operand of addition, with an explicit Operator child",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1780-1819",
+      "evidence": [
+        {
+          "fixture": "fixtures/positive/expressions__operator-precedence.flix",
+          "form": "normalized",
+          "diagnostics": [],
+          "matches": [
+            {
+              "kind": "Expr.Binary",
+              "children": [
+                {
+                  "kind": "Ident",
+                  "children": [
+                    {
+                      "token": "NameLowercase",
+                      "text": "g"
+                    }
+                  ],
+                  "exactChildren": true
+                },
+                {
+                  "kind": "Operator",
+                  "children": [
+                    {
+                      "token": "Plus",
+                      "text": "+"
+                    }
+                  ],
+                  "exactChildren": true
+                },
+                {
+                  "kind": "Expr.Binary",
+                  "children": [
+                    {
+                      "kind": "Ident",
+                      "children": [
+                        {
+                          "token": "NameLowercase",
+                          "text": "h"
+                        }
+                      ],
+                      "exactChildren": true
+                    },
+                    {
+                      "kind": "Operator",
+                      "children": [
+                        {
+                          "token": "Star",
+                          "text": "*"
+                        }
+                      ],
+                      "exactChildren": true
+                    },
+                    {
+                      "kind": "Ident",
+                      "children": [
+                        {
+                          "token": "NameLowercase",
+                          "text": "i"
+                        }
+                      ],
+                      "exactChildren": true
+                    }
+                  ],
+                  "exactChildren": true
+                }
+              ],
+              "exactChildren": true
+            }
+          ],
+          "absent": []
+        }
+      ]
+    },
+    {
+      "id": "expression.associativity.cons-right",
+      "production": "Expression.expression / Op.rightBindsTighter",
+      "description": "equal-precedence cons nests in the right operand",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1780-1819",
+      "evidence": [
+        {
+          "fixture": "fixtures/positive/expressions__associativity-pairs.flix",
+          "form": "normalized",
+          "diagnostics": [],
+          "matches": [
+            {
+              "kind": "Expr.Binary",
+              "children": [
+                {
+                  "kind": "Ident",
+                  "children": [
+                    {
+                      "token": "NameLowercase",
+                      "text": "a"
+                    }
+                  ],
+                  "exactChildren": true
+                },
+                {
+                  "kind": "Operator",
+                  "children": [
+                    {
+                      "token": "ColonColon",
+                      "text": "::"
+                    }
+                  ],
+                  "exactChildren": true
+                },
+                {
+                  "kind": "Expr.Binary",
+                  "children": [
+                    {
+                      "kind": "Ident",
+                      "children": [
+                        {
+                          "token": "NameLowercase",
+                          "text": "b"
+                        }
+                      ],
+                      "exactChildren": true
+                    },
+                    {
+                      "kind": "Operator",
+                      "children": [
+                        {
+                          "token": "ColonColon",
+                          "text": "::"
+                        }
+                      ],
+                      "exactChildren": true
+                    },
+                    {
+                      "kind": "Ident",
+                      "children": [
+                        {
+                          "token": "NameLowercase",
+                          "text": "c"
+                        }
+                      ],
+                      "exactChildren": true
+                    }
+                  ],
+                  "exactChildren": true
+                }
+              ],
+              "exactChildren": true
+            }
+          ],
+          "absent": []
+        }
+      ]
+    },
+    {
+      "id": "expression.associativity.subtract-left",
+      "production": "Expression.expression / Op.rightBindsTighter",
+      "description": "equal-precedence subtraction nests in the left operand",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1780-1819",
+      "evidence": [
+        {
+          "fixture": "fixtures/positive/expressions__associativity-pairs.flix",
+          "form": "normalized",
+          "diagnostics": [],
+          "matches": [
+            {
+              "kind": "Expr.Binary",
+              "children": [
+                {
+                  "kind": "Expr.Binary",
+                  "children": [
+                    {
+                      "kind": "Ident",
+                      "children": [
+                        {
+                          "token": "NameLowercase",
+                          "text": "a"
+                        }
+                      ],
+                      "exactChildren": true
+                    },
+                    {
+                      "kind": "Operator",
+                      "children": [
+                        {
+                          "token": "Minus",
+                          "text": "-"
+                        }
+                      ],
+                      "exactChildren": true
+                    },
+                    {
+                      "kind": "Ident",
+                      "children": [
+                        {
+                          "token": "NameLowercase",
+                          "text": "b"
+                        }
+                      ],
+                      "exactChildren": true
+                    }
+                  ],
+                  "exactChildren": true
+                },
+                {
+                  "kind": "Operator",
+                  "children": [
+                    {
+                      "token": "Minus",
+                      "text": "-"
+                    }
+                  ],
+                  "exactChildren": true
+                },
+                {
+                  "kind": "Ident",
+                  "children": [
+                    {
+                      "token": "NameLowercase",
+                      "text": "c"
+                    }
+                  ],
+                  "exactChildren": true
+                }
+              ],
+              "exactChildren": true
+            }
+          ],
+          "absent": []
         }
       ]
     }
