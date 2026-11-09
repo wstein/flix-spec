@@ -27,15 +27,18 @@ GROUP="io.github.wstein"
 # data bundle, while `pages.yml` publishes three artifacts plus the plugin marker -- so a release that omitted
 # the runner and the plugin entirely reported success, and a missing marker would break
 # `plugins { id("io.github.wstein.flix-spec") }` at settings evaluation with nothing to notice.
+MARKER_GROUP="io.github.wstein.flix-spec"
+MARKER_ARTIFACT="io.github.wstein.flix-spec.gradle.plugin"
 ARTIFACTS=(
   "flix-spec:packaging/build/distributions"
   "flix-spec-runner:tools/conformance/build/libs"
   "flix-spec-gradle-plugin:tools/gradle-plugin/build/libs"
+  "$MARKER_ARTIFACT:tools/gradle-plugin/build/libs"
 )
 # The Gradle plugin marker is a POM-only coordinate under its own group; it is what `plugins { id(...) }`
-# resolves before it ever reaches the implementation jar.
-MARKER_GROUP="io.github.wstein.flix-spec"
-MARKER_ARTIFACT="io.github.wstein.flix-spec.gradle.plugin"
+# resolves before it ever reaches the implementation jar. Resolve its dependency with Gradle, too:
+# snapshot POMs have timestamped filenames selected by maven-metadata.xml, not -SNAPSHOT.pom paths.
+# The marker must reach the expected implementation module and its byte-identical jar.
 
 REQUIRE_DIGEST=0
 VERSION=""
@@ -52,10 +55,21 @@ if [ -z "$VERSION" ]; then
   exit 2
 fi
 
+# One fresh home for this invocation: no dependency from an earlier run can mask serving failures.
+WORK="$(mktemp -d)"
+trap 'rm -rf "$WORK"' EXIT
+export GRADLE_USER_HOME="$WORK/gradle-home"
+
 # Each coordinate is probed in its own Gradle project below; this loop drives them.
 for entry in "${ARTIFACTS[@]}"; do
 ARTIFACT="${entry%%:*}"
 LOCAL_DIR="${entry##*:}"
+GROUP="io.github.wstein"
+LOCAL_ARTIFACT="$ARTIFACT"
+if [ "$ARTIFACT" = "$MARKER_ARTIFACT" ]; then
+  GROUP="$MARKER_GROUP"
+  LOCAL_ARTIFACT="flix-spec-gradle-plugin"
+fi
 # Only the data bundle has a documented interior. The runner and plugin jars are code, so "resolves and is
 # byte-identical to what we built" is the whole question for them.
 if [ "$ARTIFACT" = "flix-spec" ]; then
@@ -66,22 +80,16 @@ fi
 
 echo "Resolving $GROUP:$ARTIFACT:$VERSION from $REPO_URL"
 
-WORK="$(mktemp -d)"
-trap 'rm -rf "$WORK"' EXIT
-
-# An isolated Gradle home: a cache hit would prove nothing about what is published.
-export GRADLE_USER_HOME="$WORK/gradle-home"
-
 # The digest of the artifact this checkout builds, when it builds this version. Resolution plus a
 # content check only ever proves that *something* plausible is being served -- an older snapshot under
 # the same coordinate satisfies both, which is the failure this script exists to catch one layer down.
 # Comparing digests is the only form of the question that distinguishes "published" from "published
 # and actually the thing we built". Requires the reproducible-jar settings in packaging/build.gradle.kts.
-LOCAL_JAR="$ROOT/$LOCAL_DIR/$ARTIFACT-$VERSION.jar"
+LOCAL_JAR="$ROOT/$LOCAL_DIR/$LOCAL_ARTIFACT-$VERSION.jar"
 EXPECTED_SHA=""
 if [ -f "$LOCAL_JAR" ]; then
   EXPECTED_SHA="$(shasum -a 256 "$LOCAL_JAR" | cut -d' ' -f1)"
-  echo "Comparing against locally built $ARTIFACT-$VERSION.jar ($EXPECTED_SHA)"
+  echo "Comparing against locally built $LOCAL_ARTIFACT-$VERSION.jar ($EXPECTED_SHA)"
 elif [ "$REQUIRE_DIGEST" -eq 1 ]; then
   echo "FATAL: --require-digest was given but there is no local build at $LOCAL_JAR." >&2
   echo "       In CI the jar was built in this job, so its absence means the job is wrong, not the" >&2
@@ -93,8 +101,9 @@ else
   echo "      Run ./gradlew :packaging:artifactsJar first to compare digests." >&2
 fi
 
-mkdir -p "$WORK/probe"
-cat > "$WORK/probe/settings.gradle.kts" <<EOF
+PROBE="$WORK/$ARTIFACT"
+mkdir -p "$PROBE"
+cat > "$PROBE/settings.gradle.kts" <<EOF
 rootProject.name = "flix-spec-publish-probe"
 EOF
 
@@ -106,13 +115,16 @@ else
   CONTENT_FILTER="mavenContent { releasesOnly() }"
 fi
 
-cat > "$WORK/probe/build.gradle.kts" <<EOF
+cat > "$PROBE/build.gradle.kts" <<EOF
 plugins { base }
 
 repositories {
     maven {
         url = uri("$REPO_URL")
-        content { includeGroup("$GROUP") }
+        content {
+            includeGroup("io.github.wstein")
+            includeGroup("$MARKER_GROUP")
+        }
         $CONTENT_FILTER
     }
 }
@@ -130,7 +142,10 @@ tasks.register("resolveProbe") {
 
         // Resolution alone only proves the coordinate exists. The artifact is a data bundle, so
         // also assert it carries the files consumers actually depend on.
-        val jar = resolved.first { it.name.endsWith(".jar") }
+        val jar = files.resolvedConfiguration.resolvedArtifacts.singleOrNull {
+            it.moduleVersion.id.group == "io.github.wstein" &&
+                it.moduleVersion.id.name == "$LOCAL_ARTIFACT" && it.extension == "jar"
+        }?.file ?: error("missing expected module io.github.wstein:$LOCAL_ARTIFACT")
         val entries = java.util.zip.ZipFile(jar).use { z -> z.entries().toList().map { it.name } }
         listOf($CONTENT_REQUIRED).forEach { required ->
             require(entries.contains(required)) { "published jar is missing \$required" }
@@ -162,7 +177,7 @@ EOF
 # Reporting an identity mismatch as "not resolvable" sends the reader to look at Pages configuration
 # for an artifact that resolved perfectly well and was simply the wrong bytes.
 PROBE_LOG="$WORK/probe.log"
-if ! ( cd "$WORK/probe" && "$ROOT/gradlew" --no-daemon --quiet resolveProbe 2>&1 ) | tee "$PROBE_LOG"; then
+if ! ( cd "$PROBE" && "$ROOT/gradlew" --no-daemon --quiet resolveProbe 2>&1 ) | tee "$PROBE_LOG"; then
   if grep -q "served artifact is not the one built here" "$PROBE_LOG"; then
     echo "FATAL: $GROUP:$ARTIFACT:$VERSION resolves, but the served artifact is not the one built here." >&2
     echo "       Serving is fine; the identity is wrong. Either an older artifact is still being" >&2
@@ -182,19 +197,4 @@ fi
 
 done
 
-# The plugin marker is POM-only and has no jar to compare, but it is what `plugins { id(...) }` resolves
-# first: without it the id is unresolvable and the implementation jar is never reached.
-MARKER_URL="${REPO_URL%/}/${MARKER_GROUP//.//}/$MARKER_ARTIFACT/$VERSION/$MARKER_ARTIFACT-$VERSION.pom"
-if [[ "$MARKER_URL" == file://* ]]; then
-  [ -f "${MARKER_URL#file://}" ] && MARKER_OK=yes || MARKER_OK=no
-else
-  [ "$(curl -s -o /dev/null -w '%{http_code}' -L "$MARKER_URL")" = "200" ] && MARKER_OK=yes || MARKER_OK=no
-fi
-if [ "$MARKER_OK" != "yes" ]; then
-  echo "FATAL: the Gradle plugin marker $MARKER_GROUP:$MARKER_ARTIFACT:$VERSION is not served." >&2
-  echo "       plugins { id } resolves this before the implementation jar, so the plugin is unusable" >&2
-  echo "       even though its own jar published." >&2
-  exit 1
-fi
-echo "OK: the Gradle plugin marker resolves"
 echo "OK: all published coordinates for $VERSION verified"
