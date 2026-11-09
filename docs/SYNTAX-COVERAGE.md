@@ -47,3 +47,46 @@ Tests exercise structural, token, ordering, first-child, diagnostic, provenance 
 failures. When changing a predicate or adding a variant, also mutate its evidence so the gate fails
 for the intended reason. Run the source checks with `umask 022`; no standalone oracle build is
 needed for this checker.
+
+## Consumer-driven extension matrix
+
+The catalogue now declares 32 variants, including eleven additions in the matrix below.
+The number describes this finite set of decisions, not a percentage of Flix grammar.
+The existing nine row-tail variants already cover the consumer's variable-only row-tail
+limitation; duplicating those witnesses would add no new production decision.
+
+| Decision and variant IDs | Consumer evidence and reason to select it | Executable witness |
+| --- | --- | --- |
+| Expression precedence: `expression.precedence.multiply-in-add`, `expression.associativity.cons-right`, `expression.associativity.subtract-left` | JetBrains' precedence-chain mapping requires a wrapper to become a binary node when its operator is present ([CONFORMANCE](CONFORMANCE.md#precedence-chains)). The mixed precedence chain and equal-precedence left/right pairs control that boundary; they are not newly measured consumer failures. | Exact normalized binary children include named operands and `Operator`; multiplication nests on the right of addition, cons on the right of cons, subtraction on the left of subtraction. |
+| Type arrows: `type.arrow.right-associative`, `type.arrow.result-effect` | The tree-sitter 0.79 remeasurement finds missing operator children in both existing arrow fixtures: expected/actual arities 3/2 and 4/3, followed by `Operator` versus `Type.Binary` / `Type.Variable`. These are current measured differences, rather than extrapolation from the old pilot. | Exact raw binary children bind the right-nested arrow and the result/effect sequence, including the backslash token. |
+| Interpolation: `interpolation.nested`, `interpolation.adjacent` | JetBrains retains an exact EOF interpolation recovery difference ([migration review](https://github.com/wstein/flix-jetbrains-plugin/blob/775e3a814f91f3ad7f1ae00a7afebe53eb230454/docs/conformance-migration.md)). Nested and adjacent complete interpolations are nearby positive controls for Parser2's opener distinction, not claims of additional consumer failures. | Exact raw outer/inner interpolation children distinguish a nested opener from the single `}${` boundary between sibling expressions. |
+| Declaration prefixes: `declaration.prefix.single`, `declaration.prefix.multiple` | Tree-sitter's [recorded baseline](https://github.com/wstein/tree-sitter-flix/blob/349e4d3d23c71bd13e4e414b708714e5ca3c78b2/conformance/baseline.json) records a real fix for annotation/modifier list arity. Single and multiple prefixes preserve the production distinction that required that fix. | Ordered lists belong to the named declaration; exact list children distinguish one from two annotations/modifiers. Nonempty singleton lists also survive normalization. |
+| Recovery: `recovery.operator-gap`, `recovery.interpolation-eof` | [CONFORMANCE](CONFORMANCE.md) records the attempted synthetic `OperatorError` consumer implementation; JetBrains' migration review retains the separate synthetic EOF error identity. No adapter should synthesize reference-shaped recovery to hide these differences. | Raw `OperatorError` remains inside `Operator` inside binary operands. EOF evidence requires both the inner interpolation error and a separate direct root error containing `Err`, plus exactly `UnterminatedStringInterpolation` at line 1. The missing operator has no parse diagnostic; the weeder reports it later. |
+
+The tree-sitter remeasurement used Flix v0.79.0 / commit
+`36d923ca325dc466b28c63419667e6026a80f920`, oracle digest from `pin.json`, and
+fixture revision `aa16763bda3466465bc0735b4c2b14dcf2e072fc64893b49991f74cefeeb312f`
+(the 163-fixture input before these three new positive fixtures). It is separate
+from the committed older-pin consumer baseline. Its consumer head is
+`b6c4b3590c565108bda44023bb938a968114e2a5`, projection-map SHA-256
+`e43fb516c61ed8c2acaaaa25b603d29ca2be78eb648ee95d60d7c640f3093b11`,
+and runner SHA-256 `ea02ead1dbe3c5d9d22f6bfffec7f8207715f04ebc0d33a694e9f75aebc1fec2`.
+Reproduce from that consumer checkout with
+`node scripts/flix-spec-conformance.mjs /path/to/163-fixture-flix-spec --runner /path/to/runner.jar --remeasure --out /path/to/report`.
+Adding witnesses here does not
+approve new consumer baselines or declare their gates passing.
+
+Parser2 citations are in each variant. Prefix ordering is additionally established
+by `Decl.declaration` at lines 1016–1022; nonempty lists come from lines 1430–1445.
+For EOF, `Decl.declaration` at lines 1016–1047 retains the top-level error,
+`closeWithError` at lines 458–464 avoids duplicating lexer diagnostics, and
+`interpolatedStringExpr` at lines 3275–3314 retains the inner error. The lexer
+emits the unterminated-interpolation diagnostic at `Lexer.scala:646`.
+
+`ProductionCatalogueTest` checks all eleven new witnesses, rotates each matched
+anchor's direct children while retaining its kinds/tokens, and runs a token-text
+mutation through the evidence gate for every addition. EOF diagnostic kind and
+line mutations must fail specifically with a diagnostic mismatch. These checks
+preserve projection provenance so a hash failure cannot substitute for testing
+the production predicate. The existing defect ledger and incomplete corpus case
+remain part of their existing gates.

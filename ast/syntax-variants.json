@@ -2028,7 +2028,7 @@
       "id": "recovery.interpolation-eof",
       "production": "root / Expression.interpolatedStringExpr",
       "description": "unterminated interpolation keeps an inner recovery node and a distinct top-level synthetic Err at EOF",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:897-946",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1016-1047",
       "evidence": [
         {
           "fixture": "fixtures/negative/lexical__unterminated-string-interpolation.flix",
