@@ -176,8 +176,14 @@ Example projection map entry (`tree-sitter-flix`'s `conformance/projection-map.j
 `elide` and `flattenCanonical` — which named *canonical* kinds to skip — are **deprecated**. That
 work now happens once, upstream, in `ast/transparency.json`, where it can be argued from the
 reference's own structure rather than re-derived per consumer with each one's grammar shape leaking
-into it. What remains admissible there is a consumer-specific extra: a canonical kind that consumer
-genuinely cannot produce but that is not transparent in the reference.
+into it. Conditional rules can leave canonical occurrences that still need a consumer-specific extra.
+`validateProjectionMap` measures `fixtures/expected` before advising that an entry is "removable
+now". For a kind covered by `ast/transparency.json`, an `elide` entry is removable only when no
+surviving occurrence has at most one child, counting both nodes and tokens; a `flattenCanonical`
+entry is removable only when no occurrence survives at all. A single-token `AnnotationList` or
+`ModifierList` therefore still needs consumer elision, and a branching
+`UsesOrImports.UseOrImportList` still needs consumer flattening when that consumer has no matching
+wrapper. The advice applies to the committed fixture suite, not to every possible input.
 
 `recoveryMarkers` is the one thing a consumer must still declare about the reference's vocabulary,
 and it is really a declaration about its own: which of its nodes mark error recovery. It is
