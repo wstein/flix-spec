@@ -21,6 +21,9 @@ fi
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
+echo "== verifying Maven release and snapshot resolution =="
+bash tools/packaging/verify-published-test.sh
+
 echo "== running Gradle test suite =="
 ./gradlew test
 
