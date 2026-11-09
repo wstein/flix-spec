@@ -317,3 +317,8 @@ tasks.withType<Test> {
         }
     }
 }
+
+// Functional release-bundle tests consume the same source-data Sync output as the tar workflow.
+tasks.named<Test>("test") {
+    dependsOn(":packaging:assembleArtifacts")
+}

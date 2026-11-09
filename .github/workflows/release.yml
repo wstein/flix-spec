@@ -105,26 +105,10 @@ jobs:
           # cannot order. One release should not answer to two conventions.
           BUNDLE="flix-spec-${VERSION#v}"
 
-          mkdir -p "dist/${BUNDLE}/corpus"
-          cp -r pin.json ast schemas fixtures defects \
-                LICENSE.md NOTICE.md README.md "dist/${BUNDLE}/"
-          cp corpus/corpus.json "dist/${BUNDLE}/corpus/"
-
-          # Both projected-tree forms and the transparency contract are load-bearing for a
-          # consumer: fixtures/expected is what conformance compares against, fixtures/raw is what
-          # the recovery lane compares against, and ast/transparency.json is the only thing that
-          # explains the difference. The copies above are recursive and pick all three up today;
-          # asserting it means a future narrowing of that copy fails here rather than shipping a
-          # bundle whose canonical trees cannot be explained.
-          for required in fixtures/raw fixtures/expected ast/transparency.json; do
-            test -e "dist/${BUNDLE}/${required}" \
-              || { echo "FATAL: release bundle is missing ${required}" >&2; exit 1; }
-          done
-
-          tar -czf "dist/${BUNDLE}.tar.gz" -C dist "${BUNDLE}"
-          ( cd dist && sha256sum "${BUNDLE}.tar.gz" > SHA256SUMS )
-          ( cd "dist/${BUNDLE}" && find . -type f -print0 \
-              | sort -z | xargs -0 sha256sum > ../SHA256SUMS.contents )
+          # Share Maven's source-data assembly, including bounded syntax profiles.
+          ./gradlew -q :packaging:assembleArtifacts
+          bash tools/packaging/assemble-release-bundle.sh \
+            packaging/build/assembled README.md dist "$VERSION"
 
           echo "bundle=${BUNDLE}" >> "$GITHUB_OUTPUT"
           cat dist/SHA256SUMS
