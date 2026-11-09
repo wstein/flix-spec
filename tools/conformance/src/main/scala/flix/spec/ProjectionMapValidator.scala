@@ -68,7 +68,8 @@ object ProjectionMapValidator {
       sys.exit(1)
     }
 
-    val errors = validate(maps, schema, inventory, contract, unattachable, canonicalKinds())
+    val occurrences = canonicalOccurrences()
+    val errors = validate(maps, schema, inventory, contract, unattachable, occurrences.keySet)
 
     if (!errors.isEmpty) {
       System.err.println("FATAL: projection map validation failed")
@@ -82,21 +83,19 @@ object ProjectionMapValidator {
     val deprecatedKeys = schema("properties").asObject.collect {
       case (key, spec) if spec.get("deprecated").contains(Json.JBool(true)) => key
     }.toSet
-    // Naming the key alone is not actionable: it fires on the key's presence, so a consumer that removes
-    // every entry the contract already covers still sees the same line and cannot tell whether any work is
-    // left. Split the entries instead -- what the contract now covers and can go, and what is genuinely this
-    // consumer's and must stay until it is argued into ast/transparency.json.
-    val covered = contract.all
+    // Contract membership alone is insufficient: conditional transparency can leave occurrences behind.
+    // Advice is measured over the same canonical trees used for mapping reachability.
     val notices = maps.flatMap { path =>
       val doc = Json.parseFile(Paths.get(path))
       doc.asObject.keySet.intersect(deprecatedKeys).toList.sorted.map { key =>
         val entries = doc.get(key).map(_.asArray.map(_.asString)).getOrElse(Nil).sorted
-        val redundant = entries.filter(covered)
-        val remaining = entries.filterNot(covered)
+        val redundant = removableEntries(key, entries, contract, occurrences)
+        val remaining = entries.filterNot(redundant.toSet)
         val detail =
           if (entries.isEmpty) "no entries; the key can be removed"
-          else if (redundant.isEmpty) s"${remaining.length} entry/entries, none covered by the contract"
-          else s"${redundant.length} of ${entries.length} now covered by ast/transparency.json"
+          else if (redundant.isEmpty)
+            s"${remaining.length} entry/entries, none removable from the measured canonical trees"
+          else s"${redundant.length} of ${entries.length} removable after normalization in fixtures/expected"
         (path, key, detail, redundant, remaining)
       }
     }
@@ -107,33 +106,46 @@ object ProjectionMapValidator {
         if (redundant.nonEmpty) println(s"    removable now: ${redundant.mkString(", ")}")
         if (remaining.nonEmpty) println(s"    still yours:   ${remaining.mkString(", ")}")
       }
-      println("  The key stays reportable until it is empty: `elide` and `flattenCanonical` say on the")
-      println("  consumer's side what ast/transparency.json now says once, centrally. An entry under")
-      println("  `still yours` is a candidate to argue into that contract, not something to delete.")
+      println("  Advice is measured from fixtures/expected and applies to this fixture suite.")
+      println("  Entries under `still yours` may still act on surviving canonical occurrences.")
     }
 
     val total = maps.map(p => Json.parseFile(Paths.get(p)).get("mappings").map(_.asObject.size).getOrElse(0)).sum
     println(s"OK: ${maps.length} projection map(s) valid, $total mappings, all targets in inventory")
   }
 
-  /** The checks themselves, separated from `main` so they can be exercised without exiting the JVM. */
-  /** Every kind that actually occurs in `fixtures/expected`, i.e. what survived normalisation.
-    *
-    * Read rather than inferred, because the contract's rules fire per occurrence: a kind can be elided in most
-    * positions and still stand in some. This is the only honest basis for calling a mapping target unreachable.
+  /** A deprecated entry can go only if the contract covers it and it acts on no surviving occurrence. Count all
+    * children, including tokens: a one-token list still carries its token's role. This measures the committed fixture
+    * suite, not every possible Flix input.
     */
-  private def canonicalKinds(): Set[String] = {
-    val out = scala.collection.mutable.Set.empty[String]
+  private[spec] def removableEntries(
+      key: String,
+      entries: List[String],
+      contract: Transparency.Contract,
+      occurrences: Map[String, List[Int]]
+  ): List[String] = entries.filter { kind =>
+    contract.all.contains(kind) && (key match {
+      case "elide"            => !occurrences.getOrElse(kind, Nil).exists(_ <= 1)
+      case "flattenCanonical" => !occurrences.contains(kind)
+      case _                  => false
+    })
+  }
+
+  /** Surviving occurrences and their full arities, shared by reachability and deprecation advice. */
+  private[spec] def canonicalOccurrences(
+      dir: java.nio.file.Path = Paths.get(Spec.NormalizedDir)
+  ): Map[String, List[Int]] = {
+    val out = scala.collection.mutable.Map.empty[String, List[Int]]
     def walk(n: Json): Unit = n.get("kind").foreach { k =>
-      out += k.asString
+      val children = n.get("children").map(_.asArray).getOrElse(Nil)
+      out.update(k.asString, children.length :: out.getOrElse(k.asString, Nil))
       n.get("children").map(_.asArray).getOrElse(Nil).foreach(walk)
     }
-    val dir = Paths.get(Spec.NormalizedDir)
     if (Files.isDirectory(dir))
       Files.list(dir).iterator().asScala.map(_.toString).filter(_.endsWith(".json")).foreach { f =>
         Json.parseFile(Paths.get(f)).get("units").map(_.asArray).getOrElse(Nil).foreach(_.get("tree").foreach(walk))
       }
-    out.toSet
+    out.toMap
   }
 
   def validate(
