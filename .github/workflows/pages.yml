@@ -233,11 +233,17 @@ jobs:
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: gh-pages-worktree
+          # Artifacts belong to the run, not the attempt. A re-run would otherwise upload a second
+          # `github-pages` and deploy-pages would refuse to pick one. Keep in sync with
+          # artifact_name below (tools/packaging/pages-artifact-name-test.sh checks it).
+          name: github-pages-${{ github.run_attempt }}
 
       - name: Deploy to GitHub Pages
         if: steps.commit.outputs.changed == 'true'
         id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
 
       - name: Verify the Published Coordinate Actually Resolves
         # Deploying is not publishing. Resolving the coordinate from a clean Gradle project against
