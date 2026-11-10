@@ -24,6 +24,9 @@ trap 'rm -rf "$WORK"' EXIT
 echo "== verifying Maven release and snapshot resolution =="
 bash tools/packaging/verify-published-test.sh
 
+echo "== verifying the Pages artifact name is unique per run attempt =="
+bash tools/packaging/pages-artifact-name-test.sh
+
 echo "== running Gradle test suite =="
 ./gradlew test
 
