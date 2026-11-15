@@ -6,7 +6,7 @@
   "properties": {
     "schemaVersion": {"enum": [1]},
     "scope": {"enum": ["bounded-parser-cases"]},
-    "profiles": {"type": "array", "minItems": 10, "maxItems": 10, "items": {"$ref": "#/definitions/profile"}}
+    "profiles": {"type": "array", "minItems": 11, "maxItems": 11, "items": {"$ref": "#/definitions/profile"}}
   },
   "definitions": {
     "snapshot": {

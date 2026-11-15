@@ -1,7 +1,7 @@
 # Historical syntax profiles
 
-`profiles/profiles.json` selects ten exact official releases from 0.75.0 through
-0.79.0. These are **bounded parser compatibility cases**, not full historical
+`profiles/profiles.json` selects eleven exact official releases from 0.75.0 through
+0.80.0. These are **bounded parser compatibility cases**, not full historical
 grammars or historical conformance suites. The current `pin.json`, root fixtures,
 normalization and inventory remain a separate contract.
 
@@ -60,9 +60,9 @@ The worker drives only Lexer and Parser2, using an in-memory ReadAst root with
 UTF-8 source. Reader, package loading and the standard library are outside scope.
 
 The schema retains Draft 7 size restrictions. The shared project validator
-implements a subset of Draft 7; the exact ten releases, four source keys and nine
+implements a subset of Draft 7; the exact eleven releases, four source keys and nine
 case identities are additionally enforced in Scala, including rejection of extra
-entries. Unit mutations cover an eleventh profile, missing/extra source keys,
+entries. Unit mutations cover a twelfth profile, missing/extra source keys,
 cross-profile snapshots, source/output corruption, malformed tokens, empty trees,
 and inconsistent acceptance. Both invalid sentinels must retain their measured
 lexer/parser diagnostic classes in every release.

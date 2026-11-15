@@ -261,7 +261,7 @@ The exact figure is **generated**, not written here: `ast/coverage.json` carries
 `generateCoverage` whenever fixtures change.
 
 <!-- generated: wrappers -->
-At this pin that is **555 of 4696 nodes (11.8%)**, across 166 fixtures.
+At this pin that is **560 of 4750 nodes (11.8%)**, across 168 fixtures.
 Read [`ast/coverage.json`](../ast/coverage.json) for the per-kind `alwaysSingleChildWrapper`
 breakdown; this paragraph is regenerated from it rather than retyped.
 <!-- /generated: wrappers -->
@@ -376,8 +376,8 @@ the current figures, and re-measure in the consumer repository rather than trust
 ## Lexical consumers
 
 A syntax highlighter or TextMate grammar has no parse tree, so it can never consume
-`fixtures/expected/`. Its contract is [`ast/tokenkind.json`](../ast/tokenkind.json) — the 159
-`TokenKind`s the reference lexer defines, 158 case objects plus `Err`, reflected from the pinned
+`fixtures/expected/`. Its contract is [`ast/tokenkind.json`](../ast/tokenkind.json) — the 160
+`TokenKind`s the reference lexer defines, 159 case objects plus `Err`, reflected from the pinned
 jar and pinned by digest in `pin.json`.
 
 That exists so lexical consumers stop scraping `Lexer.scala` as text. Text scraping cannot be
@@ -417,8 +417,8 @@ found it; that is what the corpus is for. Narrowing the `$` exclusion to exactly
 behaviour is what closed them.
 
 <!-- generated: lossless -->
-It now holds on **all 166 fixtures and all 893
-cleanly-parsed corpus files** — 893 of the 894 corpus files parse without error, and the
+It now holds on **all 168 fixtures and all 894
+cleanly-parsed corpus files** — 894 of the 895 corpus files parse without error, and the
 remainder are excluded rather than failing (see below).
 <!-- /generated: lossless -->
 
@@ -440,11 +440,11 @@ consumer can pass today. `./gradlew :tools:project:lossless`.
 
 ## Token reachability
 
-`ReachabilityRun` measures the lexical vocabulary over the same corpus walk: **151 of 159
-TokenKinds** are emitted somewhere in the 893 files.
+`ReachabilityRun` measures the lexical vocabulary over the same corpus walk: **152 of 160
+TokenKinds** are emitted somewhere in the 895 files.
 
 Seven of the eight that are not — `Bang`, `Caret`, `Dollar`, `Err`, `KeywordForall`,
-`KeywordSealed`, `KeywordStaticLowercase` — *are* exercised by hand-written fixtures. That is the
+`KeywordStaticLowercase`, `KeywordVal` — *are* exercised by hand-written fixtures. That is the
 clearest justification for curating a fixture suite at all: 900 files of real Flix do not reach them, and
 targeted inputs do.
 

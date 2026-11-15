@@ -781,6 +781,84 @@
           "expectedSha256": "74766ca953d772faaaa7f292d96ab46be86398223138d8aff4e8893b93e46a97"
         }
       ]
+    },
+    {
+      "version": "0.80.0",
+      "tag": "v0.80.0",
+      "commit": "0c641c73c4635dee992d01c4364f224ea56d9a46",
+      "sources": {
+        "main/src/ca/uwaterloo/flix/language/ast/SyntaxTree.scala": "6b3f1202cc6e8f976ea9dc34dede2e6ced44b0ba",
+        "main/src/ca/uwaterloo/flix/language/ast/TokenKind.scala": "a08cff744784cfec96c7509977a6051d594823bd",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala": "feddb5b40fc8985ae71155c0ed3bca534ea4e59e",
+        "main/src/ca/uwaterloo/flix/language/phase/Lexer.scala": "b90c77c0da120c92fb4db2d2c45300babf940bb8"
+      },
+      "oracleUrl": "https://github.com/flix/flix/releases/download/v0.80.0/flix.jar",
+      "oracleSha256": "0e9dec1e93071ada5eaba2e187499f0880b574e7e4ef62937d6f31c661c1fda0",
+      "cases": [
+        {
+          "id": "baseline",
+          "source": "profiles/sources/baseline.flix",
+          "sourceSha256": "bfda4c560ab56a24dc81995e3654a79e836b4fcc9ee6b6c6aa837d816a3a7dbf",
+          "expected": "profiles/expected/0.80.0/baseline.json",
+          "expectedSha256": "21ad82d1cc1ae0a91f50b65a737be41a3ff4513b9973c4e5098127703f40c9ec"
+        },
+        {
+          "id": "comments",
+          "source": "profiles/sources/comments.flix",
+          "sourceSha256": "78079fb78af41c027affed0053505524d112e7927009147425740517ca0e1654",
+          "expected": "profiles/expected/0.80.0/comments.json",
+          "expectedSha256": "d054a8d9943389dba095fdf025bedc30a0e6bdd4dd4b325f8973c7af78f9b94d"
+        },
+        {
+          "id": "complex-row-tail",
+          "source": "profiles/sources/complex-row-tail.flix",
+          "sourceSha256": "e74aa2fd1525e7dce72a8cc2eb1b93bc87b7a2f149c57b54bf2639a4845f2373",
+          "expected": "profiles/expected/0.80.0/complex-row-tail.json",
+          "expectedSha256": "b6bd8dc79978ddfb7a68803e128a0feab2ebf75cf33856b334b93660a2e3f50e"
+        },
+        {
+          "id": "effect-type-parameter",
+          "source": "profiles/sources/effect-type-parameter.flix",
+          "sourceSha256": "e1b4ad105235d24b5cbe6fb4a650e62e6cf75e7a3c6379608b1091aa973baff1",
+          "expected": "profiles/expected/0.80.0/effect-type-parameter.json",
+          "expectedSha256": "0a005079cc9a47a9280f3b82134234244f3c299d37aef2577776a791c026c952"
+        },
+        {
+          "id": "invalid-lexer",
+          "source": "profiles/sources/invalid-lexer.flix",
+          "sourceSha256": "f8e7dd44de3ed8af796c7eac1acc43d98724318f53e700195894a4d7d2e03525",
+          "expected": "profiles/expected/0.80.0/invalid-lexer.json",
+          "expectedSha256": "ba6cbf53db5f9aa7cedc91e392485f35edc5795f037b4d63d7b5692f16712c41"
+        },
+        {
+          "id": "invalid-parser",
+          "source": "profiles/sources/invalid-parser.flix",
+          "sourceSha256": "54e751e9468b08f4d63e4e5c7299dd4fc9ff33dabd9b35529e7b5f2677b9297c",
+          "expected": "profiles/expected/0.80.0/invalid-parser.json",
+          "expectedSha256": "42ca46d7d24b194499e26d300f7d7e0987295ead54258d7e8e39bc7033e6cc22"
+        },
+        {
+          "id": "law",
+          "source": "profiles/sources/law.flix",
+          "sourceSha256": "a214199973744d8eb6674291e4eb0c6f9a27b9d6331ed68b14b5e06f85bdbda1",
+          "expected": "profiles/expected/0.80.0/law.json",
+          "expectedSha256": "4c145b8fefa5b468f1103d017b4f7af7939252d14e414ecf0e043d64fe317a80"
+        },
+        {
+          "id": "lawful",
+          "source": "profiles/sources/lawful.flix",
+          "sourceSha256": "569f3fdcc7f117ef1eb4e51feedd59d0eba429fe414bcb93303f9afc4cf7ef9b",
+          "expected": "profiles/expected/0.80.0/lawful.json",
+          "expectedSha256": "10afa2964ecdf6b6cf1167dbd0e30d74bc265343e8e45888e1826c3f3f942e44"
+        },
+        {
+          "id": "tight-use",
+          "source": "profiles/sources/tight-use.flix",
+          "sourceSha256": "0a87846d9a94b9c726c9802b157504f16f6f482d29f512d78e082ef21060c0c1",
+          "expected": "profiles/expected/0.80.0/tight-use.json",
+          "expectedSha256": "74766ca953d772faaaa7f292d96ab46be86398223138d8aff4e8893b93e46a97"
+        }
+      ]
     }
   ]
 }

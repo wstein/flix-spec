@@ -2,12 +2,12 @@
   "schemaVersion": 1,
   "upstream": {
     "repository": "https://github.com/flix/flix",
-    "commit": "36d923ca325dc466b28c63419667e6026a80f920",
-    "treeHash": "9f62ecb4b14147379474befc1bc2d5768648216c"
+    "commit": "0c641c73c4635dee992d01c4364f224ea56d9a46",
+    "treeHash": "0f545f3521e6628e7eda47b73df36f104f492612"
   },
   "counts": {
-    "totalFlixFiles": 894,
-    "mainFlixFiles": 717,
+    "totalFlixFiles": 895,
+    "mainFlixFiles": 718,
     "exampleFlixFiles": 177
   },
   "inclusionRules": {

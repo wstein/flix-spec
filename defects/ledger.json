@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "upstreamCommit": "36d923ca325dc466b28c63419667e6026a80f920",
+  "upstreamCommit": "0c641c73c4635dee992d01c4364f224ea56d9a46",
   "note": "HAND-MAINTAINED. Defects in the *reference compiler* that this suite has observed and cannot itself falsify. An oracle-derived suite inherits the reference's bugs by construction, so the only honest response to finding one is to record it where consumers can read it -- not to normalise it away into an expectation that quietly makes the bug the specification. Every entry carries a runnable reproducer and a declarative assertion, so `validateDefects` re-checks at the current pin whether the defect still manifests. An entry that stops reproducing fails the build: that is upstream fixing it, and the entry must then be closed rather than left to rot. Entries also expire; see docs/DEFECTS.md for why that gate is time-based and what it costs.",
   "entries": [
     {
@@ -23,23 +23,23 @@
         ]
       },
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:4040",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:4043",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:4057",
-        "main/src/ca/uwaterloo/flix/language/phase/Weeder2.scala:2076",
-        "main/src/ca/uwaterloo/flix/language/phase/Weeder2.scala:2834"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:4169",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:4172",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:4186",
+        "main/src/ca/uwaterloo/flix/language/phase/Weeder2.scala:2100",
+        "main/src/ca/uwaterloo/flix/language/phase/Weeder2.scala:2895"
       ],
       "upstreamStatus": "not-filed",
       "upstreamIssue": null,
       "owner": "wstein",
-      "reviewedAtPin": "36d923ca325dc466b28c63419667e6026a80f920"
+      "reviewedAtPin": "0c641c73c4635dee992d01c4364f224ea56d9a46"
     },
     {
       "id": "FLIX-0002",
       "title": "Weeder2 crashes on a math-name operator used infix",
       "component": "Weeder2",
       "disposition": "accepted-upstream-defect",
-      "summary": "Parser2 has a dedicated binary operator for math-symbol names: peekBinaryOp maps TokenKind.NameMath to BinaryOp.NameMath (Parser2.scala:1704), NameMath is a member of FIRST_BINARY_OP (Parser2.scala:1732), and it carries its own precedence. So `a ⊆ b` lexes and parses cleanly into Expr.Binary with the symbol closed as Operator. Weeder2.visitBinaryExpr then matches the operator token against a fixed set -- the keyword operators, the literal cases, ColonColon, ColonColonTight, Tick and GenericOperator (Weeder2.scala:1245) -- which omits NameMath, and falls through to `throw InternalCompilerException(\"Expr.Binary operator not recognized\")` (Weeder2.scala:1249). The two phases disagree about whether NameMath is an operator, which is what makes this a defect rather than unsupported syntax. Confirmed against the released v0.77.0 jar from the command line, which prints the compiler's own bug-report banner, not only by driving the phases directly. Upstream has seen this exception before, from a different trigger: flix/flix#13320 reported it for a keyword used as an infix function name (`1 `checked_cast` 2`), and flix/flix#13326 fixed that path on 2026-09-19 by adding a Tick case to the same match. That fix is an ancestor of the pinned v0.77.0 commit and does not touch NameMath, so this path survives it. A search of flix/flix issues and pull requests for the exception text, for NameMath, and for math-operator crashes finds nothing covering this trigger, so it is unreported as of the v0.77.0 investigation. A review-ready upstream draft is staged at https://github.com/wstein/flix-fork/issues/4, with a standalone minimal reproduction at https://github.com/wstein/flix-repro-namemath-infix-crash -- a flix-template project pinned by digest to v0.77.0, so it needs only a JDK.",
+      "summary": "Parser2 has a dedicated binary operator for math-symbol names: peekBinaryOp maps TokenKind.NameMath to BinaryOp.NameMath (Parser2.scala:1830), NameMath is a member of FIRST_BINARY_OP (Parser2.scala:1858), and it carries its own precedence. So `a \u2286 b` lexes and parses cleanly into Expr.Binary with the symbol closed as Operator. Weeder2.visitBinaryExpr then matches the operator token against a fixed set -- the keyword operators, the literal cases, ColonColon, ColonColonTight, Tick and GenericOperator (Weeder2.scala:1269) -- which omits NameMath, and falls through to `throw InternalCompilerException(\"Expr.Binary operator not recognized\")` (Weeder2.scala:1273). The two phases disagree about whether NameMath is an operator, which is what makes this a defect rather than unsupported syntax. Confirmed against the released v0.77.0 jar from the command line, which prints the compiler's own bug-report banner, not only by driving the phases directly. Upstream has seen this exception before, from a different trigger: flix/flix#13320 reported it for a keyword used as an infix function name (`1 `checked_cast` 2`), and flix/flix#13326 fixed that path on 2026-09-19 by adding a Tick case to the same match. That fix is an ancestor of the pinned v0.77.0 commit and does not touch NameMath, so this path survives it. A search of flix/flix issues and pull requests for the exception text, for NameMath, and for math-operator crashes finds nothing covering this trigger, so it is unreported as of the v0.77.0 investigation. A review-ready upstream draft is staged at https://github.com/wstein/flix-fork/issues/4, with a standalone minimal reproduction at https://github.com/wstein/flix-repro-namemath-infix-crash -- a flix-template project pinned by digest to v0.77.0, so it needs only a JDK.",
       "impact": "Nothing for a parser: the reference's own parser accepts the input and produces the tree this repository publishes, so a consumer that agrees with fixtures/expected is correct. It is recorded because the fixture expressions__math-name-operator.flix asserts a tree the reference cannot actually compile, and a reader is entitled to know that the suite's authority stops at the parse. It also bounds what a positive fixture means here.",
       "firstObservedAtPin": "4a5b60a31ac03bb762f68b554a0fc2b6f4d982b9",
       "reproducer": "defects/reproducers/math-name-binary-operator.flix",
@@ -52,15 +52,15 @@
         "weedOutcome": "crashes"
       },
       "citations": [
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1704",
-        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1732",
-        "main/src/ca/uwaterloo/flix/language/phase/Weeder2.scala:1245",
-        "main/src/ca/uwaterloo/flix/language/phase/Weeder2.scala:1249"
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1830",
+        "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1858",
+        "main/src/ca/uwaterloo/flix/language/phase/Weeder2.scala:1269",
+        "main/src/ca/uwaterloo/flix/language/phase/Weeder2.scala:1273"
       ],
       "upstreamStatus": "not-filed",
       "upstreamIssue": null,
       "owner": "wstein",
-      "reviewedAtPin": "36d923ca325dc466b28c63419667e6026a80f920"
+      "reviewedAtPin": "0c641c73c4635dee992d01c4364f224ea56d9a46"
     }
   ]
 }

@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "upstreamCommit": "36d923ca325dc466b28c63419667e6026a80f920",
-  "upstreamTag": "v0.79.0",
+  "upstreamCommit": "0c641c73c4635dee992d01c4364f224ea56d9a46",
+  "upstreamTag": "v0.80.0",
   "scope": "Bounded catalogue: row tails, selected comments/documentation, expression and type operators, interpolation boundaries, declaration prefixes and two recovery paths. All other syntax remains outside this catalogue.",
   "variants": [
     {
       "id": "row-tail.extensible.variable",
       "production": "extensibleType",
       "description": "variable tail after the bar in Type.Extensible",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3779-3793",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3908-3922",
       "evidence": [
         {
           "fixture": "fixtures/positive/types__extensible-tail-variable.flix",
@@ -61,7 +61,7 @@
       "id": "row-tail.extensible.complex",
       "production": "extensibleType",
       "description": "complex tail after the bar in Type.Extensible",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3779-3793",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3908-3922",
       "evidence": [
         {
           "fixture": "fixtures/positive/types__extensible-tail-complex.flix",
@@ -145,7 +145,7 @@
       "id": "row-tail.extensible.missing",
       "production": "extensibleType",
       "description": "missing tail after the bar in Type.Extensible",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3779-3793",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3908-3922",
       "evidence": [
         {
           "fixture": "fixtures/negative/types__missing-extensible-tail.flix",
@@ -198,7 +198,7 @@
       "id": "row-tail.schema.variable",
       "production": "schemaType",
       "description": "variable tail after the bar in Type.Schema",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3795-3809",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3924-3938",
       "evidence": [
         {
           "fixture": "fixtures/positive/types__schema-tail-variable.flix",
@@ -290,7 +290,7 @@
       "id": "row-tail.schema.complex",
       "production": "schemaType",
       "description": "complex tail after the bar in Type.Schema",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3795-3809",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3924-3938",
       "evidence": [
         {
           "fixture": "fixtures/positive/types__schema-tail-complex.flix",
@@ -374,7 +374,7 @@
       "id": "row-tail.schema.missing",
       "production": "schemaType",
       "description": "missing tail after the bar in Type.Schema",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3795-3809",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3924-3938",
       "evidence": [
         {
           "fixture": "fixtures/negative/types__missing-schema-tail.flix",
@@ -427,7 +427,7 @@
       "id": "row-tail.schema-row.variable",
       "production": "schemaRowType",
       "description": "variable tail after the bar in Type.SchemaRow",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3811-3824",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3940-3953",
       "evidence": [
         {
           "fixture": "fixtures/positive/types__schema-row-tail-variable.flix",
@@ -480,7 +480,7 @@
       "id": "row-tail.schema-row.complex",
       "production": "schemaRowType",
       "description": "complex tail after the bar in Type.SchemaRow",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3811-3824",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3940-3953",
       "evidence": [
         {
           "fixture": "fixtures/positive/types__schema-row-tail-complex.flix",
@@ -564,7 +564,7 @@
       "id": "row-tail.schema-row.missing",
       "production": "schemaRowType",
       "description": "missing tail after the bar in Type.SchemaRow",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3811-3824",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3940-3953",
       "evidence": [
         {
           "fixture": "fixtures/negative/types__missing-schema-row-tail.flix",
@@ -617,7 +617,7 @@
       "id": "comment.leading-between-trailing-eof",
       "production": "buildTree/placeComments",
       "description": "Plain comments before the first declaration, after an expression, between declarations, and at EOF retain root sibling order",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:168-183",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:300-315",
       "evidence": [
         {
           "fixture": "fixtures/positive/comments__leading-trailing-and-eof.flix",
@@ -710,7 +710,7 @@
       "id": "comment.qualified-name",
       "production": "buildTree/placeComments",
       "description": "A block comment remains inside QName between Foo and the dot",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:168-183",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:300-315",
       "evidence": [
         {
           "fixture": "fixtures/positive/comments__between-qualified-name-and-operator.flix",
@@ -763,7 +763,7 @@
       "id": "comment.binary-operator",
       "production": "buildTree/placeComments",
       "description": "Comments immediately before and after an operator remain ordered within Expr.Binary",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:168-183",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:300-315",
       "evidence": [
         {
           "fixture": "fixtures/positive/comments__between-qualified-name-and-operator.flix",
@@ -830,7 +830,7 @@
       "id": "comment.parameter-type",
       "production": "buildTree/placeComments",
       "description": "Comments on both sides of a parameter colon stay in Parameter",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:168-183",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:300-315",
       "evidence": [
         {
           "fixture": "fixtures/positive/comments__inside-type-and-arguments.flix",
@@ -885,7 +885,7 @@
       "id": "comment.type-application",
       "production": "buildTree/placeComments",
       "description": "A comment between List and its type argument list belongs to Type.Apply",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:168-183",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:300-315",
       "evidence": [
         {
           "fixture": "fixtures/positive/comments__inside-type-and-arguments.flix",
@@ -928,7 +928,7 @@
       "id": "comment.argument-separator",
       "production": "buildTree/placeComments",
       "description": "Comments after the opening parenthesis and argument separator stay in ArgumentList",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:168-183",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:300-315",
       "evidence": [
         {
           "fixture": "fixtures/positive/comments__inside-type-and-arguments.flix",
@@ -995,7 +995,7 @@
       "id": "documentation.def-attachment",
       "production": "buildTree/placeComments",
       "description": "Documentation is the first child of the named def; declaration metadata stays on that declaration",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:168-183",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:300-315",
       "evidence": [
         {
           "fixture": "fixtures/positive/comments__documentation-attachment.flix",
@@ -1061,7 +1061,7 @@
       "id": "documentation.struct-attachment",
       "production": "buildTree/placeComments",
       "description": "Documentation is the first child of the named struct; declaration metadata stays on that declaration",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:168-183",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:300-315",
       "evidence": [
         {
           "fixture": "fixtures/positive/comments__documentation-attachment.flix",
@@ -1105,7 +1105,7 @@
       "id": "documentation.field-attachment",
       "production": "buildTree/placeComments",
       "description": "Documentation is the first child of the named field; declaration metadata stays on that declaration",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:168-183",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:300-315",
       "evidence": [
         {
           "fixture": "fixtures/positive/comments__documentation-attachment.flix",
@@ -1149,7 +1149,7 @@
       "id": "documentation.misplaced-inline-doc",
       "production": "reportMisplacedDocComments",
       "description": "A doc comment without a documentable target remains plain and reports MisplacedDocComments",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:371-380",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:481-490",
       "evidence": [
         {
           "fixture": "fixtures/negative/comments__misplaced-inline-doc.flix",
@@ -1189,7 +1189,7 @@
       "id": "documentation.orphan-doc-at-eof",
       "production": "reportMisplacedDocComments",
       "description": "A doc comment without a documentable target remains plain and reports MisplacedDocComments",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:371-380",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:481-490",
       "evidence": [
         {
           "fixture": "fixtures/negative/comments__orphan-doc-at-eof.flix",
@@ -1229,7 +1229,7 @@
       "id": "documentation.doc-inside-expression",
       "production": "reportMisplacedDocComments",
       "description": "A doc comment without a documentable target remains plain and reports MisplacedDocComments",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:371-380",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:481-490",
       "evidence": [
         {
           "fixture": "fixtures/negative/comments__doc-inside-expression.flix",
@@ -1269,7 +1269,7 @@
       "id": "expression.precedence.multiply-in-add",
       "production": "Expression.expression / Op.rightBindsTighter",
       "description": "multiplication is the right operand of addition, with an explicit Operator child",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1780-1819",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1906-1945",
       "evidence": [
         {
           "fixture": "fixtures/positive/expressions__operator-precedence.flix",
@@ -1347,7 +1347,7 @@
       "id": "expression.associativity.cons-right",
       "production": "Expression.expression / Op.rightBindsTighter",
       "description": "equal-precedence cons nests in the right operand",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1780-1819",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1906-1945",
       "evidence": [
         {
           "fixture": "fixtures/positive/expressions__associativity-pairs.flix",
@@ -1425,7 +1425,7 @@
       "id": "expression.associativity.subtract-left",
       "production": "Expression.expression / Op.rightBindsTighter",
       "description": "equal-precedence subtraction nests in the left operand",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1780-1819",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1906-1945",
       "evidence": [
         {
           "fixture": "fixtures/positive/expressions__associativity-pairs.flix",
@@ -1503,7 +1503,7 @@
       "id": "interpolation.nested",
       "production": "Expression.interpolatedStringExpr",
       "description": "nested opener belongs to an inner StringInterpolation, not the adjacent-interpolation path",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3275-3314",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3401-3440",
       "evidence": [
         {
           "fixture": "fixtures/positive/lexical__nested-string-interpolation.flix",
@@ -1575,7 +1575,7 @@
       "id": "interpolation.adjacent",
       "production": "Expression.interpolatedStringExpr",
       "description": "a single }${ token separates two sibling expressions",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3275-3314",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3401-3440",
       "evidence": [
         {
           "fixture": "fixtures/positive/lexical__adjacent-string-interpolation.flix",
@@ -1653,7 +1653,7 @@
       "id": "declaration.prefix.single",
       "production": "Decl.declaration / annotations / modifiers",
       "description": "one annotation and modifier remain ordered singleton lists on their named declaration",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1430-1445",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1556-1571",
       "evidence": [
         {
           "fixture": "fixtures/positive/declarations__annotations-precede-modifiers.flix",
@@ -1708,7 +1708,7 @@
       "id": "declaration.prefix.multiple",
       "production": "Decl.declaration / annotations / modifiers",
       "description": "multiple annotations and modifiers retain two ordered non-singular lists on their declaration",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1430-1445",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1556-1571",
       "evidence": [
         {
           "fixture": "fixtures/positive/declarations__multiple-prefixes.flix",
@@ -1771,7 +1771,7 @@
       "id": "type.arrow.right-associative",
       "production": "Type.ttype / typeAndEffect",
       "description": "arrow nests on the right and both binary nodes keep their Operator child",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3444-3487",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3570-3613",
       "evidence": [
         {
           "fixture": "fixtures/positive/types__arrow-types-are-right-associative.flix",
@@ -1873,7 +1873,7 @@
       "id": "type.arrow.result-effect",
       "production": "Type.ttype / typeAndEffect",
       "description": "the arrow binary keeps its Operator, result type, backslash and effect in order",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3444-3487",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:3570-3613",
       "evidence": [
         {
           "fixture": "fixtures/positive/types__effect-annotation-binds-to-the-arrow-result.flix",
@@ -1963,7 +1963,7 @@
       "id": "recovery.operator-gap",
       "production": "Expression.statement",
       "description": "missing infix operator creates OperatorError inside Operator while parse diagnostics remain empty until weeding",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1510-1545",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1636-1671",
       "evidence": [
         {
           "fixture": "fixtures/negative/operator-error.flix",
@@ -2028,7 +2028,7 @@
       "id": "recovery.interpolation-eof",
       "production": "root / Expression.interpolatedStringExpr",
       "description": "unterminated interpolation keeps an inner recovery node and a distinct top-level synthetic Err at EOF",
-      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1016-1047",
+      "upstreamSource": "main/src/ca/uwaterloo/flix/language/phase/Parser2.scala:1126-1158",
       "evidence": [
         {
           "fixture": "fixtures/negative/lexical__unterminated-string-interpolation.flix",
