@@ -32,7 +32,7 @@ class ReleaseBundleTest extends AnyFunSuite with Matchers {
       stage.toString,
       root.resolve("README.md").toString,
       output.toString,
-      "v0.79.0"
+      "v0.80.0"
     )
       .redirectErrorStream(true)
       .start()
@@ -44,14 +44,14 @@ class ReleaseBundleTest extends AnyFunSuite with Matchers {
     val output = Files.createTempDirectory("release-bundle-test-")
     bundle(stage(), output)._1 shouldBe 0
     val unpacked = Files.createTempDirectory("release-bundle-unpacked-")
-    run("tar", "-xzf", output.resolve("flix-spec-0.79.0.tar.gz").toString, "-C", unpacked.toString) shouldBe 0
-    val data = unpacked.resolve("flix-spec-0.79.0")
+    run("tar", "-xzf", output.resolve("flix-spec-0.80.0.tar.gz").toString, "-C", unpacked.toString) shouldBe 0
+    val data = unpacked.resolve("flix-spec-0.80.0")
     List("fixtures/raw", "fixtures/expected", "ast/transparency.json").foreach(p =>
       Files.exists(data.resolve(p)) shouldBe true
     )
-    SyntaxProfiles.validate(data) shouldBe 10
+    SyntaxProfiles.validate(data) shouldBe 11
     SyntaxProfiles.Versions.foreach(v => SyntaxProfiles.select(data, v)("version").asString shouldBe v)
-    SyntaxProfiles.Versions.map(v => SyntaxProfiles.select(data, v)("cases").asArray.size).sum shouldBe 90
+    SyntaxProfiles.Versions.map(v => SyntaxProfiles.select(data, v)("cases").asArray.size).sum shouldBe 99
   }
 
   test("omitting profiles from staged data fails release assembly rather than shipping a partial bundle") {

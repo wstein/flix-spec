@@ -46,19 +46,19 @@ Pre-release evidence: [real consumer pilots and remaining adoption gates](docs/C
 
 Key components established:
 - **Oracle pin contract ([`pin.json`](pin.json))**: <!-- generated: pin-summary -->
-pinned to upstream release `v0.79.0` (`36d923ca…`, tree `9f62ecb4…`), the release asset's SHA-256 (`8fad2aa0…`)
+pinned to upstream release `v0.80.0` (`0c641c73…`, tree `0f545f35…`), the release asset's SHA-256 (`0e9dec1e…`)
 <!-- /generated: pin-summary -->, the entry point actually used, the required library level, and the classpath requirement. The `attestation` field records that the jar is **verified by digest, not by build provenance**.
 - **Projection contract ([`docs/PROJECTION.md`](docs/PROJECTION.md))**: canonical projected tree format, load-bearing versus advisory elements, normalisation rules, and consumer projection maps.
 - **JSON schemas ([`schemas/`](schemas/))**: draft-07 definitions for `ast/treekind.json` and canonical projected trees, enforced in CI by [`TreeKindSchemaValidator`](tools/project/src/main/scala/flix/spec/TreeKindSchemaValidator.scala).
-- **Committed AST inventory ([`ast/treekind.json`](ast/treekind.json))**: 192 `TreeKind` nodes with qualified names, parent traits and forms, name-set digest `92a8f27a…`, and a provenance header naming the generator, tool version, upstream commit and the exact oracle jar it was derived from.
-- **Token inventory ([`ast/tokenkind.json`](ast/tokenkind.json))**: 159 `TokenKind`s (158 case objects plus `Err`), digest-pinned in `pin.json`. This is the contract for **lexical** consumers such as `flix-textmate`, which have no parse tree and cannot consume `fixtures/expected/`. Every `token` in a projected tree is validated against it — previously the projection schema declared `token` as an unconstrained string, so 134 distinct names were committed and checked against nothing. Fixture coverage of the lexical vocabulary is now measured exactly as tree-kind coverage is, and reported in [Kind status](#kind-status); `Eof` is the single exception, and it is structurally rather than incidentally uncovered: the lexer always appends it as a virtual sentinel, but the parser only ever tests `at(TokenKind.Eof)` to decide when to stop — it is never pushed onto the tree as a node's child, so no fixture, however constructed, can make it appear in a projected tree.
+- **Committed AST inventory ([`ast/treekind.json`](ast/treekind.json))**: 193 `TreeKind` nodes with qualified names, parent traits and forms, name-set digest `d4ca310e…`, and a provenance header naming the generator, tool version, upstream commit and the exact oracle jar it was derived from.
+- **Token inventory ([`ast/tokenkind.json`](ast/tokenkind.json))**: 160 `TokenKind`s (159 case objects plus `Err`), digest-pinned in `pin.json`. This is the contract for **lexical** consumers such as `flix-textmate`, which have no parse tree and cannot consume `fixtures/expected/`. Every `token` in a projected tree is validated against it — previously the projection schema declared `token` as an unconstrained string, so 134 distinct names were committed and checked against nothing. Fixture coverage of the lexical vocabulary is now measured exactly as tree-kind coverage is, and reported in [Kind status](#kind-status); `Eof` is the single exception, and it is structurally rather than incidentally uncovered: the lexer always appends it as a virtual sentinel, but the parser only ever tests `at(TokenKind.Eof)` to decide when to stop — it is never pushed onto the tree as a node's child, so no fixture, however constructed, can make it appear in a projected tree.
 - **Corpus definition ([`corpus/`](corpus/))**: <!-- generated: corpus -->
-**894** pinned `.flix` files (**717** under `main/`, **177** under `examples/`), inclusion rules, and a tree-hash-verified fetch script.
+**895** pinned `.flix` files (**718** under `main/`, **177** under `examples/`), inclusion rules, and a tree-hash-verified fetch script.
 <!-- /generated: corpus -->
 - **Projected fixtures ([`fixtures/`](fixtures/))**: **two committed forms of every parse**, both generated from the pinned oracle and both held under a diff gate. `fixtures/raw/` is the reference's own tree, node for node — the provenance record, the input to every measurement of the reference's own vocabulary, and the authority the recovery conformance lane compares against. `fixtures/expected/` is that tree **normalized**:
 <!-- generated: normalisation -->
-**2284 of 4696 nodes (48.6%)** removed by [`ast/transparency.json`](ast/transparency.json), which elides wrapper nodes that carry no information beyond their child and splices out the error-recovery vocabulary.
-<!-- /generated: normalisation --> Doing that once here, with a reason argued from the reference's own structure and citations a reader can check, is neutral in a way that asking each consumer to re-derive it never was — with one instrumented consumer, no measurement could have told a neutral rule from one shaped by that consumer's grammar. Every document declares which form it is, in `form`. Kind names are sub-trait qualified, sources are repository-relative, and diagnostics record `kind`/`line` as gated with `col`/`message` advisory. At v0.79.0 comments are hidden from grammar lookahead and reinserted by the tree builder. Misplaced documentation is retained as `PlainComment` and diagnosed by `MisplacedDocComments`; `MisplacedComments` is no longer raised by Parser2. See [the current diagnostic contract](docs/CONFORMANCE.md#diagnostic-kind-coverage). Weeder-only diagnostics remain outside this parser pipeline.
+**2316 of 4750 nodes (48.8%)** removed by [`ast/transparency.json`](ast/transparency.json), which elides wrapper nodes that carry no information beyond their child and splices out the error-recovery vocabulary.
+<!-- /generated: normalisation --> Doing that once here, with a reason argued from the reference's own structure and citations a reader can check, is neutral in a way that asking each consumer to re-derive it never was — with one instrumented consumer, no measurement could have told a neutral rule from one shaped by that consumer's grammar. Every document declares which form it is, in `form`. Kind names are sub-trait qualified, sources are repository-relative, and diagnostics record `kind`/`line` as gated with `col`/`message` advisory. At v0.80.0 comments are hidden from grammar lookahead and reinserted by the tree builder. Misplaced documentation is retained as `PlainComment` and diagnosed by `MisplacedDocComments`; `MisplacedComments` is no longer raised by Parser2. See [the current diagnostic contract](docs/CONFORMANCE.md#diagnostic-kind-coverage). Weeder-only diagnostics remain outside this parser pipeline.
 - **Annotation inventory ([`ast/annotation.json`](ast/annotation.json))**: the 16 annotations the reference defines, digest-pinned in `pin.json`. A third vocabulary, because the first two cannot express it: the lexer emits a single `TokenKind.Annotation` for every one of them, so the name lives in the token's `text` and no `TokenKind` digest moves when one is added, removed or renamed. It is a **coverage** vocabulary and never a validity check — the `Annotation` token is genuinely open, since Java interop annotations lex identically and upstream models exactly that with `Annotation.Error`. `ReachabilityRun` reports which of them real code exercises: 13 of 16 across the corpus, the other three covered by a fixture.
 - **Retired vocabulary ([`ast/retired.json`](ast/retired.json))**: names the reference once defined and has since removed, with the tag each went at. Hand-maintained, because nothing in the current jar can say what used to be in an older one, and falsifiable — a retired name must be absent from the inventory it was retired from. An added kind announces itself under a name a reader can look up; a removed one leaves only a digest that no longer matches, and this is what survives it.
 - **Coverage, reachability and status ([`ast/coverage.json`](ast/coverage.json), [`ast/reachability.json`](ast/reachability.json), [`ast/status.json`](ast/status.json))**: what the fixtures exercise, what the reference emits across the whole corpus, and the joined per-kind verdict — see [Kind status](#kind-status) below.
@@ -68,7 +68,7 @@ pinned to upstream release `v0.79.0` (`36d923ca…`, tree `9f62ecb4…`), the re
 Flix v0.79.0 replaces `CommentList` and `Doc` with `PlainComment` and `DocComment`, and moves
 comment attachment out of grammar lookahead. v0.78.0 expands the tails of extensible, schema and
 schema-row types from variable names to full types. Token names and lexer behaviour are unchanged
-across v0.77.0–v0.79.0. See [the migration notes](docs/MIGRATION-v0.79.0.md).
+across v0.77.0–v0.79.0. See [the 0.79 migration notes](docs/MIGRATION-v0.79.0.md) and [0.80 migration notes](docs/MIGRATION-v0.80.0.md).
 
   | Workflow | Trigger | Does |
   | --- | --- | --- |
@@ -81,7 +81,7 @@ across v0.77.0–v0.79.0. See [the migration notes](docs/MIGRATION-v0.79.0.md).
 The [syntax variant catalogue](docs/SYNTAX-COVERAGE.md) checks 32 declared production variants
 against specific fixture trees, token identities and diagnostics. It is bounded evidence, not a
 percentage of grammar completeness. [Historical syntax profiles](docs/SYNTAX-PROFILES.md) retain
-ten separate oracle identities, vocabulary source identities and nine targeted probes per release; selecting a profile
+eleven separate oracle identities, vocabulary source identities and nine targeted probes per release; selecting a profile
 never relabels the current fixtures. These probes do not establish full historical grammar or corpus conformance.
 
 ### Kind status
@@ -94,14 +94,14 @@ construction* — is what turns a bare ratio into a status.
 <!-- generated: status -->
 | Status | `TreeKind` | `TokenKind` |
 | --- | ---: | ---: |
-| Inventory | 192 | 159 |
+| Inventory | 193 | 160 |
 | `reachable-covered` — the corpus emits it, a fixture pins it | 182 | 152 |
-| `fixture-only` — only a curated fixture reaches it | 4 | 6 |
+| `fixture-only` — only a curated fixture reaches it | 5 | 7 |
 | `corpus-only` — real Flix reaches it, no fixture does | 0 | 0 |
 | `structurally-unattachable` — cannot appear in any tree, argued in `ast/unattachable.json` | 6 | 1 |
 | `unknown` — neither exercised nor explained | 0 | 0 |
 
-Measured over 166 fixtures and 894 corpus files at pin `v0.79.0` (`36d923ca`).
+Measured over 168 fixtures and 895 corpus files at pin `v0.80.0` (`0c641c73`).
 `corpus-only` is the only row that is a to-do list. Machine-readable form:
 [`ast/status.json`](ast/status.json).
 <!-- /generated: status -->
@@ -130,12 +130,12 @@ is it* — and the two are independent: a `wrapper` can be `reachable-covered`, 
 <!-- generated: roles -->
 | Role | `TreeKind` |
 | --- | ---: |
-| `syntax` — the vocabulary a consumer is asked to agree with | 166 |
+| `syntax` — the vocabulary a consumer is asked to agree with | 167 |
 | `wrapper` — carries no information beyond its child; elided when normalising | 17 |
 | `error-marker` — marks recovery rather than syntax; spliced out, measured in the recovery lane | 3 |
 | `unattachable` — cannot appear in any tree from any input | 6 |
 
-The four partition the 192 `TreeKind`s exactly. Machine-readable form:
+The four partition the 193 `TreeKind`s exactly. Machine-readable form:
 `treeKindRole` in [`ast/status.json`](ast/status.json).
 <!-- /generated: roles -->
 
@@ -155,7 +155,7 @@ children for it to hide, so the wrapper/error-marker distinction has no content 
 flowchart TD
     REL["flix.jar<br/>release asset<br/>digest pinned in <code>pin.json</code>"]
     PIN["<code>pin.json</code><br/>execution contract"]
-    TK["<code>ast/treekind.json</code><br/>192 kinds"]
+    TK["<code>ast/treekind.json</code><br/>193 kinds"]
     PROJ["projected trees<br/><code>fixtures/expected/</code>"]
 
     PIN -->|"names + verifies"| REL
@@ -187,8 +187,8 @@ schemas/
   transparency.schema.json  # JSON Schema for ast/transparency.json
   defect-ledger.schema.json # JSON Schema for defects/ledger.json
 ast/
-  treekind.json          # GENERATED — 192 qualified syntax tree kinds, digest, provenance header
-  tokenkind.json         # GENERATED — 159 lexical token kinds, digest, provenance header
+  treekind.json          # GENERATED — 193 qualified syntax tree kinds, digest, provenance header
+  tokenkind.json         # GENERATED — 160 lexical token kinds, digest, provenance header
   coverage.json          # GENERATED — which kinds and tokens the fixture suite exercises
   reachability.json      # GENERATED — which kinds the reference emits across the whole corpus
   status.json            # GENERATED — the two joined: a status and a role per kind
@@ -251,8 +251,8 @@ moved to the consumers that own them, nothing here could enumerate them without 
 Everything in `ast/`, `schemas/`, `fixtures/` and `corpus/corpus.json`, plus `pin.json`, is also
 published as `io.github.wstein:flix-spec` — for a consumer that would rather add a dependency than
 vendor files by hand. Versioning is documented in [`docs/VERSIONING.md`](docs/VERSIONING.md); in
-short it is plain semver, `<flixMajor>.<flixMinor>.<revision>` — currently `0.79.0`, derived from
-Flix v0.79.0.
+short it is plain semver, `<flixMajor>.<flixMinor>.<revision>`. This source tree configures
+`0.80.0` for Flix v0.80.0; publication is a separate release operation.
 
 The pin is deliberately **not** encoded in the version. A version can advertise a pin but never
 enforce one, and this project has already seen a consumer depend on fixtures from one Flix while
@@ -270,7 +270,8 @@ Published to two places, with a real trade-off between them:
 | Retention | Every published version accumulates in git history on `gh-pages`, forever, by construction | Managed by GitHub; versions are not deleted by this repository |
 
 For a consumer who cannot or would rather not manage a GitHub token just to resolve a dependency,
-the Pages repository is the one to use:
+the Pages repository is the one to use. The example uses the configured version and requires it
+to have been published:
 
 ```kotlin
 repositories {
@@ -279,7 +280,7 @@ repositories {
 
 dependencies {
 <!-- generated: maven-coordinate -->
-    implementation("io.github.wstein:flix-spec:0.79.0")
+    implementation("io.github.wstein:flix-spec:0.80.0")
 <!-- /generated: maven-coordinate -->
 }
 ```

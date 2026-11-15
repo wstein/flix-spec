@@ -7,7 +7,7 @@ import java.security.MessageDigest
 /** Deliberately bounded compatibility profiles; never compared to the current vocabulary. */
 object SyntaxProfiles {
   val Versions =
-    List("0.75.0", "0.75.1", "0.75.2", "0.75.3", "0.76.0", "0.76.1", "0.76.2", "0.77.0", "0.78.0", "0.79.0")
+    List("0.75.0", "0.75.1", "0.75.2", "0.75.3", "0.76.0", "0.76.1", "0.76.2", "0.77.0", "0.78.0", "0.79.0", "0.80.0")
   def sha256(bytes: Array[Byte]): String =
     MessageDigest.getInstance("SHA-256").digest(bytes).map(b => f"${b & 0xff}%02x").mkString
   def requireDigest(file: Path, expected: String): Unit =
@@ -46,7 +46,7 @@ object SyntaxProfiles {
       "invalid-lexer",
       "invalid-parser"
     )
-    require(entries.map(_("version").asString) == Versions, "exact ten ordered release profiles required")
+    require(entries.map(_("version").asString) == Versions, "exact eleven ordered release profiles required")
     entries.foreach { p =>
       require(p("sources").asObject.keySet == sourcePaths, "exact four vocabulary source identities required")
       require(p("sources").asObject.values.forall(_.asString.matches("[0-9a-f]{40}")), "invalid source blob identity")

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 2,
+  "generatedBy": "flix.spec.ProjectionExtractor",
+  "toolVersion": "2.0.0",
+  "form": "normalized",
+  "upstreamCommit": "0c641c73c4635dee992d01c4364f224ea56d9a46",
+  "oracleSha256": "0e9dec1e93071ada5eaba2e187499f0880b574e7e4ef62937d6f31c661c1fda0",
+  "units": [
+    {
+      "source": "fixtures/negative/identifier__reserved-val.flix",
+      "diagnostics": [
+      {"kind":"UnexpectedToken","line":1,"col":1,"message":"UnexpectedToken(FromKinds(Set(NameLowercase, NameMath, GenericOperator)),Some(KeywordVal),Module,Some('val' is a keyword.),fixtures/negative/identifier__reserved-val.flix:1:1)"},
+      {"kind":"UnexpectedToken","line":1,"col":5,"message":"UnexpectedToken(FromKinds(Set(ParenL)),Some(KeywordVal),Module,None,fixtures/negative/identifier__reserved-val.flix:1:5)"},
+      {"kind":"UnexpectedToken","line":1,"col":5,"message":"UnexpectedToken(FromKinds(Set(Colon)),Some(KeywordVal),Module,None,fixtures/negative/identifier__reserved-val.flix:1:5)"},
+      {"kind":"UnexpectedToken","line":1,"col":5,"message":"UnexpectedToken(Type,Some(KeywordVal),Unknown,None,fixtures/negative/identifier__reserved-val.flix:1:5)"},
+      {"kind":"UnexpectedToken","line":1,"col":5,"message":"UnexpectedToken(FromKinds(Set(Equal)),Some(KeywordVal),Module,None,fixtures/negative/identifier__reserved-val.flix:1:5)"},
+      {"kind":"UnexpectedToken","line":1,"col":8,"message":"UnexpectedToken(FromKinds(Set(NameLowercase)),Some(ParenL),Module,None,fixtures/negative/identifier__reserved-val.flix:1:8)"},
+      {"kind":"UnexpectedToken","line":1,"col":8,"message":"UnexpectedToken(FromKinds(Set(Colon)),Some(ParenL),Module,None,fixtures/negative/identifier__reserved-val.flix:1:8)"}
+    ],
+      "tree": {"kind":"Root","span":{"start":{"line":1,"col":1},"end":{"line":2,"col":1}},"children":[{"kind":"Decl.Def","span":{"start":{"line":1,"col":1},"end":{"line":1,"col":4}},"children":[{"token":"KeywordDef","text":"def","start":{"line":1,"col":1},"end":{"line":1,"col":4}},{"kind":"ParameterList","span":{"start":{"line":1,"col":5},"end":{"line":1,"col":4}},"children":[]}]},{"kind":"Decl.Val","span":{"start":{"line":1,"col":5},"end":{"line":1,"col":22}},"children":[{"token":"KeywordVal","text":"val","start":{"line":1,"col":5},"end":{"line":1,"col":8}},{"kind":"Ident","span":{"start":{"line":1,"col":8},"end":{"line":1,"col":8}},"children":[]},{"kind":"Type.Ascribe","span":{"start":{"line":1,"col":8},"end":{"line":1,"col":17}},"children":[{"kind":"Type.RecordRow","span":{"start":{"line":1,"col":8},"end":{"line":1,"col":10}},"children":[{"token":"ParenL","text":"(","start":{"line":1,"col":8},"end":{"line":1,"col":9}},{"token":"ParenR","text":")","start":{"line":1,"col":9},"end":{"line":1,"col":10}}]},{"token":"Colon","text":":","start":{"line":1,"col":10},"end":{"line":1,"col":11}},{"kind":"Kind","span":{"start":{"line":1,"col":12},"end":{"line":1,"col":17}},"children":[{"kind":"Ident","span":{"start":{"line":1,"col":12},"end":{"line":1,"col":17}},"children":[{"token":"NameUppercase","text":"Int32","start":{"line":1,"col":12},"end":{"line":1,"col":17}}]}]}]},{"token":"Equal","text":"=","start":{"line":1,"col":18},"end":{"line":1,"col":19}},{"kind":"Expr.Literal","span":{"start":{"line":1,"col":20},"end":{"line":1,"col":22}},"children":[{"token":"LiteralInt","text":"42","start":{"line":1,"col":20},"end":{"line":1,"col":22}}]}]}]}
+    }
+  ]
+}

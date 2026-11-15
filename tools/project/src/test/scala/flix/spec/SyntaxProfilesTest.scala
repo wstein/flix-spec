@@ -12,9 +12,9 @@ import org.scalatestplus.junit.JUnitRunner
 class SyntaxProfilesTest extends AnyFunSuite with Matchers {
   private val root = Paths.get("../..").toAbsolutePath.normalize()
 
-  test("ten exact release profiles validate independently of the current inventory") {
-    SyntaxProfiles.validate(root) shouldBe 10
-    SyntaxProfiles.select(root, "0.75.0")("tag").asString shouldBe "v0.75.0"
+  test("eleven exact release profiles validate independently of the current inventory") {
+    SyntaxProfiles.validate(root) shouldBe 11
+    SyntaxProfiles.select(root, "0.80.0")("tag").asString shouldBe "v0.80.0"
     intercept[IllegalArgumentException](SyntaxProfiles.select(root, "latest"))
   }
 
@@ -75,9 +75,9 @@ class SyntaxProfilesTest extends AnyFunSuite with Matchers {
   test("mutation: changed oracle expectation fails its digest") {
     mutated(r => edit(r, "profiles/expected/0.75.0/law.json")(_ + "\n"))(_.getMessage should include("digest mismatch"))
   }
-  test("mutation: an eleventh release profile is rejected") {
+  test("mutation: a twelfth release profile is rejected") {
     mutated(r => manifest(r)(entries => entries :+ entries.head))(
-      _.getMessage should include("profiles/profiles.json.profiles: 11 item(s), more than maxItems 10")
+      _.getMessage should include("profiles/profiles.json.profiles: 12 item(s), more than maxItems 11")
     )
   }
   test("mutation: a missing source identity is rejected") {
@@ -151,6 +151,19 @@ class SyntaxProfilesTest extends AnyFunSuite with Matchers {
       _.getMessage should include("empty oracle tree")
     )
   }
+  test("current inventory contains the val declaration and token") {
+    names(Json.parseFile(root.resolve("ast/tokenkind.json")), "name") should contain("KeywordVal")
+    names(Json.parseFile(root.resolve("ast/treekind.json")), "name") should contain("Decl.Val")
+  }
+  test("val declaration parses and val cannot name a definition") {
+    val positive = Json.parseFile(root.resolve("fixtures/raw/declarations__val.json"))("units").asArray.head
+    positive("diagnostics").asArray shouldBe empty
+    names(positive("tree"), "kind") should contain("Decl.Val")
+    names(positive("tree"), "token") should contain("KeywordVal")
+    val negative = Json.parseFile(root.resolve("fixtures/raw/identifier__reserved-val.json"))("units").asArray.head
+    negative("diagnostics").asArray.map(_("kind").asString) should contain("UnexpectedToken")
+    names(negative("tree"), "token") should contain("KeywordVal")
+  }
   test("measured law removal is version bound") {
     def accepted(version: String, id: String): Json =
       Json.parseFile(root.resolve(s"profiles/expected/$version/$id.json"))("accepted")
@@ -174,7 +187,7 @@ class SyntaxProfilesTest extends AnyFunSuite with Matchers {
     SyntaxProfiles.Versions.foreach { version =>
       def accepted(id: String): Json = Json.parseFile(root.resolve(s"profiles/expected/$version/$id.json"))("accepted")
       accepted("effect-type-parameter") shouldBe Json.JBool(!version.startsWith("0.75."))
-      accepted("complex-row-tail") shouldBe Json.JBool(Set("0.78.0", "0.79.0").contains(version))
+      accepted("complex-row-tail") shouldBe Json.JBool(Set("0.78.0", "0.79.0", "0.80.0").contains(version))
     }
   }
   private def names(value: Json, key: String): List[String] = value match {
@@ -190,7 +203,7 @@ class SyntaxProfilesTest extends AnyFunSuite with Matchers {
         else "ColonColonTight"
       names(tight, "token").filter(_.startsWith("ColonColon")) shouldBe List(expected)
       val comments = Json.parseFile(root.resolve(s"profiles/expected/$version/comments.json"))
-      if (version == "0.79.0") {
+      if (Set("0.79.0", "0.80.0").contains(version)) {
         names(comments, "kind") should contain("DocComment")
         names(comments, "kind") should contain("PlainComment")
         names(comments, "kind") should not contain "CommentList"

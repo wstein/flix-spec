@@ -64,7 +64,7 @@ limitation; duplicating those witnesses would add no new production decision.
 | Recovery: `recovery.operator-gap`, `recovery.interpolation-eof` | [CONFORMANCE](CONFORMANCE.md) records the attempted synthetic `OperatorError` consumer implementation; JetBrains' migration review retains the separate synthetic EOF error identity. No adapter should synthesize reference-shaped recovery to hide these differences. | Raw `OperatorError` remains inside `Operator` inside binary operands. EOF evidence requires both the inner interpolation error and a separate direct root error containing `Err`, plus exactly `UnterminatedStringInterpolation` at line 1. The missing operator has no parse diagnostic; the weeder reports it later. |
 
 The tree-sitter remeasurement used Flix v0.79.0 / commit
-`36d923ca325dc466b28c63419667e6026a80f920`, oracle digest from `pin.json`, and
+`36d923ca325dc466b28c63419667e6026a80f920`, oracle digest `8fad2aa09567a7edabcc43f4101fa6199131df2c22929e001c87659d764f6dcf`, and
 fixture revision `aa16763bda3466465bc0735b4c2b14dcf2e072fc64893b49991f74cefeeb312f`
 (the 163-fixture input before these three new positive fixtures). It is separate
 from the committed older-pin consumer baseline. Its consumer head is
