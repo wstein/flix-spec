@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata modelVersion="1.1.0">
+  <groupId>io.github.wstein.flix-spec</groupId>
+  <artifactId>io.github.wstein.flix-spec.gradle.plugin</artifactId>
+  <versioning>
+    <lastUpdated>20261115222714</lastUpdated>
+    <snapshot>
+      <timestamp>20261115.222714</timestamp>
+      <buildNumber>1</buildNumber>
+    </snapshot>
+    <snapshotVersions>
+      <snapshotVersion>
+        <extension>pom</extension>
+        <value>0.80.0-20261115.222714-1</value>
+        <updated>20261115222714</updated>
+      </snapshotVersion>
+    </snapshotVersions>
+  </versioning>
+  <version>0.80.0-SNAPSHOT</version>
+</metadata>
